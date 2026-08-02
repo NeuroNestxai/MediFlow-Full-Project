@@ -1,0 +1,750 @@
+<title>MediFlow AI — How the system works</title>
+
+<style>
+  :root {
+    --ink:        #1f2540;
+    --ink-soft:   #5a6285;
+    --ink-faint:  #8a91ab;
+    --page:       #f5f7fb;
+    --surface:    #ffffff;
+    --line:       #dfe4ef;
+    --line-soft:  #ecf0f7;
+    --indigo:     #3b4a87;
+    --indigo-bg:  #eef0f8;
+    --teal:       #0a767b;
+    --teal-bg:    #e6f4f4;
+    --coral:      #903228;
+    --coral-bg:   #fbece9;
+    --violet:     #7458b0;
+    --violet-bg:  #f0ecf9;
+    --amber:      #825511;
+    --amber-bg:   #fdf1dc;
+    --code-bg:    #f2f4f9;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 68ch;
+    --radius: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:        #e8ebf5;
+      --ink-soft:   #a3abc7;
+      --ink-faint:  #7b83a1;
+      --page:       #14172a;
+      --surface:    #1c2039;
+      --line:       #2e3454;
+      --line-soft:  #262b47;
+      --indigo:     #9fadea;
+      --indigo-bg:  #232a4d;
+      --teal:       #4fc4c9;
+      --teal-bg:    #133438;
+      --coral:      #ef9385;
+      --coral-bg:   #3a1f1c;
+      --violet:     #b9a3e6;
+      --violet-bg:  #2a2447;
+      --amber:      #e0b063;
+      --amber-bg:   #382a12;
+      --code-bg:    #171b32;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink:#e8ebf5; --ink-soft:#a3abc7; --ink-faint:#7b83a1;
+    --page:#14172a; --surface:#1c2039; --line:#2e3454; --line-soft:#262b47;
+    --indigo:#9fadea; --indigo-bg:#232a4d; --teal:#4fc4c9; --teal-bg:#133438;
+    --coral:#ef9385; --coral-bg:#3a1f1c; --violet:#b9a3e6; --violet-bg:#2a2447;
+    --amber:#e0b063; --amber-bg:#382a12; --code-bg:#171b32;
+  }
+  :root[data-theme="light"] {
+    --ink:#1f2540; --ink-soft:#5a6285; --ink-faint:#8a91ab;
+    --page:#f5f7fb; --surface:#ffffff; --line:#dfe4ef; --line-soft:#ecf0f7;
+    --indigo:#3b4a87; --indigo-bg:#eef0f8; --teal:#0a767b; --teal-bg:#e6f4f4;
+    --coral:#903228; --coral-bg:#fbece9; --violet:#7458b0; --violet-bg:#f0ecf9;
+    --amber:#825511; --amber-bg:#fdf1dc; --code-bg:#f2f4f9;
+  }
+
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  /* ---- masthead ---- */
+  .masthead { border-bottom: 2px solid var(--ink); padding-bottom: 24px; margin-bottom: 8px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--indigo); font-weight: 650; margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(32px, 5vw, 46px); line-height: 1.1; letter-spacing: -.02em;
+    font-weight: 700; text-wrap: balance; margin-bottom: 14px;
+  }
+  .standfirst {
+    font-size: 18px; color: var(--ink-soft); max-width: var(--measure); text-wrap: pretty;
+  }
+
+  section { margin-top: 56px; }
+  h2 {
+    font-size: 25px; line-height: 1.25; letter-spacing: -.01em; font-weight: 680;
+    text-wrap: balance; margin-bottom: 6px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+  h3 {
+    font-size: 17px; font-weight: 660; margin: 32px 0 8px; letter-spacing: -.005em;
+  }
+  p { max-width: var(--measure); margin-top: 14px; text-wrap: pretty; }
+  .lede { color: var(--ink-soft); }
+
+  ul, ol { max-width: var(--measure); margin-top: 14px; padding-left: 22px; }
+  li { margin-top: 7px; }
+  li::marker { color: var(--ink-faint); }
+
+  strong { font-weight: 650; }
+  em { font-style: normal; color: var(--indigo); font-weight: 600; }
+
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--code-bg); border: 1px solid var(--line-soft);
+    padding: .1em .38em; border-radius: 5px; white-space: nowrap;
+  }
+  pre {
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; margin-top: 16px;
+    overflow-x: auto;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; font-size: inherit; }
+
+  /* ---- cards ---- */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin-top: 20px;
+  }
+  .card > :first-child { margin-top: 0; }
+
+  .note {
+    border-left: 3px solid var(--indigo); background: var(--indigo-bg);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 16px 20px; margin-top: 22px;
+  }
+  .note > :first-child { margin-top: 0; }
+  .note p { max-width: none; }
+
+  .grid { display: grid; gap: 14px; margin-top: 20px; }
+  @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+
+  /* ---- permission chips ---- */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip.allow  { background: var(--teal-bg);   color: var(--teal);   border: 1px solid color-mix(in srgb, var(--teal) 28%, transparent); }
+  .chip.block  { background: var(--coral-bg);  color: var(--coral);  border: 1px solid color-mix(in srgb, var(--coral) 28%, transparent); }
+  .chip.role   { background: var(--violet-bg); color: var(--violet); border: 1px solid color-mix(in srgb, var(--violet) 28%, transparent); }
+
+  /* ---- tables ---- */
+  .tablewrap { overflow-x: auto; margin-top: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th {
+    font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 650; white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td code { white-space: nowrap; }
+
+  /* ---- lifecycle: a real sequence, so it is numbered ---- */
+  .steps { list-style: none; padding: 0; margin-top: 24px; max-width: none; counter-reset: step; }
+  .steps li {
+    display: grid; grid-template-columns: 34px 1fr; gap: 16px;
+    padding: 14px 0; border-top: 1px solid var(--line); margin: 0;
+  }
+  .steps li:last-child { border-bottom: 1px solid var(--line); }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--indigo); background: var(--indigo-bg);
+    border-radius: 8px; height: 26px; display: grid; place-items: center;
+  }
+  .steps .who {
+    font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 650; margin-bottom: 2px;
+  }
+  .steps .what { font-weight: 600; }
+  .steps .how { color: var(--ink-soft); font-size: 14.5px; margin-top: 3px; }
+
+  /* ---- Q&A ---- */
+  .qa { margin-top: 18px; border-top: 1px solid var(--line); }
+  .qa details {
+    border-bottom: 1px solid var(--line);
+  }
+  .qa summary {
+    cursor: pointer; padding: 14px 0; font-weight: 600; list-style: none;
+    display: flex; gap: 12px; align-items: baseline;
+  }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary::before {
+    content: "?"; font-family: var(--mono); color: var(--indigo);
+    font-weight: 700; flex: none;
+  }
+  .qa summary:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 4px; }
+  .qa details[open] summary { padding-bottom: 4px; }
+  .qa .answer { padding: 0 0 16px 24px; color: var(--ink-soft); }
+  .qa .answer p { margin-top: 8px; max-width: var(--measure); }
+
+  .diagram { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
+  .mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-top: 20px; overflow-x: auto; }
+
+  footer {
+    margin-top: 72px; padding-top: 22px; border-top: 1px solid var(--line);
+    color: var(--ink-faint); font-size: 14px;
+  }
+  footer p { max-width: var(--measure); }
+
+  a { color: var(--indigo); text-underline-offset: 2px; }
+  a:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; border-radius: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">MediFlow AI · MCC Clinic</div>
+    <h1>How the system works</h1>
+    <p class="standfirst">
+      A guide to the architecture you have built — written so you can not only extend it,
+      but explain it to someone who asks hard questions about it.
+    </p>
+  </header>
+
+  <section>
+    <h2>Start here: what you already have</h2>
+    <p>
+      The patient side of MediFlow is real software. Booking writes to a real database
+      through real stored procedures, sign-in resolves a real role, and the permission
+      rules are enforced by PostgreSQL rather than by hiding buttons. That is a
+      meaningfully higher standard than most student projects and most production
+      code.
+    </p>
+    <p>
+      What was missing was the other two thirds of the clinic — the doctor and the
+      receptionist — plus the database foundation they need. This guide explains the
+      whole system as it now stands: how the three roles connect, why the security is
+      built the way it is, and how to add a screen.
+    </p>
+
+    <div class="grid two">
+      <div class="card">
+        <h3 style="margin-top:0">The stack</h3>
+        <ul>
+          <li><strong>Next.js 16</strong> (App Router) + React 19 + TypeScript</li>
+          <li><strong>Supabase</strong> — PostgreSQL, authentication, file storage</li>
+          <li><strong>n8n</strong> — runs the “Ask MediFlow” assistant</li>
+          <li>CSS Modules with design tokens, no UI framework</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">The three roles</h3>
+        <ul>
+          <li><span class="chip role">Patient</span> books, checks appointments, shows a QR code</li>
+          <li><span class="chip role">Reception</span> checks patients in and out, runs the queue</li>
+          <li><span class="chip role">Doctor</span> consults, writes notes, sends follow-ups</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The shape of the system</h2>
+    <p class="lede">
+      Four layers. Each one only talks to the one below it — that is what keeps the
+      system understandable as it grows.
+    </p>
+
+    <pre class="diagram"><code>   Browser  ·  patient / doctor / reception screens
+      |                                    ^
+      v                                    | live updates
+   Next.js server  ·  role checks          |
+      |                                    |
+      v                                    |
+   Supabase PostgreSQL  -------------------+
+   row-level security · stored procedures
+
+   Browser  - - - >  /api/mediflow/chat  ---->  n8n
+   (chat only)       server-side proxy          assistant
+                     holds the secret</code></pre>
+
+    <p>
+      Notice the dotted line. The browser never talks to n8n directly, and it never
+      holds the n8n address. It calls your own server, which holds the secret and
+      forwards only the message text — no name, no email, no login token, no medical
+      information. If that webhook address leaked, anyone on the internet could trigger
+      your workflows.
+    </p>
+
+    <div class="note">
+      <p>
+        <strong>The rule this illustrates:</strong> a secret that reaches the browser is
+        not a secret. Anything named <code>NEXT_PUBLIC_*</code> is visible to every
+        visitor — view-source visible. Everything else stays on the server. This is
+        why the chat goes through a proxy instead of calling n8n from React.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>How permissions actually work</h2>
+    <p class="lede">
+      This is the most important idea in the codebase, and the one most likely to be
+      asked about.
+    </p>
+
+    <h3>The weak way most apps do it</h3>
+    <p>
+      Hide the buttons a user should not have. The problem: hiding a button hides
+      nothing. Anyone can open the browser console and call the same database that the
+      button would have called. The data was never protected — only the path to it was
+      decorated.
+    </p>
+
+    <h3>What MediFlow does instead</h3>
+    <p>
+      The database itself refuses. Every table has <em>row-level security</em>: a rule,
+      written in SQL, that runs on every single query and decides which rows that
+      particular user is allowed to see. There is no way around it, because it is not
+      in the app — it is in PostgreSQL.
+    </p>
+
+    <pre><code>-- A doctor may read an appointment only if it is theirs.
+create policy appointments_select_doctor on public.appointments
+  for select to authenticated
+  using (private.is_doctor() and doctor_id = private.current_doctor_id());</code></pre>
+
+    <p>
+      So when a doctor's dashboard runs <code>select * from appointments</code>, it does
+      not get the clinic's appointments and filter them in JavaScript. It gets
+      <em>only theirs</em> — the other rows do not exist as far as that connection is
+      concerned. A second doctor's account queries the same table and sees zero rows.
+    </p>
+
+    <h3>Where the role comes from</h3>
+    <p>
+      A role is read from the <code>user_roles</code> table, using the user's verified
+      login. It is never read from a URL, a button, local storage, or user metadata —
+      all of which the user could change themselves.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Patient</th><th>Reception</th><th>Doctor</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>See their own appointments</td>
+            <td><span class="chip allow">Yes</span></td>
+            <td><span class="chip allow">All</span></td>
+            <td><span class="chip allow">Own only</span></td>
+          </tr>
+          <tr>
+            <td>See another patient's appointment</td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip allow">Yes</span></td>
+            <td><span class="chip block">No</span></td>
+          </tr>
+          <tr>
+            <td>Read consultation notes</td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip allow">Own only</span></td>
+          </tr>
+          <tr>
+            <td>Read allergies &amp; medications</td>
+            <td><span class="chip allow">Own</span></td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip allow">Own patients</span></td>
+          </tr>
+          <tr>
+            <td>Read a follow-up before approval</td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip allow">Author</span></td>
+          </tr>
+          <tr>
+            <td>Change an appointment directly</td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip block">No</span></td>
+            <td><span class="chip block">No</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      That last row is not a mistake. <strong>Nobody</strong> can write to the
+      appointments table directly — not even reception. Every change goes through a
+      stored procedure.
+    </p>
+
+    <div class="note">
+      <p>
+        <strong>Reception cannot read clinical information.</strong> Not “the UI does not
+        show it” — they have no database permission on consultation notes or follow-up
+        instructions at all. If a receptionist opened the browser console and asked for
+        them, they would get nothing back. That distinction — hidden versus impossible —
+        is worth making if you are asked about privacy.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why every change goes through a stored procedure</h2>
+    <p>
+      A stored procedure (Supabase calls it an <em>RPC</em>) is a function that lives in
+      the database. The app cannot update an appointment; it can only ask the database
+      to perform a named operation, and the database decides whether that operation is
+      legal right now.
+    </p>
+
+    <pre><code>-- Reception checks a patient in. Abridged from the real function.
+create function public.staff_check_in_appointment(p_appointment_id uuid)
+returns table (reference text, status text)
+security definer set search_path = '' as $$
+begin
+  perform private.require_staff('reception');        -- 1. is the caller reception?
+
+  select a.status, a.reference into v_status, v_ref
+  from public.appointments a
+  where a.id = p_appointment_id for update;          -- 2. lock the row
+
+  if v_status not in ('scheduled', 'confirmed') then -- 3. is this transition legal?
+    raise exception 'not_checkinable';
+  end if;
+
+  update public.appointments
+     set status = 'checked_in' where id = p_appointment_id;
+end; $$;</code></pre>
+
+    <p>This buys four things that application code cannot reliably give you:</p>
+    <ul>
+      <li><strong>The rule lives in one place.</strong> Add a mobile app tomorrow and the same rules apply, with nothing to re-implement.</li>
+      <li><strong>Steps cannot be skipped.</strong> Checking out a patient who was never seen is rejected by the database.</li>
+      <li><strong>Double-clicks are harmless.</strong> The row is locked and the status re-checked, so the second click fails cleanly instead of corrupting anything.</li>
+      <li><strong>Errors are named.</strong> <code>not_checkinable</code> is something the UI can turn into a sentence a receptionist understands. A raw database error is not.</li>
+    </ul>
+
+    <p>
+      <code>security definer</code> means the function runs with the database owner's
+      permissions rather than the caller's — that is how it can update a table nobody
+      can write to. That is also why the very first line re-checks who is calling.
+      <code>set search_path = ''</code> closes a known attack where someone creates a
+      fake table that a function picks up by accident, which is why every function name
+      inside is written out in full.
+    </p>
+  </section>
+
+  <section>
+    <h2>The appointment lifecycle</h2>
+    <p class="lede">
+      One appointment travels through all three roles. This sequence is the spine of the
+      whole product — the demo is simply walking it end to end.
+    </p>
+
+    <pre class="diagram"><code>  scheduled --> confirmed --> checked_in --> waiting --> in_consultation
+                                 ^             |               |
+                              Reception     Reception       Doctor
+                                                                |
+                                                                v
+                              checked_out <-- completed <-------+
+                                   ^          Doctor
+                                Reception
+
+  branches:  confirmed --> cancelled       waiting --> no_show</code></pre>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <div class="who">Patient</div>
+          <div class="what">Books an appointment and receives a QR code</div>
+          <div class="how">The QR contains only the booking reference — no name, no doctor, no medical information. If someone photographs it, they learn nothing about the patient.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="who">Reception</div>
+          <div class="what">Scans the QR, confirms identity, checks the patient in</div>
+          <div class="how">Identity confirmation is a deliberate separate step. A scanned code proves someone has the code, not that they are the patient.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="who">Reception</div>
+          <div class="what">Moves the patient into the waiting queue</div>
+          <div class="how">The doctor's dashboard updates at this moment, with no refresh.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="who">Doctor</div>
+          <div class="what">Reviews the summary, starts the consultation, writes notes</div>
+          <div class="how">Notes autosave as a draft while typing.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="who">Doctor</div>
+          <div class="what">Completes the consultation</div>
+          <div class="how">Behind a confirmation dialog, because it cannot be undone automatically. Only a doctor can make this transition.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="who">Reception</div>
+          <div class="what">Checks the patient out</div>
+          <div class="how">Only possible once the consultation is complete — the database enforces the order.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="who">Doctor</div>
+          <div class="what">Writes a follow-up and approves it</div>
+          <div class="how">Saving a draft sends nothing. Only <em>Approve and Send</em> makes it visible to the patient, and that gate is in the database, not the interface.</div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="note">
+      <p>
+        <strong>A note on <code>completed</code>.</strong> There is no separate
+        “ready for checkout” status. An appointment that is <code>completed</code> but
+        not yet <code>checked_out</code> <em>is</em> the ready-for-checkout list. Fewer
+        states means fewer ways to get stuck — worth remembering when you are tempted to
+        add one.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>How a screen is built</h2>
+    <p>
+      Every screen in this codebase follows the same three-file shape. Once you have
+      seen one, you have seen all of them.
+    </p>
+
+    <pre><code>src/app/reception/queue/
+  page.tsx           server component — checks the role, renders the client
+  QueueClient.tsx    "use client" — fetches data, holds state, handles clicks
+  page.module.css    styles scoped to this screen only</code></pre>
+
+    <h3>The server half</h3>
+    <pre><code>import { requireReception } from "@/lib/supabase/staff-auth";
+import { QueueClient } from "./QueueClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const reception = await requireReception();   // redirects if not reception
+  return &lt;QueueClient displayName={reception.displayName} /&gt;;
+}</code></pre>
+
+    <p>
+      This runs on the server, never in the browser. <code>requireReception()</code>
+      checks the role and redirects if it is wrong — so by the time your component
+      renders, the visitor is definitely a receptionist. You never write a permission
+      check inside a component.
+    </p>
+
+    <h3>The client half</h3>
+    <p>
+      Anything interactive — state, clicks, effects — needs <code>"use client"</code> at
+      the top of the file. It calls the ready-made functions in
+      <code>src/lib/staff/client-data.ts</code> and never writes a database query of its
+      own:
+    </p>
+
+    <pre><code>const result = await checkInAppointment(appointment.id);
+
+if (result.ok) {
+  showToast(`${result.reference} checked in`);
+} else if (result.reason === "not_allowed") {
+  showToast("This patient cannot be checked in right now.");
+} else {
+  showToast("Something went wrong. Please try again.");
+}</code></pre>
+
+    <p>
+      Every action returns a result object rather than throwing, and it never contains a
+      raw database error. Database errors leak table names and column names to
+      attackers, and mean nothing to a receptionist. Translating them into sentences is
+      part of the job, not an afterthought.
+    </p>
+
+    <h3>Three states you must always build</h3>
+    <p>
+      Loading, empty, and error. Not optional: a screen that renders nothing while
+      loading looks broken, and a screen that renders nothing when there is no data
+      looks like it lost your information. <code>StatePanel</code> provides all three.
+    </p>
+  </section>
+
+  <section>
+    <h2>The rules the database will not let you break</h2>
+    <p class="lede">
+      These come from the clinical brief. They are enforced in SQL, so breaking one
+      produces an error rather than a quiet mistake.
+    </p>
+
+    <div class="grid two">
+      <div class="card">
+        <h3 style="margin-top:0">No clinical judgement, anywhere</h3>
+        <p>
+          No diagnosis, prescription, severity, urgency or triage exists in the schema.
+          Statuses describe <em>where the patient is in the building</em>, never how ill
+          they are. The assistant organises what a patient said; it never interprets it.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Nothing reaches a patient unapproved</h3>
+        <p>
+          A follow-up draft is invisible to the patient. Approval is an explicit,
+          separate action by the doctor — and the permission rule, not the button,
+          is what enforces it.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Status is never colour alone</h3>
+        <p>
+          Every status shows an icon, a text label and a colour. The app ships five
+          colour-vision modes. A red dot alone is invisible to roughly one in twelve
+          men.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Demo data says it is demo data</h3>
+        <p>
+          Prototype schedules and mappings are labelled on screen. In a clinical
+          product, letting someone mistake invented data for confirmed data is a real
+          hazard.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>If you are asked</h2>
+    <p class="lede">
+      Questions worth being ready for, and honest answers.
+    </p>
+
+    <div class="qa">
+      <details>
+        <summary>How do you stop a patient from reading someone else's records?</summary>
+        <div class="answer">
+          <p>
+            The database refuses. Every table has a row-level security policy tied to the
+            verified login, so a patient's query returns only their own rows. It is not
+            enforced by the interface — if they bypassed our app entirely and queried the
+            database directly with their own credentials, they would still get only their
+            own data.
+          </p>
+        </div>
+      </details>
+      <details>
+        <summary>What happens if the receptionist clicks Check In twice?</summary>
+        <div class="answer">
+          <p>
+            Nothing bad. The stored procedure locks the row and re-checks the status, so
+            the second call fails with <code>not_checkinable</code> and the interface shows a
+            message. The appointment cannot end up in two states or skip a step.
+          </p>
+        </div>
+      </details>
+      <details>
+        <summary>Does the AI diagnose patients?</summary>
+        <div class="answer">
+          <p>
+            No, and it cannot. There is no diagnosis, severity or urgency field anywhere in
+            the database to put such a thing in. The assistant matches what a patient
+            describes to a clinic service and organises what they said for the doctor to
+            read. Every doctor-facing summary is labelled as requiring review before
+            clinical use.
+          </p>
+        </div>
+      </details>
+      <details>
+        <summary>Why is the doctor's login separate from the doctor's record?</summary>
+        <div class="answer">
+          <p>
+            Authentication and identity are different things. Supabase knows an email
+            signed in; it does not know that email is Dr. Abbas. The <code>doctors.user_id</code>
+            column links them, and every doctor permission resolves through that link. An
+            account with the doctor role but no link can see nothing — which is the safe
+            direction to fail in.
+          </p>
+        </div>
+      </details>
+      <details>
+        <summary>What is still missing?</summary>
+        <div class="answer">
+          <p>
+            Operational reports, the administrator modules, restricting staff sign-up to
+            approved work emails, and the staff access-request flow. Doctor schedule
+            management and reception's manual booking are partly built. Being straight
+            about this is better than being caught out — a clear list of known gaps reads
+            as engineering judgement, not as an excuse.
+          </p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where things live</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>You want to…</th><th>Look in</th></tr></thead>
+        <tbody>
+          <tr><td>Add or change a screen</td><td><code>src/app/&lt;role&gt;/&lt;screen&gt;/</code></td></tr>
+          <tr><td>Call the database from a screen</td><td><code>src/lib/staff/client-data.ts</code></td></tr>
+          <tr><td>Change a permission or add a table</td><td><code>supabase/migrations/</code></td></tr>
+          <tr><td>Check a role on the server</td><td><code>src/lib/supabase/staff-auth.ts</code></td></tr>
+          <tr><td>Reuse a button, dialog or badge</td><td><code>src/components/ui/</code></td></tr>
+          <tr><td>Change a colour, spacing or font</td><td><code>src/styles/tokens.css</code></td></tr>
+          <tr><td>Know which screen to build next</td><td><code>docs/BUILD_GUIDE.md</code></td></tr>
+          <tr><td>Prove the whole flow works</td><td><code>supabase/tests/e2e_three_roles.sql</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p>
+        <strong>Before you commit:</strong> run <code>npm run typecheck</code>. It catches
+        an entire category of mistake for free, and it is the difference between finding a
+        problem now and finding it during a demo.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      MediFlow AI — MCC Clinic prototype. All patient names, appointments and
+      schedules in this system are synthetic demo data. Doctor and specialty
+      information is confirmed with the clinic; service mappings are prototype
+      assumptions and are labelled as such in the interface.
+    </p>
+  </footer>
+
+</div>
