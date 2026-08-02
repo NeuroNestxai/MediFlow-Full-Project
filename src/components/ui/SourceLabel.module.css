@@ -1,0 +1,28 @@
+.label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.patient-reported {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+}
+
+.ai-organized {
+  background: var(--color-accent-violet-subtle);
+  color: var(--color-accent-violet);
+}
+
+.doctor-approved {
+  background: var(--color-accent-teal-subtle);
+  color: var(--color-accent-teal);
+}
+
+.prototype-data {
+  background: var(--color-status-neutral-bg);
+  color: var(--color-status-neutral-text);
+}

@@ -1,0 +1,30 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.animated {
+  animation: flo-pulse 3.2s ease-in-out infinite;
+}
+
+.static {
+  animation: none;
+}
+
+@keyframes flo-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+/* Also honor the OS-level preference even if a state prop forgets to. */
+@media (prefers-reduced-motion: reduce) {
+  .animated {
+    animation: none;
+  }
+}

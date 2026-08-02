@@ -1,0 +1,299 @@
+/**
+ * MediFlow AI — Design Tokens
+ *
+ * Mirrors the variable collections in the cleaned Figma file
+ * (01 — Design System): Color / Semantic (5 modes), Spacing, Radius,
+ * plus typography, shadow, breakpoint, and motion tokens translated
+ * from the Figma text/effect styles.
+ *
+ * Color mode is switched by setting `data-color-mode` on <html>.
+ * See src/hooks/useAccessibilityMode.ts and
+ * src/components/accessibility/AccessibilityProvider.tsx.
+ */
+
+:root {
+  /* ---- Typography ----
+     --font-manrope / --font-inter are injected by next/font/google in
+     src/app/layout.tsx (as CSS variables on <html>). The system stack
+     after them is a fallback only, used during font load / if the font
+     fails to load — it is not the primary typeface. */
+  --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --text-display-size: 44px;
+  --text-display-line: 52px;
+  --text-page-title-size: 30px;
+  --text-page-title-line: 38px;
+  --text-section-title-size: 22px;
+  --text-section-title-line: 28px;
+  --text-card-title-size: 17px;
+  --text-card-title-line: 22px;
+  --text-body-size: 16px;
+  --text-body-line: 24px;
+  --text-supporting-size: 14px;
+  --text-supporting-line: 20px;
+  --text-caption-size: 12px;
+  --text-caption-line: 16px;
+  --text-button-size: 14px;
+  --text-button-line: 18px;
+
+  /* ---- Spacing ---- */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+
+  /* ---- Shadows ---- */
+  --shadow-soft: 0 1px 2px rgba(31, 37, 64, 0.04), 0 2px 8px rgba(31, 37, 64, 0.05);
+  --shadow-card: 0 2px 4px rgba(31, 37, 64, 0.04), 0 10px 28px rgba(31, 37, 64, 0.08);
+  --shadow-lift: 0 8px 16px rgba(31, 37, 64, 0.08), 0 20px 48px rgba(31, 37, 64, 0.14);
+
+  /* ---- Breakpoints (reference values; used in JS via matchMedia too) ---- */
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet: 834px;
+  --breakpoint-desktop: 1280px;
+
+  /* ---- Icon sizes ---- */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  /* ---- Focus ---- */
+  --focus-ring-color: #7458B0;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+
+  /* ---- Motion ---- */
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 250ms;
+  --motion-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Respect the OS-level reduced-motion preference by default. Components
+   should also honor the explicit in-app toggle (see AccessibilityProvider),
+   which sets the same attribute this selector checks for. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+  }
+}
+
+[data-reduced-motion="true"] {
+  --motion-duration-fast: 0ms;
+  --motion-duration-base: 0ms;
+}
+
+/* ===========================================================================
+   Color / Semantic — Standard (default mode)
+   =========================================================================== */
+:root,
+[data-color-mode="standard"] {
+  --color-bg-page: #f7f9fb;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-blush: #e9eff7;
+  --color-bg-surface-lilac: #efebf9;
+  --color-text-primary: #1f2540;
+  --color-text-secondary: #5a6285;
+  --color-border-default: #dfe4ef;
+
+  --color-action-primary: #3b4a87;
+  --color-action-primary-hover: #44548f;
+  --color-action-primary-pressed: #2e3a6d;
+  --color-action-primary-subtle: #eef0f8;
+
+  --color-accent-teal: #0a767b;
+  --color-accent-teal-bright: #12a9ae;
+  --color-accent-teal-subtle: #e6f4f4;
+  --color-accent-violet: #7458b0;
+  --color-accent-violet-bright: #9179c6;
+  --color-accent-violet-subtle: #f0ecf9;
+  --color-accent-coral: #d96a5c;
+  --color-accent-coral-deep: #903228;
+  --color-accent-coral-subtle: #fbece9;
+
+  --color-status-success-text: #0a767b;
+  --color-status-success-bg: #e6f4f4;
+  --color-status-warning-text: #825511;
+  --color-status-warning-bg: #fdf1dc;
+  --color-status-error-text: #903228;
+  --color-status-error-bg: #fbece9;
+  --color-status-info-text: #3b4a87;
+  --color-status-info-bg: #efebf9;
+  --color-status-neutral-text: #5a6285;
+  --color-status-neutral-bg: #edf0f6;
+}
+
+/* ===========================================================================
+   Color / Semantic — Protanopia
+   Hues shifted away from the red/green confusion line: error moves to
+   orange-brown, success moves further blue-green.
+   =========================================================================== */
+[data-color-mode="protanopia"] {
+  --color-bg-page: #f7f9fb;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-blush: #e9eff7;
+  --color-bg-surface-lilac: #efebf9;
+  --color-text-primary: #1f2540;
+  --color-text-secondary: #5a6285;
+  --color-border-default: #dfe4ef;
+
+  --color-action-primary: #3b4a87;
+  --color-action-primary-hover: #44548f;
+  --color-action-primary-pressed: #2e3a6d;
+  --color-action-primary-subtle: #eef0f8;
+
+  --color-accent-teal: #0b6e8c;
+  --color-accent-teal-bright: #1596b0;
+  --color-accent-teal-subtle: #e3f1f5;
+  --color-accent-violet: #7458b0;
+  --color-accent-violet-bright: #9179c6;
+  --color-accent-violet-subtle: #f0ecf9;
+  --color-accent-coral: #b5651d;
+  --color-accent-coral-deep: #7a430f;
+  --color-accent-coral-subtle: #f5e6d8;
+
+  --color-status-success-text: #0b6e8c;
+  --color-status-success-bg: #e1f0f4;
+  --color-status-warning-text: #825511;
+  --color-status-warning-bg: #fdf1dc;
+  --color-status-error-text: #7a430f;
+  --color-status-error-bg: #f5e6d8;
+  --color-status-info-text: #3b4a87;
+  --color-status-info-bg: #eef0f8;
+  --color-status-neutral-text: #5a6285;
+  --color-status-neutral-bg: #edf0f6;
+}
+
+/* ===========================================================================
+   Color / Semantic — Deuteranopia
+   Same hue-shift strategy as protanopia (both are red/green confusion types).
+   =========================================================================== */
+[data-color-mode="deuteranopia"] {
+  --color-bg-page: #f7f9fb;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-blush: #e9eff7;
+  --color-bg-surface-lilac: #efebf9;
+  --color-text-primary: #1f2540;
+  --color-text-secondary: #5a6285;
+  --color-border-default: #dfe4ef;
+
+  --color-action-primary: #3b4a87;
+  --color-action-primary-hover: #44548f;
+  --color-action-primary-pressed: #2e3a6d;
+  --color-action-primary-subtle: #eef0f8;
+
+  --color-accent-teal: #0b6e8c;
+  --color-accent-teal-bright: #1596b0;
+  --color-accent-teal-subtle: #e3f1f5;
+  --color-accent-violet: #7458b0;
+  --color-accent-violet-bright: #9179c6;
+  --color-accent-violet-subtle: #f0ecf9;
+  --color-accent-coral: #b5651d;
+  --color-accent-coral-deep: #7a430f;
+  --color-accent-coral-subtle: #f5e6d8;
+
+  --color-status-success-text: #0b6e8c;
+  --color-status-success-bg: #e1f0f4;
+  --color-status-warning-text: #825511;
+  --color-status-warning-bg: #fdf1dc;
+  --color-status-error-text: #7a430f;
+  --color-status-error-bg: #f5e6d8;
+  --color-status-info-text: #3b4a87;
+  --color-status-info-bg: #eef0f8;
+  --color-status-neutral-text: #5a6285;
+  --color-status-neutral-bg: #edf0f6;
+}
+
+/* ===========================================================================
+   Color / Semantic — Tritanopia
+   Hues shifted away from the blue/yellow confusion line: warning moves more
+   orange, primary/violet shift slightly to stay distinct from each other.
+   =========================================================================== */
+[data-color-mode="tritanopia"] {
+  --color-bg-page: #f7f9fb;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-blush: #e9eff7;
+  --color-bg-surface-lilac: #efebf9;
+  --color-text-primary: #1f2540;
+  --color-text-secondary: #5a6285;
+  --color-border-default: #dfe4ef;
+
+  --color-action-primary: #2e4a93;
+  --color-action-primary-hover: #3555a0;
+  --color-action-primary-pressed: #253d78;
+  --color-action-primary-subtle: #eaeef9;
+
+  --color-accent-teal: #0a767b;
+  --color-accent-teal-bright: #12a9ae;
+  --color-accent-teal-subtle: #e6f4f4;
+  --color-accent-violet: #9354a0;
+  --color-accent-violet-bright: #b073b8;
+  --color-accent-violet-subtle: #f5ecf5;
+  --color-accent-coral: #d96a5c;
+  --color-accent-coral-deep: #903228;
+  --color-accent-coral-subtle: #fbece9;
+
+  --color-status-success-text: #0a767b;
+  --color-status-success-bg: #e6f4f4;
+  --color-status-warning-text: #8a4a0c;
+  --color-status-warning-bg: #fceedd;
+  --color-status-error-text: #903228;
+  --color-status-error-bg: #fbece9;
+  --color-status-info-text: #2e4a93;
+  --color-status-info-bg: #eaeef9;
+  --color-status-neutral-text: #5a6285;
+  --color-status-neutral-bg: #edf0f6;
+}
+
+/* ===========================================================================
+   Color / Semantic — Achromatopsia / Grayscale High Contrast
+   Every color collapses to a luminance-ordered gray with boosted contrast.
+   Status can no longer be read from color at all here — this mode is the
+   real test that icon + label + shape are doing the communicating.
+   =========================================================================== */
+[data-color-mode="achromatopsia"] {
+  --color-bg-page: #f7f7f8;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-blush: #ededee;
+  --color-bg-surface-lilac: #eaeaec;
+  --color-text-primary: #14151a;
+  --color-text-secondary: #5b5d66;
+  --color-border-default: #d6d6da;
+
+  --color-action-primary: #3a3b42;
+  --color-action-primary-hover: #46474f;
+  --color-action-primary-pressed: #2a2b30;
+  --color-action-primary-subtle: #e7e7ea;
+
+  --color-accent-teal: #3f4046;
+  --color-accent-teal-bright: #6e6f76;
+  --color-accent-teal-subtle: #ededee;
+  --color-accent-violet: #4a4b52;
+  --color-accent-violet-bright: #86878e;
+  --color-accent-violet-subtle: #efefef;
+  --color-accent-coral: #3a3b41;
+  --color-accent-coral-deep: #232428;
+  --color-accent-coral-subtle: #ececec;
+
+  --color-status-success-text: #2e2f35;
+  --color-status-success-bg: #f0f0f1;
+  --color-status-warning-text: #45464c;
+  --color-status-warning-bg: #f2f2f3;
+  --color-status-error-text: #202126;
+  --color-status-error-bg: #ececec;
+  --color-status-info-text: #38393f;
+  --color-status-info-bg: #e9e9eb;
+  --color-status-neutral-text: #58595f;
+  --color-status-neutral-bg: #ebebec;
+}

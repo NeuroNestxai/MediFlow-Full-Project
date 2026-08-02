@@ -1,0 +1,32 @@
+.promptChip {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.promptChip:hover {
+  background: var(--color-action-primary-subtle);
+}
+
+.slotChip {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.slotSelected {
+  background: var(--color-action-primary);
+  color: #ffffff;
+  border-color: var(--color-action-primary);
+}

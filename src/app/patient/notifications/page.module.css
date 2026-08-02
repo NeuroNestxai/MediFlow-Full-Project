@@ -1,0 +1,94 @@
+.page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 16px 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 32px 40px 64px;
+  }
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+}
+
+.markRead {
+  background: none;
+  border: none;
+  color: var(--color-action-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  gap: 10px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+
+.unread {
+  background: var(--color-action-primary-subtle);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-action-primary);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.unread .dot {
+  visibility: visible;
+}
+
+.item:not(.unread) .dot {
+  visibility: hidden;
+}
+
+.itemTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.itemBody {
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.itemTime {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  opacity: 0.75;
+  margin-top: 2px;
+}

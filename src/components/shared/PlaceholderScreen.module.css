@@ -1,0 +1,26 @@
+.wrapper {
+  max-width: 480px;
+  margin: 64px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+  margin-bottom: 12px;
+}
+
+.body {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+}
+
+.link {
+  color: var(--color-action-primary);
+  font-weight: 600;
+  font-size: 14px;
+}

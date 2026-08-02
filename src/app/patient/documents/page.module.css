@@ -1,0 +1,110 @@
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 32px 40px 64px;
+  }
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+.icon {
+  font-size: 20px;
+}
+
+.itemName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.itemMeta {
+  font-size: 11.5px;
+  color: var(--color-text-secondary);
+}
+
+.note {
+  font-size: 11.5px;
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.uploadRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.itemName {
+  overflow-wrap: anywhere;
+}
+
+.docActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-default);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+
+.banner {
+  border-radius: var(--radius-lg, 12px);
+  padding: 10px 14px;
+  font-size: 13px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-muted, #f6f7f9);
+  color: var(--color-text-secondary);
+}
+
+.bannerError {
+  background: var(--color-danger-surface, #fef2f2);
+  border-color: var(--color-danger, #dc2626);
+  color: var(--color-danger-strong, #b91c1c);
+}

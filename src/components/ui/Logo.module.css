@@ -1,0 +1,17 @@
+.lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+.mark {
+  display: block;
+  flex-shrink: 0;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--color-action-primary);
+}

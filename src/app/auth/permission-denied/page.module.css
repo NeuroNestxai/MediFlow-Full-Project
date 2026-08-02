@@ -1,0 +1,16 @@
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 48px 20px 64px;
+  display: flex;
+  justify-content: center;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+}

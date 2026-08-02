@@ -1,0 +1,31 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  flex-wrap: wrap;
+}
+
+.info {
+  flex: 1;
+  min-width: 140px;
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.meta {
+  font-size: 11.5px;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}

@@ -1,0 +1,112 @@
+/* Shared controls for the Patient Services & Doctors directory pages. */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.search {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+
+.select {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.search:focus-visible,
+.select:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.chipActive {
+  background: var(--color-action-primary);
+  color: #ffffff;
+  border-color: var(--color-action-primary);
+}
+
+.notice {
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-muted, #f6f7f9);
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+  padding: 10px 14px;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.summaryTag {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.clearAll {
+  background: none;
+  border: none;
+  color: var(--color-action-primary);
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  min-height: 32px;
+}
+
+.loadMoreRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.count {
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
