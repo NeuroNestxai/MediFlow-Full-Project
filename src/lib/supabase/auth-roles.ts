@@ -13,6 +13,7 @@ export const APP_ROLES: AppRole[] = ["patient", "doctor", "reception"];
 export const SIGN_IN_PATH = "/auth/sign-in";
 export const PERMISSION_DENIED_PATH = "/auth/permission-denied";
 export const POST_LOGIN_PATH = "/auth/post-login";
+export const CHOOSE_ROLE_PATH = "/auth/choose-role";
 
 const DASHBOARD_FOR_ROLE: Record<AppRole, string> = {
   patient: "/patient/dashboard",
@@ -38,20 +39,28 @@ export function isAppRole(value: string): value is AppRole {
 export async function getAuthenticatedRole(): Promise<{
   userId: string | null;
   role: AppRole | null;
+  /**
+   * EVERY role the user holds. A person can legitimately hold more than one —
+   * at MCC, Dr. Nadia Al Hajri is both a clinician and an administrator — so
+   * access must be decided by membership of this list, never by `role` alone.
+   */
+  roles: AppRole[];
 }> {
-  if (!isSupabaseConfigured()) return { userId: null, role: null };
+  if (!isSupabaseConfigured()) return { userId: null, role: null, roles: [] };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { userId: null, role: null };
+  if (!user) return { userId: null, role: null, roles: [] };
 
   const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-  if (error) return { userId: user.id, role: null };
+  if (error) return { userId: user.id, role: null, roles: [] };
 
-  const roles = (data ?? []).map((r) => String((r as { role: unknown }).role));
-  const known = APP_ROLES.find((r) => roles.includes(r)) ?? null;
-  return { userId: user.id, role: known };
+  const raw = (data ?? []).map((r) => String((r as { role: unknown }).role));
+  const roles = APP_ROLES.filter((r) => raw.includes(r));
+  // `role` stays the single "primary" role, used only to pick a default
+  // landing page. It is NOT an access decision.
+  return { userId: user.id, role: roles[0] ?? null, roles };
 }
 
 /** Ensure a signed-in user; redirect to the shared sign-in otherwise. */
@@ -70,9 +79,12 @@ export async function requireAuthenticatedUser(): Promise<string> {
  * wrong/missing/blocked role → permission-denied. No IDs/errors exposed.
  */
 export async function requireRole(expected: AppRole): Promise<void> {
-  const { userId, role } = await getAuthenticatedRole();
+  const { userId, roles } = await getAuthenticatedRole();
   if (!userId) redirect(SIGN_IN_PATH);
-  if (role !== expected) redirect(PERMISSION_DENIED_PATH);
+  // Membership, not equality: a user who holds both `doctor` and `reception`
+  // must be able to reach both areas. Comparing against a single resolved role
+  // would silently lock them out of one of their own jobs.
+  if (!roles.includes(expected)) redirect(PERMISSION_DENIED_PATH);
 }
 
 /**
@@ -81,8 +93,11 @@ export async function requireRole(expected: AppRole): Promise<void> {
  * shared sign-in page and the post-login handoff.
  */
 export async function redirectAuthenticatedUserByRole(): Promise<void> {
-  const { userId, role } = await getAuthenticatedRole();
+  const { userId, role, roles } = await getAuthenticatedRole();
   if (!userId) redirect(SIGN_IN_PATH);
   if (!role) redirect(PERMISSION_DENIED_PATH);
+  // Someone who wears two hats is asked which one they are here for, rather
+  // than being dropped into whichever the code happened to list first.
+  if (roles.length > 1) redirect(CHOOSE_ROLE_PATH);
   redirect(dashboardPathForRole(role));
 }

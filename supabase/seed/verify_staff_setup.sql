@@ -50,15 +50,22 @@ with checks(step, item, ok) as (
         select 1 from pg_publication_tables
         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'appointments')),
 
-    ('5', 'doctor account has the doctor role', exists (
-        select 1 from auth.users u join public.user_roles r on r.user_id = u.id
-        where u.email = 'doctor@mediflowom.com' and r.role::text = 'doctor')),
-    ('5', 'reception account has the reception role', exists (
-        select 1 from auth.users u join public.user_roles r on r.user_id = u.id
-        where u.email = 'reception@mediflowom.com' and r.role::text = 'reception')),
-    ('5', 'doctor account linked to a doctor record', exists (
-        select 1 from auth.users u join public.doctors d on d.user_id = u.id
-        where u.email = 'doctor@mediflowom.com'))
+    ('5', 'all 4 doctor accounts have the doctor role', (
+        select count(*) = 4 from auth.users u join public.user_roles r on r.user_id = u.id
+        where lower(u.email) in ('nadia_alhajri@mccoman.com', 'khawla_alhuti@mccoman.com',
+                                 'hayat_alkiyumi@mccoman.com', 'jumana_almajrafi@mccoman.com')
+          and r.role::text = 'doctor')),
+    ('5', 'both admin accounts have the reception role', (
+        select count(*) = 2 from auth.users u join public.user_roles r on r.user_id = u.id
+        where lower(u.email) in ('nasayim_alhajri@mccoman.com', 'nadia_alhajri@mccoman.com')
+          and r.role::text = 'reception')),
+    ('5', 'Dr. Nadia holds BOTH roles', (
+        select count(*) = 2 from auth.users u join public.user_roles r on r.user_id = u.id
+        where lower(u.email) = 'nadia_alhajri@mccoman.com'
+          and r.role::text in ('doctor', 'reception'))),
+    ('5', '3 doctor accounts linked to directory records', (
+        select count(*) = 3 from auth.users u join public.doctors d on d.user_id = u.id
+        where lower(u.email) like '%@mccoman.com'))
 )
 select case when ok then 'OK' else 'MISSING' end as result,
        'step ' || step as step,
