@@ -38,12 +38,25 @@ export interface DirectoryDoctor {
   services: DoctorServiceRef[];
 }
 
+/**
+ * Mirrors public.appointment_status. Operational only — no clinical, severity,
+ * urgency or triage meaning.
+ *
+ * Lifecycle: scheduled → confirmed → checked_in → waiting → in_consultation
+ *            → completed → checked_out, with cancelled / no_show as branches.
+ * `completed` means "consultation complete"; a completed appointment that is
+ * not yet `checked_out` is what Reception lists as Ready for Checkout.
+ */
 export type DbAppointmentStatus =
   | "scheduled"
   | "confirmed"
   | "checked_in"
+  | "waiting"
+  | "in_consultation"
   | "completed"
-  | "cancelled";
+  | "checked_out"
+  | "cancelled"
+  | "no_show";
 
 export interface PatientAppointment {
   id: string;
@@ -73,16 +86,24 @@ export const DB_STATUS_LABEL: Record<DbAppointmentStatus, string> = {
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   checked_in: "Checked In",
+  waiting: "Waiting",
+  in_consultation: "In Consultation",
   completed: "Completed",
+  checked_out: "Checked Out",
   cancelled: "Cancelled",
+  no_show: "No Show",
 };
 
 export const DB_STATUS_TONE: Record<DbAppointmentStatus, StatusTone> = {
   scheduled: "info",
   confirmed: "info",
   checked_in: "success",
+  waiting: "pending",
+  in_consultation: "info",
   completed: "success",
+  checked_out: "neutral",
   cancelled: "error",
+  no_show: "error",
 };
 
 /** Appointments a patient may still cancel. */
