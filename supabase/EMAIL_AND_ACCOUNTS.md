@@ -64,7 +64,36 @@ Two things worth knowing:
 
 ---
 
-## Fix 3 — Just wait
+## Fix 3 — Turn email confirmation off (prototype only)
+
+**Authentication → Sign In / Providers → Email → "Confirm email" OFF.**
+
+Every signup, patient or staff, becomes active immediately. No email is sent, so
+the limit stops applying to *everything* — including patients testing with their
+own personal addresses.
+
+Be straight about the tradeoff. With confirmation off, anyone can register using
+an address they do not own. That is acceptable in a prototype where the whole
+patient list is synthetic, and unacceptable in production, where a real clinic
+would have it **on** and run its own SMTP (Fix 2) so the limit never bites.
+
+Deciding this deliberately — and being able to say why — is the difference
+between a shortcut and an engineering decision.
+
+### Which email can a patient use?
+
+Any. Patient sign-up is self-service and unrestricted by design, so a personal
+Gmail works fine for testing. Staff are the opposite: doctor and reception
+accounts are created by an administrator and are meant to be restricted to
+approved `@mccoman.com` work addresses.
+
+If you test with a real personal inbox, remember it ends up attached to a
+patient record in the clinic database. Use one you do not mind appearing in a
+demo system.
+
+---
+
+## Fix 4 — Just wait
 
 The limit is hourly. Doing nothing for an hour also clears it. Fine if you are
 not in a hurry; not useful the night before a demo.
