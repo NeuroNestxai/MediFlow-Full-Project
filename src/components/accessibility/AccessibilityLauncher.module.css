@@ -165,3 +165,32 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
+
+.preview {
+  padding-top: var(--spacing-16);
+  margin-top: var(--spacing-16);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.previewLabel {
+  margin-bottom: var(--spacing-8);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 650;
+  color: var(--color-text-secondary);
+}
+
+.previewRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.previewNote {
+  margin-top: var(--spacing-8);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line);
+  color: var(--color-text-secondary);
+}

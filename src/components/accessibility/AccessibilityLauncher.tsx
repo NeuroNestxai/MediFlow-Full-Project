@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useAccessibility } from "./AccessibilityProvider";
 import { COLOR_MODES } from "@/types";
 import styles from "./AccessibilityLauncher.module.css";
@@ -85,6 +86,26 @@ export function AccessibilityLauncher() {
             checked={largeText}
             onChange={(e) => setLargeText(e.target.checked)}
           />
+        </div>
+
+        {/* Live preview.
+            Colour-vision modes deliberately only re-tune the colours that
+            carry MEANING — status and accents — never the whole brand. That
+            makes the effect invisible on a screen with no badges, which reads
+            as "the setting is broken". Showing the affected elements right
+            here makes the change visible where it is made. */}
+        <div className={styles.preview}>
+          <p className={styles.previewLabel}>Preview</p>
+          <div className={styles.previewRow}>
+            <StatusBadge tone="success" label="Checked In" />
+            <StatusBadge tone="pending" label="Waiting" />
+            <StatusBadge tone="info" label="Scheduled" />
+            <StatusBadge tone="error" label="Cancelled" />
+          </div>
+          <p className={styles.previewNote}>
+            Status always shows an icon and a label as well as a colour, so it stays readable in
+            every mode — including grayscale.
+          </p>
         </div>
 
         <div className={styles.footer}>

@@ -94,6 +94,33 @@
   --motion-duration-base: 0ms;
 }
 
+/* ---------------------------------------------------------------------------
+   Large text (AccessibilityProvider sets data-large-text on <html>).
+
+   Scales the type ramp by roughly 1.15 and nothing else — spacing, radii and
+   tap targets stay put, so text grows without layouts breaking or controls
+   drifting off screen. Because `body` and the component styles read these
+   tokens rather than hard-coding sizes, this reaches the whole app.
+   --------------------------------------------------------------------------- */
+[data-large-text="true"] {
+  --text-display-size: 50px;
+  --text-display-line: 58px;
+  --text-page-title-size: 34px;
+  --text-page-title-line: 42px;
+  --text-section-title-size: 25px;
+  --text-section-title-line: 32px;
+  --text-card-title-size: 19px;
+  --text-card-title-line: 25px;
+  --text-body-size: 18px;
+  --text-body-line: 28px;
+  --text-supporting-size: 16px;
+  --text-supporting-line: 24px;
+  --text-caption-size: 14px;
+  --text-caption-line: 20px;
+  --text-button-size: 16px;
+  --text-button-line: 21px;
+}
+
 /* ===========================================================================
    Color / Semantic — Standard (default mode)
    =========================================================================== */
