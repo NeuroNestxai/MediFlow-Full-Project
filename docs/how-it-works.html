@@ -712,6 +712,154 @@ if (result.ok) {
   </section>
 
   <section>
+    <h2>What changed, and why</h2>
+    <p class="lede">
+      The starting point was a strong patient application with two thirds of the
+      clinic missing. This is everything that was added or corrected, and the
+      reasoning behind each one.
+    </p>
+
+    <h3>Where it started</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Area</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Patient screens</td><td>Working on real data</td><td>Unchanged, plus three fixes</td></tr>
+          <tr><td>Doctor screens</td><td>12 of 13 were 4-line placeholders</td><td>3 built on real data</td></tr>
+          <tr><td>Reception screens</td><td>11 of 12 were 4-line placeholders</td><td>4 built on real data</td></tr>
+          <tr><td>Both dashboards</td><td>Numbers typed by hand (<code>value={3}</code>)</td><td>Live counts from the database</td></tr>
+          <tr><td>Doctor → account link</td><td>Did not exist</td><td><code>doctors.user_id</code> + role helpers</td></tr>
+          <tr><td>Appointment statuses</td><td>5</td><td>9 — the full clinic lifecycle</td></tr>
+          <tr><td>Staff permissions</td><td>None; every rule was <code>is_patient()</code></td><td>Doctor and reception policies</td></tr>
+          <tr><td>Consultations, follow-ups</td><td>No tables</td><td>Both, with an approval gate</td></tr>
+          <tr><td>Staff writes</td><td>No mechanism</td><td>9 stored procedures</td></tr>
+          <tr><td>Live updates</td><td>A static “Live updates active” label</td><td>Real subscription</td></tr>
+          <tr><td>Version control</td><td>Not a git repository</td><td>Git, with history</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Six bugs, and what each one teaches</h3>
+    <p>
+      Four of these were found only by signing in as all three roles and walking
+      the whole journey. None would have been caught by the type checker, the
+      linter, or by looking at the code — which is the point.
+    </p>
+
+    <div class="card">
+      <h3 style="margin-top:0">1. The follow-up never reached the patient</h3>
+      <p>
+        The doctor approved instructions, the patient got a notification saying
+        “open Follow-Up to read them” — and that screen still rendered invented
+        sample data from a mock file. A fictional doctor, a fictional recheck.
+      </p>
+      <p>
+        <strong>The lesson:</strong> mock data is scaffolding, and scaffolding
+        left in place looks exactly like a finished wall until someone leans on
+        it. When a screen goes live, delete the mock file rather than leaving
+        the import in.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">2. Finished visits vanished from the patient's history</h3>
+      <p>
+        My Appointments filtered into Upcoming, Completed and Cancelled. Adding
+        <code>checked_out</code> meant a visit matched none of the three, so
+        after checkout the appointment simply disappeared.
+      </p>
+      <p>
+        <strong>The lesson:</strong> when you add a value to an enum, search for
+        every place that lists the old values. A filter that does not mention
+        your new state does not error — it silently hides data.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">3. The QR code expired before checkout</h3>
+      <p>
+        The same QR is scanned twice: once to check in, once to check out. The
+        code retired as soon as the consultation was marked complete — which is
+        exactly the moment reception needs it the second time. Checkout by QR
+        was impossible.
+      </p>
+      <p>
+        <strong>The lesson:</strong> “active” has to be defined by the whole
+        journey, not by the step you were thinking about when you wrote it.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">4. Every staff account was silently made a patient</h3>
+      <p>
+        A trigger assigns the <code>patient</code> role to each new account, and
+        <code>user_roles</code> allows only one role per person. The setup script
+        used <code>INSERT … ON CONFLICT DO NOTHING</code>, so it hit that
+        existing row and <em>discarded</em> every doctor and reception grant. It
+        reported success. Everyone came out a patient.
+      </p>
+      <p>
+        <strong>The lesson:</strong> <code>ON CONFLICT DO NOTHING</code> means
+        “if this already exists, abandon my change quietly.” That is rarely what
+        you want. When the row may exist, <code>UPDATE</code> or
+        <code>DO UPDATE</code> — and check the schema before assuming its shape.
+        This bug happened because the local test database had a two-column key
+        and the real one had a single-column key.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">5. Two-role staff were locked out of their own job</h3>
+      <p>
+        Dr. Nadia Al Hajri is both clinician and administrator. Access was
+        decided by one <em>resolved</em> role — the first match in a fixed list —
+        so she would always have landed as a doctor and been refused entry to
+        reception, even by URL.
+      </p>
+      <p>
+        <strong>The lesson:</strong> permission checks belong on
+        <em>membership</em> (“do they hold this role?”), never on equality
+        (“is this their role?”). Real people wear more than one hat.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">6. A misleading error message</h3>
+      <p>
+        Opening a finished consultation told the doctor “this patient has not
+        been checked in yet.” Both cases return the same refusal from the
+        database; the screen assumed the earlier one.
+      </p>
+      <p>
+        <strong>The lesson:</strong> one rejection can have several causes. Use
+        the current state to say which, or you send someone looking for a
+        problem that is not there.
+      </p>
+    </div>
+
+    <h3>What was added</h3>
+    <ul>
+      <li><strong>Three migrations</strong> — statuses, staff permissions, the two new tables, and the nine stored procedures.</li>
+      <li><strong>A staff data layer</strong> (<code>src/lib/staff/</code>) — typed functions so screens never write SQL.</li>
+      <li><strong>Seven screens</strong> across doctor and reception.</li>
+      <li><strong>A role chooser</strong> for accounts holding more than one role.</li>
+      <li><strong>A database test</strong> (<code>supabase/tests/</code>) — 36 checks driving the whole loop, including the permission boundaries and deliberate privilege-escalation attempts.</li>
+      <li><strong>Setup and troubleshooting guides</strong> for applying the database and creating accounts.</li>
+    </ul>
+
+    <div class="note">
+      <p>
+        <strong>Worth keeping in mind:</strong> the database work was tested
+        against a throwaway PostgreSQL before it touched the live project, and
+        the screens were tested by driving all three roles through a real
+        booking. Both mattered. The first caught nothing, because the SQL was
+        right. The second caught four bugs — including one where the patient
+        was shown a doctor's instructions that had been invented by a mock file.
+      </p>
+    </div>
+  </section>
+
+  <section>
     <h2>Where things live</h2>
     <div class="tablewrap">
       <table>
