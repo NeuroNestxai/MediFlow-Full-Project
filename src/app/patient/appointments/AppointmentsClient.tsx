@@ -6,6 +6,9 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
 import { AppointmentListCard } from "@/components/patient/AppointmentListCard";
+import { CalendarIcon } from "@/components/ui/Icons";
+import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { RescheduleDialog } from "./RescheduleDialog";
 import { fetchMyAppointments, cancelAppointment } from "@/lib/patient/client-data";
 import {
@@ -16,6 +19,17 @@ import {
   type PatientAppointment,
 } from "@/lib/patient/types";
 import styles from "./page.module.css";
+
+const QR_ACTIVE = ["scheduled", "confirmed", "checked_in", "waiting", "in_consultation", "completed"];
+
+const EMPTY_COPY: Record<Tab, { title: string; body: string }> = {
+  Upcoming: {
+    title: "No upcoming appointments",
+    body: "When you book a visit, it will appear here with its details and QR code.",
+  },
+  Completed: { title: "No completed visits yet", body: "Finished and checked-out visits will appear here." },
+  Cancelled: { title: "No cancelled appointments", body: "Cancelled or missed appointments will appear here." },
+};
 
 const TABS = ["Upcoming", "Completed", "Cancelled"] as const;
 type Tab = (typeof TABS)[number];
@@ -88,14 +102,23 @@ export function AppointmentsClient() {
   }
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>My Appointments</h1>
+    <PatientPage width="default">
+      <PatientPageHeader
+        title="My Appointments"
+        description="Your visits by stage. Checked-out visits appear under Completed."
+        tour={PATIENT_TOURS.appointments}
+        actions={
+          <Button variant="secondary" href="/patient/booking">
+            Book Another
+          </Button>
+        }
+      />
 
       {toast ? (
         <Toast tone={toast.tone} message={toast.message} onDismiss={() => setToast(null)} />
       ) : null}
 
-      <div className={styles.tabs} role="tablist" aria-label="Appointment filters">
+      <div className={styles.tabs} role="tablist" aria-label="Appointment filters" data-tour="appts-tabs">
         {TABS.map((t) => (
           <button
             key={t}
@@ -114,29 +137,38 @@ export function AppointmentsClient() {
       {state.status === "error" && <ErrorState onRetry={retry} />}
       {state.status === "ready" && visible.length === 0 && (
         <EmptyState
-          title="No appointments here"
-          body="When you book a visit, it will show up in the matching tab."
+          icon={<CalendarIcon />}
+          title={EMPTY_COPY[tab].title}
+          body={EMPTY_COPY[tab].body}
           action={
-            <Button variant="primary" href="/patient/booking">
-              Book an Appointment
-            </Button>
+            tab === "Upcoming" ? (
+              <Button variant="primary" href="/patient/booking">
+                Book an Appointment
+              </Button>
+            ) : undefined
           }
         />
       )}
       {state.status === "ready" && visible.length > 0 && (
-        <div className={styles.list}>
-          {visible.map((appt) => {
+        <div className={styles.list} data-tour="appts-list">
+          {visible.map((appt, i) => {
             const cancellable = CANCELLABLE_STATUSES.includes(appt.status);
             return (
-              <AppointmentListCard
-                key={appt.id}
-                appointment={appt}
-                onViewDetails={() => setDetailsFor(appt)}
-                onCancel={() => setCancelFor(appt)}
-                onReschedule={() => setRescheduleFor(appt)}
-                cancellable={tab === "Upcoming" && cancellable}
-                reschedulable={tab === "Upcoming" && cancellable}
-              />
+              <div key={appt.id} data-tour={i === 0 ? "appts-actions" : undefined}>
+                <AppointmentListCard
+                  appointment={appt}
+                  onViewDetails={() => setDetailsFor(appt)}
+                  onCancel={() => setCancelFor(appt)}
+                  onReschedule={() => setRescheduleFor(appt)}
+                  cancellable={tab === "Upcoming" && cancellable}
+                  reschedulable={tab === "Upcoming" && cancellable}
+                  qrHref={
+                    QR_ACTIVE.includes(appt.status)
+                      ? `/patient/qr?ref=${encodeURIComponent(appt.reference)}`
+                      : undefined
+                  }
+                />
+              </div>
             );
           })}
         </div>
@@ -196,6 +228,6 @@ export function AppointmentsClient() {
           }}
         />
       ) : null}
-    </div>
+    </PatientPage>
   );
 }

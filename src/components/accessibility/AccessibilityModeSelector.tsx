@@ -13,13 +13,19 @@ import styles from "./AccessibilityModeSelector.module.css";
  * choice — and which one is active — is available to assistive tech,
  * not just conveyed by a highlighted background color.
  */
-export function AccessibilityModeSelector() {
+export function AccessibilityModeSelector({
+  colorTourId,
+  togglesTourId,
+}: {
+  colorTourId?: string;
+  togglesTourId?: string;
+} = {}) {
   const { colorMode, setColorMode, reducedMotion, setReducedMotion, largeText, setLargeText } =
     useAccessibility();
 
   return (
     <div className={styles.wrapper}>
-      <fieldset className={styles.fieldset}>
+      <fieldset className={styles.fieldset} data-tour={colorTourId}>
         <legend className={styles.legend}>Color vision mode</legend>
         <div className={styles.options}>
           {COLOR_MODES.map((mode) => {
@@ -42,21 +48,23 @@ export function AccessibilityModeSelector() {
         </div>
       </fieldset>
 
-      <div className={styles.toggleRow}>
-        <Checkbox
-          id="reduced-motion"
-          label="Reduced motion"
-          checked={reducedMotion}
-          onChange={(e) => setReducedMotion(e.target.checked)}
-        />
-      </div>
-      <div className={styles.toggleRow}>
-        <Checkbox
-          id="large-text"
-          label="Large text"
-          checked={largeText}
-          onChange={(e) => setLargeText(e.target.checked)}
-        />
+      <div data-tour={togglesTourId}>
+        <div className={styles.toggleRow}>
+          <Checkbox
+            id="reduced-motion"
+            label="Reduced motion"
+            checked={reducedMotion}
+            onChange={(e) => setReducedMotion(e.target.checked)}
+          />
+        </div>
+        <div className={styles.toggleRow}>
+          <Checkbox
+            id="large-text"
+            label="Large text"
+            checked={largeText}
+            onChange={(e) => setLargeText(e.target.checked)}
+          />
+        </div>
       </div>
     </div>
   );

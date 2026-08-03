@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { FloOrb, type FloState } from "@/components/ai/FloOrb";
 import { ChatBubble, ThinkingBubble } from "@/components/ai/ChatBubble";
 import { PromptChip } from "@/components/ai/Chips";
+import { TourLauncher } from "@/components/tour/TourLauncher";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import styles from "./page.module.css";
 
@@ -145,6 +147,7 @@ export function AIAssistantView() {
   const composer = (
     <form
       className={styles.composerForm}
+      data-tour="chat-composer"
       onSubmit={(e) => {
         e.preventDefault();
         send(draft);
@@ -195,16 +198,22 @@ export function AIAssistantView() {
   );
 
   const toolbar = (
-    <div className={styles.toolbar}>
+    <div className={styles.toolbar} data-tour="chat-actions">
       <Button variant="secondary" href="/patient/services">
         Browse Services
       </Button>
       <button type="button" className={styles.toolbarButton} onClick={talkToReception}>
         Talk to Reception
       </button>
-      <button type="button" className={styles.toolbarButton} onClick={newConversation}>
+      <button
+        type="button"
+        className={styles.toolbarButton}
+        onClick={newConversation}
+        data-tour="chat-new-conversation"
+      >
         New Conversation
       </button>
+      <TourLauncher tour={PATIENT_TOURS["ai-assistant"]} label="Tour" />
     </div>
   );
 
@@ -239,7 +248,7 @@ export function AIAssistantView() {
           </header>
 
           <div className={styles.card}>
-            <div className={styles.messages} aria-live="polite" aria-busy={sending}>
+            <div className={styles.messages} aria-live="polite" aria-busy={sending} data-tour="chat-messages">
               {messages.map((m) => (
                 <ChatBubble
                   key={m.id}

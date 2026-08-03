@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/Button";
 import { DoctorPortrait } from "@/components/ui/DoctorPortrait";
 import { EmptyState } from "@/components/states/StatePanel";
+import { StethoscopeIcon } from "@/components/ui/Icons";
+import { PatientPage } from "@/components/patient/PatientPage";
+import { TourLauncher } from "@/components/tour/TourLauncher";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { requirePatient } from "@/lib/supabase/patient-auth";
 import { getDoctorById } from "@/lib/patient/server-data";
 import { toPalette, displayDoctorName, PROTOTYPE_MAPPING_NOTICE } from "@/lib/patient/types";
@@ -23,31 +27,42 @@ export default async function DoctorProfilePage({ params }: { params: Promise<{ 
 
   if (failed || !doctor) {
     return (
-      <div className={styles.page}>
-        <Button variant="tertiary" href="/patient/doctors">
-          ← Back to Doctors
-        </Button>
+      <PatientPage width="default">
+        <div className={styles.topBar}>
+          <Button variant="tertiary" href="/patient/doctors">
+            ← Back to Doctors
+          </Button>
+        </div>
         <EmptyState
+          icon={<StethoscopeIcon />}
           title={failed ? "We couldn't load this doctor" : "Doctor not found"}
           body={
             failed
-              ? "Please try again in a moment."
+              ? "Please try again in a moment. Nothing was changed."
               : "This doctor isn't available. Browse the current doctor directory instead."
           }
+          action={
+            <Button variant="primary" href="/patient/doctors">
+              Back to Doctors
+            </Button>
+          }
         />
-      </div>
+      </PatientPage>
     );
   }
 
   const bookable = doctor.services.length > 0;
 
   return (
-    <div className={styles.page}>
-      <Button variant="tertiary" href="/patient/doctors">
-        ← Back to Doctors
-      </Button>
+    <PatientPage width="default">
+      <div className={styles.topBar}>
+        <Button variant="tertiary" href="/patient/doctors">
+          ← Back to Doctors
+        </Button>
+        <TourLauncher tour={PATIENT_TOURS["doctor-profile"]} />
+      </div>
 
-      <div className={styles.profileRow}>
+      <div className={styles.profileRow} data-tour="profile-identity">
         <DoctorPortrait palette={toPalette(doctor.portraitPalette)} size={120} />
         <div>
           <h1 className={styles.name}>{displayDoctorName(doctor.fullName)}</h1>
@@ -86,21 +101,23 @@ export default async function DoctorProfilePage({ params }: { params: Promise<{ 
           )}
 
           <div className={styles.actions}>
-            {bookable ? (
-              <Button variant="primary" href={`/patient/booking?doctorId=${doctor.id}`}>
-                Book Appointment
-              </Button>
-            ) : (
-              <Button variant="primary" disabled>
-                Book Appointment
-              </Button>
-            )}
+            <span data-tour="profile-book">
+              {bookable ? (
+                <Button variant="primary" href={`/patient/booking?doctorId=${doctor.id}`}>
+                  Book Appointment
+                </Button>
+              ) : (
+                <Button variant="primary" disabled>
+                  Book Appointment
+                </Button>
+              )}
+            </span>
             <Button variant="secondary" href="/patient/ai-assistant">
               Ask MediFlow
             </Button>
           </div>
         </div>
       </div>
-    </div>
+    </PatientPage>
   );
 }

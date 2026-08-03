@@ -1,34 +1,62 @@
 "use client";
 
 import { AccessibilityModeSelector } from "@/components/accessibility/AccessibilityModeSelector";
+import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Button } from "@/components/ui/Button";
+import { PatientPage, PatientPageHeader, PatientSection } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import styles from "./page.module.css";
 
 /**
- * Representative screen 6/6 — Accessibility-mode demonstration.
- * Lets you switch between all 5 color-vision modes live and see, right
- * on this page, that every status badge stays readable via icon + label
- * + shape — never color alone.
+ * Dedicated accessibility settings page. It reuses the same provider + selector
+ * as the global dialog, so changes here apply everywhere and persist on this
+ * device. Status is always shown with icon + label + shape, never colour alone.
  */
 export function AccessibilityView() {
+  const { setColorMode, setReducedMotion, setLargeText } = useAccessibility();
+
+  function resetToDefault() {
+    setColorMode("standard");
+    setReducedMotion(false);
+    setLargeText(false);
+  }
+
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>Accessibility</h1>
-      <p className={styles.subtitle}>
-        These settings apply across MediFlow. Every status always uses an icon and a text
-        label, never color alone — switch modes below and check the preview underneath.
-      </p>
+    <PatientPage width="narrow">
+      <PatientPageHeader
+        title="Accessibility"
+        description="These settings apply across MediFlow on this device. Every status uses an icon and a text label, never colour alone."
+        tour={PATIENT_TOURS.accessibility}
+      />
 
-      <AccessibilityModeSelector />
+      <PatientSection>
+        <AccessibilityModeSelector colorTourId="a11y-color" togglesTourId="a11y-toggles" />
 
-      <section className={styles.preview} aria-labelledby="preview-heading">
-        <h2 id="preview-heading" className={styles.previewTitle}>
-          Live preview
-        </h2>
+        <ul className={styles.explain}>
+          <li>
+            <strong>Colour vision mode</strong> — re-tunes status colours for protanopia,
+            deuteranopia, tritanopia, or a high-contrast greyscale.
+          </li>
+          <li>
+            <strong>Large text</strong> — increases text size across the app for easier reading.
+          </li>
+          <li>
+            <strong>Reduced motion</strong> — freezes animations, including the Ask MediFlow sphere
+            and thinking indicator.
+          </li>
+        </ul>
+
+        <div className={styles.resetRow} data-tour="a11y-reset">
+          <button type="button" className={styles.reset} onClick={resetToDefault}>
+            Reset to default
+          </button>
+        </div>
+      </PatientSection>
+
+      <PatientSection title="Live preview" id="preview">
         <p className={styles.previewHint}>
-          These badges use the same components as the rest of the app — switch color modes
-          above and watch them update immediately.
+          These badges use the same components as the rest of the app — switch colour modes above
+          and watch them stay readable.
         </p>
         <div className={styles.badgeRow}>
           <StatusBadge tone="success" label="Confirmed" />
@@ -37,11 +65,7 @@ export function AccessibilityView() {
           <StatusBadge tone="error" label="Cancelled" />
           <StatusBadge tone="neutral" label="Neutral" />
         </div>
-      </section>
-
-      <Button href="/patient/profile" variant="secondary">
-        Back to Profile
-      </Button>
-    </div>
+      </PatientSection>
+    </PatientPage>
   );
 }

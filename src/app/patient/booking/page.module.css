@@ -13,6 +13,27 @@
   }
 }
 
+.bookingTop {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.selSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selTag {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
 .stepper {
   display: flex;
   flex-wrap: wrap;

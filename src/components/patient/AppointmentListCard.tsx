@@ -11,6 +11,8 @@ export interface AppointmentListCardProps {
   onReschedule?: () => void;
   cancellable?: boolean;
   reschedulable?: boolean;
+  /** When set, a "Show QR" action links here (only for QR-active visits). */
+  qrHref?: string;
 }
 
 /** Supabase-backed appointment card showing the real server reference. */
@@ -21,6 +23,7 @@ export function AppointmentListCard({
   onReschedule,
   cancellable,
   reschedulable,
+  qrHref,
 }: AppointmentListCardProps) {
   return (
     <article className={styles.card}>
@@ -43,6 +46,11 @@ export function AppointmentListCard({
         {onViewDetails ? (
           <Button variant="secondary" onClick={onViewDetails}>
             View Details
+          </Button>
+        ) : null}
+        {qrHref ? (
+          <Button variant="secondary" href={qrHref}>
+            Show QR
           </Button>
         ) : null}
         {reschedulable && onReschedule ? (

@@ -10,6 +10,9 @@ import { FloOrb } from "@/components/ai/FloOrb";
 import { ServiceDirectoryCard } from "@/components/patient/ServiceDirectoryCard";
 import { DoctorDirectoryCard } from "@/components/patient/DoctorDirectoryCard";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
+import { PatientPage } from "@/components/patient/PatientPage";
+import { TourLauncher } from "@/components/tour/TourLauncher";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import {
   fetchServices,
@@ -284,8 +287,12 @@ export function BookingFlow() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.stepper} role="list" aria-label="Booking steps">
+    <PatientPage width="default">
+      <div className={styles.bookingTop}>
+        <TourLauncher tour={PATIENT_TOURS.booking} />
+      </div>
+
+      <div className={styles.stepper} role="list" aria-label="Booking steps" data-tour="booking-steps">
         {STEP_LABELS.map((label, i) => (
           <div key={label} role="listitem" className={styles.stepItem}>
             <span
@@ -298,6 +305,17 @@ export function BookingFlow() {
           </div>
         ))}
       </div>
+
+      <div className={styles.selSummary} data-tour="booking-summary" aria-label="Your selections">
+        <span className={styles.selTag}>Service: {service?.name ?? "—"}</span>
+        <span className={styles.selTag}>Doctor: {doctor?.fullName ?? "—"}</span>
+        <span className={styles.selTag}>Date: {selectedDate ? formatDate(selectedDate) : "—"}</span>
+        <span className={styles.selTag}>Time: {selectedSlot ? formatTime(selectedSlot.time) : "—"}</span>
+      </div>
+
+      <p className={controls.notice} data-tour="booking-availability-note">
+        {DEMO_AVAILABILITY_NOTICE}
+      </p>
 
       {step === 0 && (
         <section aria-labelledby="step-heading">
@@ -505,7 +523,7 @@ export function BookingFlow() {
           ← Back
         </button>
       </div>
-    </div>
+    </PatientPage>
   );
 }
 

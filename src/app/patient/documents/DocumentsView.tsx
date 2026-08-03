@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
+import { InfoIcon } from "@/components/ui/Icons";
+import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import {
   fetchDocuments,
   uploadDocument,
@@ -108,18 +111,22 @@ export function DocumentsView() {
   const ready = state.status === "ready";
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>Documents</h1>
+    <PatientPage width="default">
+      <PatientPageHeader
+        title="Documents"
+        description="Private to your account. Files you upload are visible only to you and your care team."
+        tour={PATIENT_TOURS.documents}
+      />
 
       {toast ? <Toast tone={toast.tone} message={toast.message} onDismiss={() => setToast(null)} /> : null}
 
       <p className={styles.note}>
-        Private to your account. Upload documents to share with your doctor ahead of a visit
-        (PDF, PNG, JPG, or WebP; up to 10 MB).
+        Upload documents to share with your doctor ahead of a visit — PDF, PNG, JPG, or WebP, up to
+        10&nbsp;MB each.
       </p>
 
       {(ready || state.status === "loading") && (
-        <div className={styles.uploadRow}>
+        <div className={styles.uploadRow} data-tour="docs-upload">
           <input
             ref={fileInput}
             id="document-upload"
@@ -155,13 +162,14 @@ export function DocumentsView() {
 
       {ready && state.documents.length === 0 && (
         <EmptyState
+          icon={<InfoIcon />}
           title="No documents yet"
           body="Upload a document above to share it with your doctor ahead of your visit."
         />
       )}
 
       {ready && state.documents.length > 0 && (
-        <ul className={styles.list}>
+        <ul className={styles.list} data-tour="docs-list">
           {state.documents.map((doc) => {
             const clinic = doc.sourceType === "clinic_provided";
             return (
@@ -172,7 +180,9 @@ export function DocumentsView() {
                 <div className={styles.body}>
                   <p className={styles.itemName}>
                     {doc.originalFilename}
-                    {clinic ? <span className={styles.badge}>Clinic provided</span> : null}
+                    <span className={styles.badge}>
+                      {clinic ? "Clinic provided" : "You uploaded"}
+                    </span>
                   </p>
                   <p className={styles.itemMeta}>
                     {[formatSize(doc.sizeBytes), formatDate(doc.createdAt)].filter(Boolean).join(" · ")}
@@ -211,6 +221,6 @@ export function DocumentsView() {
           </div>
         ) : null}
       </Dialog>
-    </div>
+    </PatientPage>
   );
 }

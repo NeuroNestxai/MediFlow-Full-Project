@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
+import { Button } from "@/components/ui/Button";
+import { CalendarIcon, InfoIcon, BellIcon } from "@/components/ui/Icons";
+import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchNotifications,
@@ -11,6 +15,7 @@ import {
   type PatientNotification,
 } from "@/lib/patient/client-data";
 import styles from "./page.module.css";
+import controls from "@/components/patient/directory.module.css";
 
 type Load =
   | { status: "loading" }
@@ -18,22 +23,50 @@ type Load =
   | { status: "error" }
   | { status: "ready"; notifications: PatientNotification[] };
 
+type Filter = "all" | "unread";
+
 function relatedHref(n: PatientNotification): string | null {
   if (n.relatedAppointmentId) return "/patient/appointments";
   if (n.relatedDocumentId) return "/patient/documents";
   return null;
 }
 
+function typeIcon(type: string) {
+  if (type.startsWith("appointment")) return <CalendarIcon />;
+  if (type.startsWith("document")) return <InfoIcon />;
+  return <BellIcon />;
+}
+
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? ""
-    : d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    : d.toLocaleString("en-GB", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 }
+
+/** Bucket a notification by day relative to today (list is already newest-first). */
+function bucketOf(iso: string): "Today" | "Yesterday" | "Earlier" {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "Earlier";
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const t = d.getTime();
+  if (t >= startToday) return "Today";
+  if (t >= startToday - 86_400_000) return "Yesterday";
+  return "Earlier";
+}
+
+const BUCKET_ORDER: Array<"Today" | "Yesterday" | "Earlier"> = ["Today", "Yesterday", "Earlier"];
 
 export function NotificationsClient() {
   const [state, setState] = useState<Load>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
     let active = true;
@@ -41,7 +74,9 @@ export function NotificationsClient() {
       .then((res) => {
         if (!active) return;
         setState(
-          res.status === "ready" ? { status: "ready", notifications: res.notifications } : { status: res.status },
+          res.status === "ready"
+            ? { status: "ready", notifications: res.notifications }
+            : { status: res.status },
         );
       })
       .catch(() => {
@@ -58,17 +93,36 @@ export function NotificationsClient() {
     const supabase = createClient();
     const channel = supabase
       .channel("patient-notifications")
-      .on("postgres_changes", { event: "*", schema: "public", table: "patient_notifications" }, () => {
-        setReloadKey((k) => k + 1);
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "patient_notifications" },
+        () => setReloadKey((k) => k + 1),
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
 
-  const notifications = state.status === "ready" ? state.notifications : [];
+  const notifications = useMemo(
+    () => (state.status === "ready" ? state.notifications : []),
+    [state],
+  );
   const unread = notifications.filter((n) => !n.isRead).length;
+
+  const shown = useMemo(
+    () => (filter === "unread" ? notifications.filter((n) => !n.isRead) : notifications),
+    [notifications, filter],
+  );
+
+  const groups = useMemo(() => {
+    const map: Record<string, PatientNotification[]> = {};
+    for (const n of shown) {
+      const b = bucketOf(n.createdAt);
+      (map[b] ??= []).push(n);
+    }
+    return BUCKET_ORDER.filter((b) => map[b]?.length).map((b) => ({ label: b, items: map[b] }));
+  }, [shown]);
 
   async function onMarkOne(id: string) {
     await markNotificationRead(id);
@@ -79,63 +133,116 @@ export function NotificationsClient() {
     setReloadKey((k) => k + 1);
   }
 
+  const ready = state.status === "ready";
+
   return (
-    <div className={styles.page}>
-      <div className={styles.headRow}>
-        <h1 className={styles.title}>Notifications{unread > 0 ? ` (${unread})` : ""}</h1>
-        {unread > 0 ? (
-          <button type="button" className={styles.markRead} onClick={onMarkAll}>
-            Mark All as Read
+    <PatientPage width="default">
+      <PatientPageHeader
+        title="Notifications"
+        description="Updates about your appointments and documents. Operational only — never medical."
+        tour={PATIENT_TOURS.notifications}
+        actions={
+          unread > 0 ? (
+            <span data-tour="notif-mark-all">
+              <Button variant="secondary" onClick={onMarkAll}>
+                Mark all as read
+              </Button>
+            </span>
+          ) : undefined
+        }
+      />
+
+      {ready && notifications.length > 0 ? (
+        <div className={controls.row} role="group" aria-label="Filter notifications" data-tour="notif-filters">
+          <button
+            type="button"
+            className={`${controls.chip} ${filter === "all" ? controls.chipActive : ""}`}
+            aria-pressed={filter === "all"}
+            onClick={() => setFilter("all")}
+          >
+            All ({notifications.length})
           </button>
-        ) : null}
-      </div>
+          <button
+            type="button"
+            className={`${controls.chip} ${filter === "unread" ? controls.chipActive : ""}`}
+            aria-pressed={filter === "unread"}
+            onClick={() => setFilter("unread")}
+          >
+            Unread ({unread})
+          </button>
+        </div>
+      ) : null}
 
       {state.status === "loading" && <LoadingState label="Loading notifications…" />}
       {state.status === "error" && <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />}
       {state.status === "unavailable" && (
         <EmptyState
+          icon={<BellIcon />}
           title="Notifications aren't enabled yet"
           body="Booking updates will appear here once the clinic turns this on."
         />
       )}
-      {state.status === "ready" && notifications.length === 0 && (
+      {ready && notifications.length === 0 && (
         <EmptyState
-          title="No notifications yet"
-          body="Booking updates will appear here."
+          icon={<BellIcon />}
+          title="You're all caught up"
+          body="Updates about your appointments and documents will appear here."
         />
       )}
-      {state.status === "ready" && notifications.length > 0 && (
-        <ul className={styles.list} aria-live="polite">
-          {notifications.map((n) => {
-            const href = relatedHref(n);
-            return (
-              <li key={n.id} className={`${styles.item} ${!n.isRead ? styles.unread : ""}`}>
-                <span className={styles.dot} aria-hidden="true" />
-                <div>
-                  <p className={styles.itemTitle}>
-                    {n.title}
-                    {!n.isRead ? <span className="sr-only"> (unread)</span> : null}
-                  </p>
-                  <p className={styles.itemBody}>{n.message}</p>
-                  <p className={styles.itemTime}>{formatWhen(n.createdAt)}</p>
-                  <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                    {href ? (
-                      <Link href={href} className={styles.markRead} onClick={() => onMarkOne(n.id)}>
-                        View
-                      </Link>
-                    ) : null}
-                    {!n.isRead ? (
-                      <button type="button" className={styles.markRead} onClick={() => onMarkOne(n.id)}>
-                        Mark read
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+      {ready && notifications.length > 0 && shown.length === 0 && (
+        <EmptyState icon={<BellIcon />} title="No unread notifications" body="You've read everything — nice." />
       )}
-    </div>
+
+      {ready && shown.length > 0 && (
+        <div className={styles.groups} aria-live="polite" data-tour="notif-list">
+          {groups.map((group) => (
+            <section key={group.label} className={styles.group} aria-label={group.label}>
+              <h2 className={styles.groupLabel}>{group.label}</h2>
+              <ul className={styles.list}>
+                {group.items.map((n) => {
+                  const href = relatedHref(n);
+                  return (
+                    <li key={n.id} className={`${styles.item} ${!n.isRead ? styles.unread : ""}`}>
+                      <span className={styles.icon} aria-hidden="true">
+                        {typeIcon(n.type)}
+                      </span>
+                      <div className={styles.body}>
+                        <p className={styles.itemTitle}>
+                          {n.title}
+                          {!n.isRead ? (
+                            <>
+                              <span className={styles.unreadDot} aria-hidden="true" />
+                              <span className="sr-only"> (unread)</span>
+                            </>
+                          ) : null}
+                        </p>
+                        <p className={styles.itemBody}>{n.message}</p>
+                        <p className={styles.itemTime}>{formatWhen(n.createdAt)}</p>
+                        <div className={styles.itemActions}>
+                          {href ? (
+                            <Link href={href} className={styles.action} onClick={() => onMarkOne(n.id)}>
+                              View
+                            </Link>
+                          ) : null}
+                          {!n.isRead ? (
+                            <button
+                              type="button"
+                              className={styles.action}
+                              onClick={() => onMarkOne(n.id)}
+                            >
+                              Mark read
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+    </PatientPage>
   );
 }

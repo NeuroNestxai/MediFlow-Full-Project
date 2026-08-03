@@ -6,6 +6,8 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { PatientPage, PatientPageHeader, PatientSection } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { HealthSection } from "./HealthSection";
 import { createClient } from "@/lib/supabase/client";
 import type { PatientProfile } from "@/lib/supabase/patient-auth";
@@ -84,8 +86,12 @@ export function ProfileClient({ profile, email, profileBlocked }: ProfileClientP
   }
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>Profile &amp; Settings</h1>
+    <PatientPage width="narrow">
+      <PatientPageHeader
+        title="Profile &amp; Settings"
+        description="Manage your details, patient-reported health, documents, accessibility and account."
+        tour={PATIENT_TOURS.profile}
+      />
 
       {savedMessage ? (
         <div className={styles.toastWrap}>
@@ -99,7 +105,7 @@ export function ProfileClient({ profile, email, profileBlocked }: ProfileClientP
         </div>
       ) : null}
 
-      <form onSubmit={onSaveProfile} noValidate className={styles.card}>
+      <form onSubmit={onSaveProfile} noValidate className={styles.card} data-tour="profile-sections">
         <h2 className={styles.cardTitle}>Personal information</h2>
 
         {formError ? (
@@ -166,17 +172,29 @@ export function ProfileClient({ profile, email, profileBlocked }: ProfileClientP
         </Button>
       </form>
 
-      <HealthSection />
-
-      <div className={styles.linksCard}>
-        <Button variant="secondary" href="/patient/documents">
-          Documents
-        </Button>
-        <Button variant="secondary" href="/patient/accessibility">
-          Accessibility Settings
-        </Button>
-        <SignOutButton />
+      <div data-tour="profile-health">
+        <HealthSection />
       </div>
-    </div>
+
+      <PatientSection title="Documents & accessibility">
+        <div className={styles.linksCard}>
+          <Button variant="secondary" href="/patient/documents">
+            My Documents
+          </Button>
+          <Button variant="secondary" href="/patient/accessibility">
+            Accessibility Settings
+          </Button>
+        </div>
+      </PatientSection>
+
+      <PatientSection title="Account" id="account">
+        <div className={styles.linksCard} data-tour="profile-account">
+          <Button variant="secondary" href="/auth/forgot-password">
+            Reset Password
+          </Button>
+          <SignOutButton />
+        </div>
+      </PatientSection>
+    </PatientPage>
   );
 }

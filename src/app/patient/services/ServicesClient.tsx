@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { ServiceDirectoryCard } from "@/components/patient/ServiceDirectoryCard";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
 import { Button } from "@/components/ui/Button";
+import { SearchIcon } from "@/components/ui/Icons";
+import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { fetchServices, fetchSpecialties } from "@/lib/patient/client-data";
 import type { DirectoryService, Specialty } from "@/lib/patient/types";
 import styles from "./page.module.css";
@@ -61,6 +64,18 @@ export function ServicesClient() {
     setAge(v);
     setVisible(INITIAL);
   }
+  function clearFilters() {
+    setQuery("");
+    setSpecialtyId("all");
+    setAge("All ages");
+    setVisible(INITIAL);
+  }
+
+  const specialtyName =
+    state.status === "ready"
+      ? (state.specialties.find((s) => s.id === specialtyId)?.name ?? null)
+      : null;
+  const hasFilters = query.trim() !== "" || specialtyId !== "all" || age !== "All ages";
 
   const filtered = useMemo(() => {
     if (state.status !== "ready") return [];
@@ -86,83 +101,112 @@ export function ServicesClient() {
   const shown = filtered.slice(0, visible);
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>MCC Services</h1>
-      <p className={styles.subtitle}>Explore confirmed MCC services in plain language.</p>
+    <PatientPage width="wide">
+      <PatientPageHeader
+        title="MCC Services"
+        description="Explore confirmed MCC services in plain language, then find a doctor who offers them."
+        tour={PATIENT_TOURS.services}
+      />
 
       <div className={controls.controls}>
         <div className={controls.row}>
-          <label className="sr-only" htmlFor="service-search">
-            Search services
-          </label>
-          <input
-            id="service-search"
-            className={controls.search}
-            placeholder="Search services…"
-            value={query}
-            onChange={(e) => onQuery(e.target.value)}
-            type="search"
-            disabled={!ready}
-          />
+          <div className={controls.searchWrap} data-tour="services-search">
+            <SearchIcon aria-hidden="true" className={controls.searchIcon} />
+            <label className="sr-only" htmlFor="service-search">
+              Search services
+            </label>
+            <input
+              id="service-search"
+              className={controls.search}
+              placeholder="Search services…"
+              value={query}
+              onChange={(e) => onQuery(e.target.value)}
+              type="search"
+              disabled={!ready}
+            />
+          </div>
 
-          <label className="sr-only" htmlFor="service-specialty">
-            Filter by specialty
-          </label>
-          <select
-            id="service-specialty"
-            className={controls.select}
-            value={specialtyId}
-            onChange={(e) => onSpecialty(e.target.value)}
-            disabled={!ready}
-          >
-            <option value="all">All specialties</option>
-            {ready &&
-              state.specialties.map((sp) => (
-                <option key={sp.id} value={sp.id}>
-                  {sp.name}
+          <div className={controls.filterGroup} data-tour="services-filters">
+            <label className="sr-only" htmlFor="service-specialty">
+              Filter by specialty
+            </label>
+            <select
+              id="service-specialty"
+              className={controls.select}
+              value={specialtyId}
+              onChange={(e) => onSpecialty(e.target.value)}
+              disabled={!ready}
+            >
+              <option value="all">All specialties</option>
+              {ready &&
+                state.specialties.map((sp) => (
+                  <option key={sp.id} value={sp.id}>
+                    {sp.name}
+                  </option>
+                ))}
+            </select>
+
+            <label className="sr-only" htmlFor="service-age">
+              Filter by age group
+            </label>
+            <select
+              id="service-age"
+              className={controls.select}
+              value={age}
+              onChange={(e) => onAge(e.target.value as (typeof AGE_OPTIONS)[number])}
+              disabled={!ready}
+            >
+              {AGE_OPTIONS.map((a) => (
+                <option key={a} value={a}>
+                  {a}
                 </option>
               ))}
-          </select>
-
-          <label className="sr-only" htmlFor="service-age">
-            Filter by age group
-          </label>
-          <select
-            id="service-age"
-            className={controls.select}
-            value={age}
-            onChange={(e) => onAge(e.target.value as (typeof AGE_OPTIONS)[number])}
-            disabled={!ready}
-          >
-            {AGE_OPTIONS.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
+            </select>
+          </div>
         </div>
+
+        {hasFilters ? (
+          <div className={controls.summary}>
+            <span>Active filters:</span>
+            {query.trim() ? <span className={controls.summaryTag}>“{query.trim()}”</span> : null}
+            {specialtyName ? <span className={controls.summaryTag}>{specialtyName}</span> : null}
+            {age !== "All ages" ? <span className={controls.summaryTag}>{age}</span> : null}
+            <button type="button" className={controls.clearAll} onClick={clearFilters}>
+              Clear filters
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {state.status === "loading" && <LoadingState label="Loading services…" />}
       {state.status === "error" && <ErrorState onRetry={retry} />}
       {ready && filtered.length === 0 && (
         <EmptyState
+          icon={<SearchIcon />}
           title="No services match your filters"
           body="Try a different search term, specialty, or age group."
+          action={
+            hasFilters ? (
+              <Button variant="secondary" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            ) : undefined
+          }
         />
       )}
       {ready && filtered.length > 0 && (
         <>
-          <p className={controls.count}>
+          <p className={controls.count} aria-live="polite">
             Showing {shown.length} of {filtered.length} services
           </p>
-          <div className={styles.grid}>
-            {shown.map((service) => (
-              <ServiceDirectoryCard
-                key={service.id}
-                service={service}
-                onViewDoctors={() => router.push(`/patient/doctors?serviceId=${service.id}`)}
-              />
+          <div className={styles.grid} data-tour="services-results">
+            {shown.map((service, i) => (
+              <div key={service.id} data-tour={i === 0 ? "services-view-doctors" : undefined}>
+                <ServiceDirectoryCard
+                  service={service}
+                  onViewDoctors={() => router.push(`/patient/doctors?serviceId=${service.id}`)}
+                />
+              </div>
             ))}
           </div>
           {visible < filtered.length && (
@@ -174,6 +218,6 @@ export function ServicesClient() {
           )}
         </>
       )}
-    </div>
+    </PatientPage>
   );
 }

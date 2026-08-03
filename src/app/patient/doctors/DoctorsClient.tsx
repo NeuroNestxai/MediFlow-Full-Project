@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { DoctorDirectoryCard } from "@/components/patient/DoctorDirectoryCard";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
 import { Button } from "@/components/ui/Button";
+import { SearchIcon, StethoscopeIcon } from "@/components/ui/Icons";
+import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { fetchDoctors, fetchSpecialties } from "@/lib/patient/client-data";
 import { PROTOTYPE_MAPPING_NOTICE } from "@/lib/patient/types";
 import type { DirectoryDoctor, Specialty } from "@/lib/patient/types";
@@ -95,7 +98,8 @@ export function DoctorsClient({ serviceId }: { serviceId: string | null }) {
     });
   }, [state, serviceId, specialtyId, gender, query]);
 
-  const hasFilters = Boolean(serviceId) || specialtyId !== "all" || gender !== "All genders" || query.trim() !== "";
+  const hasFilters =
+    Boolean(serviceId) || specialtyId !== "all" || gender !== "All genders" || query.trim() !== "";
   const ready = state.status === "ready";
   const shown = filtered.slice(0, visible);
 
@@ -107,70 +111,82 @@ export function DoctorsClient({ serviceId }: { serviceId: string | null }) {
   }
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>Meet Our Doctors</h1>
-      <p className={styles.subtitle}>
-        {serviceId
-          ? `Doctors offering ${serviceName ?? "the selected service"}.`
-          : "Confirmed MCC doctor names, shown with prototype portraits."}
-      </p>
+    <PatientPage width="wide">
+      <PatientPageHeader
+        title="Meet Our Doctors"
+        description={
+          serviceId
+            ? `Doctors offering ${serviceName ?? "the selected service"}.`
+            : "Confirmed MCC doctor names, shown with prototype portraits."
+        }
+        tour={PATIENT_TOURS.doctors}
+      />
 
       <p className={controls.notice}>{PROTOTYPE_MAPPING_NOTICE}</p>
 
       <div className={controls.controls}>
         <div className={controls.row}>
-          <label className="sr-only" htmlFor="doctor-search">
-            Search doctors by name
-          </label>
-          <input
-            id="doctor-search"
-            className={controls.search}
-            placeholder="Search doctors by name…"
-            value={query}
-            onChange={(e) => onQuery(e.target.value)}
-            type="search"
-            disabled={!ready}
-          />
-
-          <label className="sr-only" htmlFor="doctor-specialty">
-            Filter by specialty
-          </label>
-          <select
-            id="doctor-specialty"
-            className={controls.select}
-            value={specialtyId}
-            onChange={(e) => onSpecialty(e.target.value)}
-            disabled={!ready}
-          >
-            <option value="all">All specialties</option>
-            {ready &&
-              state.specialties.map((sp) => (
-                <option key={sp.id} value={sp.id}>
-                  {sp.name}
-                </option>
-              ))}
-          </select>
+          <div className={controls.searchWrap} data-tour="doctors-search">
+            <SearchIcon aria-hidden="true" className={controls.searchIcon} />
+            <label className="sr-only" htmlFor="doctor-search">
+              Search doctors by name
+            </label>
+            <input
+              id="doctor-search"
+              className={controls.search}
+              placeholder="Search doctors by name…"
+              value={query}
+              onChange={(e) => onQuery(e.target.value)}
+              type="search"
+              disabled={!ready}
+            />
+          </div>
         </div>
 
-        <div className={controls.row} role="group" aria-label="Filter by gender">
-          {GENDER_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`${controls.chip} ${gender === option ? controls.chipActive : ""}`}
-              aria-pressed={gender === option}
-              onClick={() => onGender(option)}
+        <div data-tour="doctors-filters" className={controls.controls}>
+          <div className={controls.row}>
+            <label className="sr-only" htmlFor="doctor-specialty">
+              Filter by specialty
+            </label>
+            <select
+              id="doctor-specialty"
+              className={controls.select}
+              value={specialtyId}
+              onChange={(e) => onSpecialty(e.target.value)}
               disabled={!ready}
             >
-              {option}
-            </button>
-          ))}
+              <option value="all">All specialties</option>
+              {ready &&
+                state.specialties.map((sp) => (
+                  <option key={sp.id} value={sp.id}>
+                    {sp.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className={controls.row} role="group" aria-label="Filter by gender">
+            {GENDER_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`${controls.chip} ${gender === option ? controls.chipActive : ""}`}
+                aria-pressed={gender === option}
+                onClick={() => onGender(option)}
+                disabled={!ready}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </div>
 
         {hasFilters && (
           <div className={controls.summary}>
             <span>Filters:</span>
-            {serviceId && <span className={controls.summaryTag}>Service: {serviceName ?? "selected"}</span>}
+            {serviceId && (
+              <span className={controls.summaryTag}>Service: {serviceName ?? "selected"}</span>
+            )}
             {specialtyName && <span className={controls.summaryTag}>Specialty: {specialtyName}</span>}
             {gender !== "All genders" && <span className={controls.summaryTag}>{gender}</span>}
             {query.trim() && <span className={controls.summaryTag}>“{query.trim()}”</span>}
@@ -185,23 +201,32 @@ export function DoctorsClient({ serviceId }: { serviceId: string | null }) {
       {state.status === "error" && <ErrorState onRetry={retry} />}
       {ready && filtered.length === 0 && (
         <EmptyState
+          icon={<StethoscopeIcon />}
           title="No doctors match your filters"
           body="Try a different search, specialty, or gender selection."
+          action={
+            hasFilters ? (
+              <Button variant="secondary" onClick={clearAll}>
+                Clear all
+              </Button>
+            ) : undefined
+          }
         />
       )}
       {ready && filtered.length > 0 && (
         <>
-          <p className={controls.count}>
+          <p className={controls.count} aria-live="polite">
             Showing {shown.length} of {filtered.length} doctors
           </p>
-          <div className={styles.grid}>
-            {shown.map((doctor) => (
-              <DoctorDirectoryCard
-                key={doctor.id}
-                doctor={doctor}
-                onViewProfile={() => router.push(`/patient/doctors/${doctor.id}`)}
-                onBook={() => router.push(bookHref(doctor.id))}
-              />
+          <div className={styles.grid} data-tour="doctors-results">
+            {shown.map((doctor, i) => (
+              <div key={doctor.id} data-tour={i === 0 ? "doctors-actions" : undefined}>
+                <DoctorDirectoryCard
+                  doctor={doctor}
+                  onViewProfile={() => router.push(`/patient/doctors/${doctor.id}`)}
+                  onBook={() => router.push(bookHref(doctor.id))}
+                />
+              </div>
             ))}
           </div>
           {visible < filtered.length && (
@@ -213,6 +238,6 @@ export function DoctorsClient({ serviceId }: { serviceId: string | null }) {
           )}
         </>
       )}
-    </div>
+    </PatientPage>
   );
 }
