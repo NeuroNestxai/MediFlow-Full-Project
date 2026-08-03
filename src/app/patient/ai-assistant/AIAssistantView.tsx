@@ -24,6 +24,8 @@ interface Message {
   suggested?: DirectoryService[];
   /** Reply is about booking, but named no service we can resolve exactly. */
   bookingIntent?: boolean;
+  /** Reply claims an appointment exists. MediFlow has to correct that. */
+  falseConfirmation?: boolean;
 }
 
 /**
@@ -67,6 +69,27 @@ function suggestedServices(reply: string, services: DirectoryService[]): Directo
  */
 function looksLikeBooking(reply: string): boolean {
   return /\b(book|booking|appointment|schedule|slot|availab)/i.test(reply);
+}
+
+/**
+ * Does the reply CLAIM an appointment already exists?
+ *
+ * The assistant runs its own booking conversation and announces things like
+ * "Your appointment is confirmed!" — but it has no access to the database and
+ * cannot create anything. A patient who believes that message arrives on a day
+ * the clinic has no record of them, which is worse than no booking at all.
+ * When this fires and MediFlow has not actually booked, we say so plainly.
+ */
+function claimsAlreadyBooked(reply: string): boolean {
+  // Allow words between the verb and the claim — the assistant writes
+  // "is already confirmed", "has been successfully booked", "is now booked".
+  // Markdown asterisks are stripped first so **confirmed** still matches.
+  const text = reply.replace(/[*_`]/g, "");
+  return (
+    /\b(is|are|has been|have been|was|were)\b[^.!?\n]{0,40}?\b(confirmed|booked|scheduled)\b/i.test(
+      text,
+    ) || /\b(appointment|booking)\b[^.!?\n]{0,40}?\bconfirmed\b/i.test(text)
+  );
 }
 
 /** The doctor a reply names, matched against the real directory. */
@@ -303,6 +326,7 @@ export function AIAssistantView() {
           text: reply,
           suggested: doctor ? [] : suggested,
           bookingIntent: !doctor && suggested.length === 0 && looksLikeBooking(reply),
+          falseConfirmation: claimsAlreadyBooked(reply),
         },
       ]);
       if (doctor) {
@@ -387,6 +411,16 @@ export function AIAssistantView() {
           {messages.map((m) => (
             <div key={m.id}>
               <ChatBubble sender={m.sender} message={m.text} />
+              {/* The assistant announced a booking it cannot make. Say so
+                  immediately, next to the claim — a patient who believes it
+                  arrives on a day the clinic has no record of them. */}
+              {m.falseConfirmation && booking?.status !== "booked" ? (
+                <div className={styles.notBooked} role="alert">
+                  <strong>Not booked yet.</strong> MediFlow has no appointment for you from this
+                  message. Nothing is reserved until you confirm a time below and see a booking
+                  reference.
+                </div>
+              ) : null}
               {m.suggested?.length || m.bookingIntent ? (
                 <div className={styles.handoff}>
                   <p className={styles.handoffNote}>

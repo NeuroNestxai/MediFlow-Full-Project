@@ -171,3 +171,17 @@
   padding: 0;
   margin: var(--spacing-8) 0;
 }
+
+/* Correction shown when the assistant claims an appointment exists that
+   MediFlow never created. Deliberately loud: believing a false confirmation
+   means arriving for a visit the clinic has no record of. */
+.notBooked {
+  margin: var(--spacing-8) 0 var(--spacing-16);
+  padding: var(--spacing-16);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-line);
+  color: var(--color-status-error-text);
+  background: var(--color-status-error-bg);
+  border: 1px dashed var(--color-status-error-text);
+  border-radius: var(--radius-md);
+}
