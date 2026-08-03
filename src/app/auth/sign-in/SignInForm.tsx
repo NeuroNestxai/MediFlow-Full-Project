@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/ui/Logo";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
@@ -103,14 +103,11 @@ export function SignInForm({ confirmationError = false }: { confirmationError?: 
   }
 
   return (
-    <main className={styles.page}>
+    <AuthShell active="sign-in">
       <div aria-live="assertive" className="sr-only">
         {announcement}
       </div>
-      <div className={styles.headerRow}>
-        <Logo variant="lockup" size={28} />
-      </div>
-      <div className={styles.card}>
+      <div>
         <h1 className={styles.title}>Sign in to MediFlow</h1>
         <p className={styles.subtitle}>Patients, doctors, and clinic staff sign in here.</p>
 
@@ -167,6 +164,6 @@ export function SignInForm({ confirmationError = false }: { confirmationError?: 
           </Link>
         </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

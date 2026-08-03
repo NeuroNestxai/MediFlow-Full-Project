@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/ui/Logo";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
@@ -113,16 +113,15 @@ export function SignUpForm() {
   }
 
   return (
-    <main className={styles.page}>
+    <AuthShell active="create-account">
       <div aria-live="assertive" className="sr-only">
         {announcement}
       </div>
-      <div className={styles.headerRow}>
-        <Logo variant="lockup" size={28} />
-      </div>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Create your account</h1>
-        <p className={styles.subtitle}>Sign up to start your care journey.</p>
+      <div>
+        <h1 className={styles.title}>Create your patient account</h1>
+        <p className={styles.subtitle}>
+          Register to explore MCC services, book appointments, and manage your clinic visits.
+        </p>
 
         {formError ? (
           <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
@@ -216,6 +215,6 @@ export function SignUpForm() {
           </Link>
         </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

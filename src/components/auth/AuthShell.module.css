@@ -1,0 +1,160 @@
+.page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--color-bg-page);
+}
+
+/* Two-up from tablet width. Below that the brand panel is dropped entirely
+   rather than stacked — on a phone it would push the form below the fold. */
+@media (min-width: 900px) {
+  .page {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---- Brand side ---- */
+.brand {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  padding: var(--spacing-48);
+  background:
+    radial-gradient(circle at 18% 22%, var(--color-accent-teal-subtle) 0%, transparent 55%),
+    radial-gradient(circle at 78% 78%, var(--color-accent-violet-subtle) 0%, transparent 55%),
+    var(--color-bg-surface);
+}
+
+@media (min-width: 900px) {
+  .brand {
+    display: grid;
+    place-items: center;
+  }
+}
+
+.brandInner {
+  max-width: 30rem;
+  text-align: center;
+}
+
+.brandMark {
+  display: block;
+  margin: 0 auto var(--spacing-24);
+}
+
+.brandName {
+  font-family: var(--font-display);
+  font-size: var(--text-display-size);
+  line-height: var(--text-display-line);
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.tagline {
+  margin-top: var(--spacing-8);
+  font-family: var(--font-display);
+  font-size: var(--text-section-title-size);
+  line-height: var(--text-section-title-line);
+  font-weight: 700;
+  color: var(--color-action-primary);
+}
+
+.brandBody {
+  margin-top: var(--spacing-16);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+  color: var(--color-text-secondary);
+}
+
+.chip {
+  display: inline-block;
+  margin-top: var(--spacing-24);
+  padding: var(--spacing-8) var(--spacing-16);
+  font-size: var(--text-supporting-size);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---- Form side ---- */
+.formSide {
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-24);
+}
+
+.card {
+  width: 100%;
+  max-width: 30rem;
+  padding: var(--spacing-32);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: var(--spacing-24);
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+}
+
+.compactBrand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--spacing-24);
+}
+
+@media (min-width: 900px) {
+  .compactBrand {
+    display: none;
+  }
+}
+
+/* ---- Tabs ---- */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-24);
+  background: var(--color-action-primary-subtle);
+  border-radius: var(--radius-full);
+}
+
+.tab {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0 var(--spacing-16);
+  font-size: var(--text-button-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-full);
+  transition: background var(--motion-duration-fast) var(--motion-easing);
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+}
+
+/* The selected tab is marked by background, weight AND aria-current — not by
+   colour alone. */
+.tabActive {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
