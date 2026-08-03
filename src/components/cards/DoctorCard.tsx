@@ -19,7 +19,6 @@ export function DoctorCard({ doctor, onViewProfile, onBook }: DoctorCardProps) {
           <p className={styles.specialty}>{doctor.specialty}</p>
         </div>
       </div>
-      <p className={styles.protoNote}>Prototype portrait — replace with official MCC photo</p>
       <div className={styles.tags}>
         <span className={styles.tag}>{doctor.gender}</span>
         {doctor.services.slice(0, 1).map((s) => (

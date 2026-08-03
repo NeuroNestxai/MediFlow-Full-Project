@@ -9,7 +9,6 @@ import { SearchIcon, StethoscopeIcon } from "@/components/ui/Icons";
 import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
 import { PATIENT_TOURS } from "@/components/tour/tours";
 import { fetchDoctors, fetchSpecialties } from "@/lib/patient/client-data";
-import { PROTOTYPE_MAPPING_NOTICE } from "@/lib/patient/types";
 import type { DirectoryDoctor, Specialty } from "@/lib/patient/types";
 import styles from "./page.module.css";
 import controls from "@/components/patient/directory.module.css";
@@ -117,12 +116,10 @@ export function DoctorsClient({ serviceId }: { serviceId: string | null }) {
         description={
           serviceId
             ? `Doctors offering ${serviceName ?? "the selected service"}.`
-            : "Confirmed MCC doctor names, shown with prototype portraits."
+            : "Browse MCC doctors and find the right service for your appointment."
         }
         tour={PATIENT_TOURS.doctors}
       />
-
-      <p className={controls.notice}>{PROTOTYPE_MAPPING_NOTICE}</p>
 
       <div className={controls.controls}>
         <div className={controls.row}>

@@ -14,7 +14,7 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -26,7 +26,7 @@
   border-left: 4px solid var(--color-action-primary);
   border-radius: var(--radius-md);
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -50,14 +50,14 @@
 }
 
 .patientName {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .meta {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -70,21 +70,21 @@
 }
 
 .sectionTitle {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .body {
-  font-size: 13.5px;
-  line-height: 20px;
+  font-size: calc(13.5px * var(--font-scale));
+  line-height: calc(20px * var(--font-scale));
   color: var(--color-text-primary);
   white-space: pre-wrap;
 }
 
 .muted {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -106,7 +106,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-primary);
 }
 
@@ -123,7 +123,7 @@
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
 }
 
 .detailRow dt {

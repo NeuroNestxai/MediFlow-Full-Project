@@ -10,7 +10,7 @@
   color: var(--color-action-primary);
   font-family: inherit;
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   cursor: pointer;
 }
 
@@ -38,7 +38,7 @@
 }
 
 .inviteText {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -55,10 +55,10 @@
   border: none;
   border-radius: var(--radius-full);
   background: var(--color-action-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   font-family: inherit;
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   cursor: pointer;
 }
 
@@ -75,7 +75,7 @@
   color: var(--color-action-primary);
   font-family: inherit;
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   cursor: pointer;
 }
 

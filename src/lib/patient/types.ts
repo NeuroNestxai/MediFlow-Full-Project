@@ -146,7 +146,5 @@ export function displayDoctorName(fullName: string): string {
   return /^dr\.?\s/i.test(t) ? t : `Dr. ${t}`;
 }
 
-/** Concise, page/section-level prototype-mapping notice (never per-chip clutter). */
-export const PROTOTYPE_MAPPING_NOTICE = "Prototype service mapping for this demo.";
 export const DEMO_AVAILABILITY_NOTICE =
-  "Prototype availability — not an official MCC schedule.";
+  "Example availability — not an official MCC schedule.";

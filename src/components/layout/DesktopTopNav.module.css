@@ -40,7 +40,7 @@
   gap: 6px;
   padding: 8px 11px;
   border-radius: var(--radius-full);
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   white-space: nowrap;
   color: var(--color-text-secondary);
@@ -53,7 +53,7 @@
 
 .active {
   background: var(--color-action-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
 }
 
 .badge {
@@ -65,14 +65,14 @@
   padding: 0 5px;
   border-radius: var(--radius-full);
   background: var(--color-accent-coral);
-  color: #ffffff;
-  font-size: 10.5px;
+  color: var(--color-on-primary);
+  font-size: calc(10.5px * var(--font-scale));
   font-weight: 700;
   line-height: 1;
 }
 
 .active .badge {
-  background: #ffffff;
+  background: var(--color-bg-surface);
   color: var(--color-action-primary);
 }
 
@@ -84,7 +84,7 @@
 }
 
 .roleTag {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 600;
   color: var(--color-accent-coral-deep);
   background: var(--color-accent-coral-subtle);

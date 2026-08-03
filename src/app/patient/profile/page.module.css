@@ -14,7 +14,7 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -37,14 +37,14 @@
 }
 
 .cardTitle {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .cardHint {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
   margin-top: -8px;
 }
@@ -58,18 +58,18 @@
 .banner {
   border-radius: var(--radius-lg, 12px);
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   border: 1px solid transparent;
 }
 
 .bannerError {
-  background: var(--color-danger-surface, #fef2f2);
-  border-color: var(--color-danger, #dc2626);
-  color: var(--color-danger-strong, #b91c1c);
+  background: var(--color-status-error-bg);
+  border-color: var(--color-status-error-text);
+  color: var(--color-status-error-text);
 }
 
 .readonlyHint {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
   margin-top: -8px;
 }

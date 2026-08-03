@@ -7,7 +7,7 @@ import { TourLauncher } from "@/components/tour/TourLauncher";
 import { PATIENT_TOURS } from "@/components/tour/tours";
 import { requirePatient } from "@/lib/supabase/patient-auth";
 import { getDoctorById } from "@/lib/patient/server-data";
-import { toPalette, displayDoctorName, PROTOTYPE_MAPPING_NOTICE } from "@/lib/patient/types";
+import { toPalette, displayDoctorName } from "@/lib/patient/types";
 import type { DirectoryDoctor } from "@/lib/patient/types";
 import styles from "./page.module.css";
 
@@ -67,9 +67,6 @@ export default async function DoctorProfilePage({ params }: { params: Promise<{ 
         <div>
           <h1 className={styles.name}>{displayDoctorName(doctor.fullName)}</h1>
           {doctor.gender ? <p className={styles.meta}>{doctor.gender}</p> : null}
-          <p className={styles.protoNote}>
-            Prototype portrait — an approved MCC photograph may be added later.
-          </p>
 
           <h2 className={styles.sectionLabel}>Specialties</h2>
           {doctor.specialties.length > 0 ? (
@@ -94,7 +91,6 @@ export default async function DoctorProfilePage({ params }: { params: Promise<{ 
                   </span>
                 ))}
               </div>
-              <p className={styles.protoNote}>{PROTOTYPE_MAPPING_NOTICE}</p>
             </>
           ) : (
             <p className={styles.meta}>No bookable service currently available.</p>

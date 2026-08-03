@@ -17,27 +17,27 @@
 }
 
 .doctorName {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .service {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .meta {
   display: flex;
   gap: 16px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .ref {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   color: var(--color-text-secondary);
   opacity: 0.75;
 }

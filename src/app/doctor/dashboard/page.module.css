@@ -20,7 +20,7 @@
 }
 
 .greeting {
-  font-size: 20px;
+  font-size: calc(20px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -28,12 +28,12 @@
 
 @media (min-width: 768px) {
   .greeting {
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale));
   }
 }
 
 .subGreeting {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -60,20 +60,20 @@
 }
 
 .statValue {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .statLabel {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .statHint {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -96,7 +96,7 @@
 }
 
 .sectionTitle {
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -134,7 +134,7 @@
 }
 
 .time {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 700;
   color: var(--color-action-primary);
   width: 70px;
@@ -143,7 +143,7 @@
 
 .patientName {
   flex: 1;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -165,7 +165,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-primary);
 }
 
@@ -176,7 +176,7 @@
 .patientLink {
   flex: 1;
   min-width: 120px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
   text-decoration: underline;
@@ -188,12 +188,12 @@
 }
 
 .liveHint {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .liveEmpty {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -214,12 +214,12 @@
 }
 
 .liveName {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .liveMeta {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }

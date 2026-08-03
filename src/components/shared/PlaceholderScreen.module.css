@@ -6,7 +6,7 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -14,7 +14,7 @@
 }
 
 .body {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: var(--color-text-secondary);
   margin-bottom: 20px;
 }
@@ -22,5 +22,5 @@
 .link {
   color: var(--color-action-primary);
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
 }

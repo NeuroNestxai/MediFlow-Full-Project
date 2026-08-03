@@ -33,6 +33,22 @@
   pointer-events: none;
 }
 
+/* Dark mode: replace the pale light fog with a deep navy/indigo composition so
+   the brand side reads as one intentional dark design with the form side —
+   restrained teal + violet glows over a token navy base (no invert/filter). The
+   brand side stays a touch more expressive via the visible decoration paths. */
+:root[data-theme="dark"] .brand {
+  background:
+    radial-gradient(120% 90% at 15% 10%, rgba(18, 169, 174, 0.16) 0%, transparent 55%),
+    radial-gradient(120% 90% at 88% 92%, rgba(145, 121, 198, 0.2) 0%, transparent 55%),
+    linear-gradient(160deg, var(--color-bg-page) 0%, #141a2e 55%, #1a1533 100%);
+  border-bottom-color: var(--color-border-default);
+}
+
+:root[data-theme="dark"] .decoration {
+  opacity: 0.3;
+}
+
 .brandInner {
   position: relative;
   z-index: 1;
@@ -61,20 +77,20 @@
 .brandName {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 30px;
+  font-size: calc(30px * var(--font-scale));
   line-height: 1.1;
   color: var(--color-text-primary);
 }
 
 .brandTagline {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 600;
   color: var(--color-action-primary);
 }
 
 .brandDescription {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   line-height: 1.55;
   color: var(--color-text-secondary);
   max-width: 380px;
@@ -82,7 +98,7 @@
 
 .brandContext {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--color-text-secondary);
@@ -141,10 +157,10 @@
     padding: calc(20px + env(safe-area-inset-top)) 24px 20px;
   }
   .brandName {
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale));
   }
   .brandTagline {
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale));
   }
   .panelBar {
     padding-top: 12px;
@@ -175,7 +191,7 @@
     padding: 48px 40px;
   }
   .brandName {
-    font-size: 34px;
+    font-size: calc(34px * var(--font-scale));
   }
   .formArea {
     align-items: center;

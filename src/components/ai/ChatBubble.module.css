@@ -31,7 +31,7 @@
 }
 
 .name {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -42,7 +42,7 @@
 .bubble {
   padding: 11px 15px;
   border-radius: var(--radius-lg);
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--font-scale));
   line-height: 1.5;
   /* Plain-text safety: keep authored line breaks, wrap long words + URLs. */
   white-space: pre-wrap;
@@ -52,7 +52,7 @@
 
 .patientBubble {
   background: var(--color-action-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   border-bottom-right-radius: 5px;
 }
 

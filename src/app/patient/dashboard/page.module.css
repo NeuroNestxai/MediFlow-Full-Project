@@ -19,14 +19,14 @@
 
 .nextDoctor {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: calc(19px * var(--font-scale));
   font-weight: 800;
   color: var(--color-text-primary);
 }
 
 .nextService {
   margin-top: 2px;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -42,7 +42,7 @@
 }
 
 .nextMeta dt {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -51,7 +51,7 @@
 
 .nextMeta dd {
   margin: 3px 0 0;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -80,7 +80,7 @@
 }
 
 .aiKicker {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--color-accent-violet);
@@ -89,14 +89,14 @@
 .aiTitle {
   margin-top: 2px;
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: calc(19px * var(--font-scale));
   font-weight: 800;
   color: var(--color-text-primary);
 }
 
 .aiBody {
   margin-top: 6px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
   line-height: 1.5;
   color: var(--color-text-secondary);
   max-width: 520px;
@@ -148,13 +148,13 @@
 }
 
 .quickLabel {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 600;
 }
 
 /* ---- Notifications preview ---- */
 .seeAll {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-action-primary);
   text-decoration: underline;
@@ -204,7 +204,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -219,7 +219,7 @@
 
 .notifBody {
   margin-top: 2px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;

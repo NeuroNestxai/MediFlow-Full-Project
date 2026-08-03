@@ -16,7 +16,7 @@
 }
 
 .tag {
-  font-size: 10px;
+  font-size: calc(10px * var(--font-scale));
   font-weight: 600;
   padding: 3px 8px;
   border-radius: var(--radius-full);
@@ -25,20 +25,20 @@
 }
 
 .age {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-secondary);
 }
 
 .name {
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .description {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -46,7 +46,7 @@
   background: none;
   border: none;
   color: var(--color-action-primary);
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
   text-align: left;

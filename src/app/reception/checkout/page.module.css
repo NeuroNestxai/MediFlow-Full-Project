@@ -28,14 +28,14 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .subtitle {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
   margin-top: 4px;
 }
@@ -47,7 +47,7 @@
 }
 
 .sectionTitle {
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -79,19 +79,19 @@
 }
 
 .patientName {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .meta {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .ref {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   color: var(--color-text-secondary);
   opacity: 0.75;
 }
@@ -108,7 +108,7 @@
 }
 
 .successTitle {
-  font-size: 20px;
+  font-size: calc(20px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -126,7 +126,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   border-bottom: 1px solid var(--color-border-default);
   padding-bottom: 6px;
 }

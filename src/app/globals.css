@@ -12,6 +12,14 @@ body {
   margin: 0;
 }
 
+/* Tell the UA which form-control / scrollbar palette to render. */
+:root {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 body {
   background: var(--color-bg-page);
   color: var(--color-text-primary);
@@ -77,4 +85,29 @@ button {
 
 .skip-link:focus {
   top: 8px;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced Motion — hard stop for decorative animation, orb movement and
+   transitions when the OS preference is set OR the in-app toggle is on. Uses
+   a near-zero duration (not 0) so any animationend/transitionend handlers
+   still fire. Applies app-wide regardless of component-local CSS.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+:root[data-reduced-motion="true"] *,
+:root[data-reduced-motion="true"] *::before,
+:root[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }

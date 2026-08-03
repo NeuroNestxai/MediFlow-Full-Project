@@ -32,7 +32,7 @@ export function AppointmentCard({ appointment, onViewDetails, onCancel }: Appoin
         <span>{appointment.date}</span>
         <span>{appointment.time}</span>
       </div>
-      <p className={styles.ref}>Ref: {appointment.reference} · Demo booking</p>
+      <p className={styles.ref}>Ref: {appointment.reference}</p>
       <div className={styles.actions}>
         <Button variant="secondary" onClick={onViewDetails}>
           View Details

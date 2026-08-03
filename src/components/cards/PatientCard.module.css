@@ -25,12 +25,12 @@
 }
 
 .name {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .meta {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }

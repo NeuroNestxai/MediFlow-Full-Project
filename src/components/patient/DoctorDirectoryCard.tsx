@@ -27,7 +27,6 @@ export function DoctorDirectoryCard({ doctor, onViewProfile, onBook }: DoctorDir
           {doctor.gender ? <p className={styles.specialty}>{doctor.gender}</p> : null}
         </div>
       </div>
-      <p className={styles.protoNote}>Prototype portrait — replace with official MCC photo</p>
       <div className={styles.tags}>
         {doctor.specialties.length > 0 ? (
           doctor.specialties.map((s) => (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
+import { AppearanceToggle } from "@/components/appearance/AppearanceToggle";
 import styles from "./DesktopTopNav.module.css";
 
 export interface NavLinkItem {
@@ -53,6 +54,7 @@ export function DesktopTopNav({ links, activeHref, roleTag, homeHref }: DesktopT
       </nav>
       <div className={styles.rightCluster}>
         {roleTag ? <span className={styles.roleTag}>{roleTag}</span> : null}
+        <AppearanceToggle variant="pill" />
         <AccessibilityMenu variant="pill" />
       </div>
     </header>

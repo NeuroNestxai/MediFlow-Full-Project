@@ -34,7 +34,7 @@
 /* Primary */
 .primary {
   background: var(--color-action-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
 }
 .primary:hover:not(:disabled) {
   background: var(--color-action-primary-hover);

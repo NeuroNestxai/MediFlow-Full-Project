@@ -39,26 +39,26 @@
 }
 
 .name {
-  font-size: 24px;
+  font-size: calc(24px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .meta {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .protoNote {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   color: var(--color-text-secondary);
   opacity: 0.75;
   margin-bottom: 8px;
 }
 
 .sectionLabel {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--color-text-secondary);
@@ -74,7 +74,7 @@
 }
 
 .tag {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--radius-full);

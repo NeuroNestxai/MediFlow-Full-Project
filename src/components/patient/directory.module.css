@@ -38,7 +38,7 @@
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
 }
 
 .filterGroup {
@@ -55,7 +55,7 @@
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
   font-weight: 600;
 }
 
@@ -71,7 +71,7 @@
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
   min-height: 40px;
@@ -79,16 +79,16 @@
 
 .chipActive {
   background: var(--color-action-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   border-color: var(--color-action-primary);
 }
 
 .notice {
   border-radius: var(--radius-lg, 12px);
   border: 1px solid var(--color-border-default);
-  background: var(--color-bg-muted, #f6f7f9);
+  background: var(--color-bg-surface-blush);
   color: var(--color-text-secondary);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   padding: 10px 14px;
 }
 
@@ -97,7 +97,7 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -115,7 +115,7 @@
   border: none;
   color: var(--color-action-primary);
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   cursor: pointer;
   text-decoration: underline;
   min-height: 32px;
@@ -130,6 +130,6 @@
 }
 
 .count {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }

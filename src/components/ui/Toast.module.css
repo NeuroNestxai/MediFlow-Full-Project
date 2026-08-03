@@ -14,7 +14,7 @@
 }
 
 .message {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   flex: 1;
 }
@@ -22,7 +22,7 @@
 .dismiss {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: calc(18px * var(--font-scale));
   line-height: 1;
   cursor: pointer;
   color: inherit;

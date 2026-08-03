@@ -76,6 +76,46 @@ export function Logo({
       ? { width: "100%", maxWidth: `${s}px`, height: "auto" as const }
       : { height: `${height}px`, width: `${width}px` };
 
+  // The horizontal lockups embed the wordmark in the artwork; on a dark surface
+  // that mid-slate wordmark is low-contrast. A prepared dark-theme variant keeps
+  // the colored emblem but recolors ONLY the wordmark to near-white. We render
+  // both and swap them purely in CSS by `data-theme` — no filter/invert, and
+  // the light-mode artwork is byte-for-byte the original.
+  const darkSrc =
+    variant === "header" || variant === "compact"
+      ? "/branding/mediflow-lockup-dark.png"
+      : null;
+
+  if (darkSrc) {
+    return (
+      <span className={`${styles.lockupSwap} ${className ?? ""}`} style={style}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- static, pre-sized brand asset */}
+        <img
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          style={style}
+          className={`${styles.logo} ${styles.lockup} ${styles.lockupLight}`}
+          decoding="async"
+          loading={priority ? "eager" : "lazy"}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element -- static, pre-sized brand asset */}
+        <img
+          src={darkSrc}
+          alt=""
+          aria-hidden="true"
+          width={width}
+          height={height}
+          style={style}
+          className={`${styles.logo} ${styles.lockup} ${styles.lockupDark}`}
+          decoding="async"
+          loading={priority ? "eager" : "lazy"}
+        />
+      </span>
+    );
+  }
+
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static, pre-sized brand asset; next/image adds no benefit here and complicates SSR/client dual use
     <img

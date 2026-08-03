@@ -22,7 +22,7 @@
 }
 
 .title {
-  font-size: 18px;
+  font-size: calc(18px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -30,13 +30,13 @@
 
 .doctor {
   margin-top: 4px;
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .meta {
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
@@ -49,7 +49,7 @@
 }
 
 .details dt {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -58,13 +58,13 @@
 
 .details dd {
   margin: 3px 0 0;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .sectionTitle {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 700;
   color: var(--color-text-primary);
   margin-bottom: 12px;
@@ -88,7 +88,7 @@
 }
 
 .privacy {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   line-height: 1.5;
   color: var(--color-text-secondary);
   text-align: center;
@@ -119,25 +119,25 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   border: 1.5px solid var(--color-border-default);
 }
 
 .done .marker {
   background: var(--color-accent-teal);
   border-color: var(--color-accent-teal);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .currentStep .marker {
   background: var(--color-action-primary);
   border-color: var(--color-action-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .stepLabel {
   flex: 1;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -148,7 +148,7 @@
 }
 
 .stepState {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;

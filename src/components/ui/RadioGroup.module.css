@@ -8,7 +8,7 @@
 }
 
 .legend {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
   padding: 0;
@@ -24,7 +24,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   min-height: 44px;
   cursor: pointer;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
+import { AppearanceToggle } from "@/components/appearance/AppearanceToggle";
 import styles from "./MobileBrandBar.module.css";
 
 /**
@@ -15,7 +16,10 @@ export function MobileBrandBar({ homeHref }: { homeHref: string }) {
       <Link href={homeHref} className={styles.logoLink} aria-label="MediFlow AI — go to dashboard">
         <Logo variant="header" size={26} alt="" />
       </Link>
-      <AccessibilityMenu variant="icon" />
+      <div className={styles.actions}>
+        <AppearanceToggle variant="icon" />
+        <AccessibilityMenu variant="icon" />
+      </div>
     </header>
   );
 }

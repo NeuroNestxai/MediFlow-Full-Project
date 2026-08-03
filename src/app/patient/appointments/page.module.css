@@ -14,7 +14,7 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -32,7 +32,7 @@
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
   min-height: 40px;
@@ -40,7 +40,7 @@
 
 .activeTab {
   background: var(--color-action-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   border-color: var(--color-action-primary);
 }
 
@@ -68,25 +68,25 @@
 }
 
 .doctorName {
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .service {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .meta {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .ref {
-  font-size: 11px;
+  font-size: calc(11px * var(--font-scale));
   color: var(--color-text-secondary);
   opacity: 0.75;
 }
@@ -101,17 +101,17 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
   color: var(--color-text-primary);
 }
 
 .dialogHint {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .timelineHeading {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 700;
   margin-top: 8px;
 }
@@ -123,7 +123,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
 }
 
 .timeline li::before {

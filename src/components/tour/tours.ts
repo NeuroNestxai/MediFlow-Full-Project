@@ -115,7 +115,7 @@ export const PATIENT_TOURS = {
     version: 1,
     title: "Doctor profile tour",
     steps: [
-      { target: "profile-identity", title: "About this doctor", body: "Their specialties and the MCC services they’re mapped to (prototype mapping)." },
+      { target: "profile-identity", title: "About this doctor", body: "Their specialties and the MCC services they’re mapped to." },
       { target: "profile-book", title: "Book with this doctor", body: "Start a booking pre-set to this doctor." },
     ],
   },
@@ -126,7 +126,7 @@ export const PATIENT_TOURS = {
     steps: [
       { target: "booking-steps", title: "Six simple steps", body: "Choose a service, doctor, date and time, then review and confirm." },
       { target: "booking-summary", title: "Your selections", body: "Your choices stay visible here as you go, so you can always see what you’re booking." },
-      { target: "booking-availability-note", title: "Prototype availability", body: "Times shown are prototype availability — not an official MCC schedule." },
+      { target: "booking-availability-note", title: "Availability", body: "Times shown are example availability, not an official MCC schedule." },
     ],
   },
   appointments: {

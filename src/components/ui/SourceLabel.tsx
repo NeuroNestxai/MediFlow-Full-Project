@@ -5,7 +5,7 @@ const SOURCE_TEXT: Record<InfoSource, string> = {
   "patient-reported": "Patient-reported",
   "ai-organized": "AI-organized",
   "doctor-approved": "Doctor-approved",
-  "prototype-data": "Prototype data",
+  "prototype-data": "Example data",
 };
 
 export interface SourceLabelProps {

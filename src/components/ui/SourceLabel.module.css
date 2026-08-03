@@ -1,6 +1,6 @@
 .label {
   display: inline-block;
-  font-size: 10px;
+  font-size: calc(10px * var(--font-scale));
   font-weight: 700;
   letter-spacing: 0.4px;
   padding: 4px 10px;

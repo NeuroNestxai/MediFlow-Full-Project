@@ -29,13 +29,13 @@
 }
 
 .title {
-  font-size: 18px;
+  font-size: calc(18px * var(--font-scale));
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .description {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-16);
 }

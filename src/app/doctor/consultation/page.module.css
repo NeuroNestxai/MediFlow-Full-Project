@@ -14,7 +14,7 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: calc(22px * var(--font-scale));
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -26,7 +26,7 @@
   border-left: 4px solid var(--color-action-primary);
   border-radius: var(--radius-md);
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -55,7 +55,7 @@
 }
 
 .columnTitle {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
@@ -64,14 +64,14 @@
 }
 
 .patientName {
-  font-size: 17px;
+  font-size: calc(17px * var(--font-scale));
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
 
 .meta {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -85,20 +85,20 @@
 }
 
 .blockTitle {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .body {
-  font-size: 13.5px;
-  line-height: 20px;
+  font-size: calc(13.5px * var(--font-scale));
+  line-height: calc(20px * var(--font-scale));
   color: var(--color-text-primary);
   white-space: pre-wrap;
 }
 
 .muted {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
@@ -115,7 +115,7 @@
 }
 
 .saveStatus {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   min-height: 16px;
   color: var(--color-text-secondary);
 }
@@ -126,7 +126,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
   color: var(--color-text-primary);
 }
 
@@ -136,7 +136,7 @@
   border: 1px dashed var(--color-border-default);
   border-radius: var(--radius-md);
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -163,7 +163,7 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -178,7 +178,7 @@
 }
 
 .legend {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
   padding: 0;
@@ -196,7 +196,7 @@
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   font-weight: 600;
   cursor: pointer;
   min-height: 40px;
@@ -209,7 +209,7 @@
 }
 
 .formError {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -221,6 +221,6 @@
 }
 
 .sendNotice {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
 }

@@ -16,19 +16,19 @@
 }
 
 .name {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
   font-weight: 700;
   color: var(--color-text-primary);
   font-family: var(--font-display);
 }
 
 .specialty {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 
 .protoNote {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--font-scale));
   color: var(--color-text-secondary);
   opacity: 0.75;
 }
@@ -40,7 +40,7 @@
 }
 
 .tag {
-  font-size: 10px;
+  font-size: calc(10px * var(--font-scale));
   font-weight: 600;
   padding: 3px 8px;
   border-radius: var(--radius-full);
@@ -49,7 +49,7 @@
 }
 
 .tagAccent {
-  font-size: 10px;
+  font-size: calc(10px * var(--font-scale));
   font-weight: 600;
   padding: 3px 8px;
   border-radius: var(--radius-full);
@@ -58,7 +58,7 @@
 }
 
 .availability {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   color: var(--color-accent-teal);
 }

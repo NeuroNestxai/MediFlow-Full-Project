@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Manrope, Inter } from "next/font/google";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
+import { AppearanceProvider } from "@/components/appearance/AppearanceProvider";
 import "./globals.css";
 
 // Load the actual Figma-specified typefaces (Manrope for display type, Inter
@@ -25,19 +26,37 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "MediFlow AI",
-  description: "MCC Clinic appointment and care-navigation prototype (frontend foundation).",
+  description: "MCC Clinic appointment and care-navigation platform.",
 };
+
+// Runs before first paint (in <head>), so the saved accessibility + appearance
+// preferences are applied to <html> synchronously — no flash of the default
+// theme/mode, and no flash of white before dark mode restores.
+const NO_FLASH_SCRIPT = `(function(){try{var d=document.documentElement;
+var a={};try{a=JSON.parse(localStorage.getItem("mediflow.accessibility")||"{}")||{}}catch(e){}
+if(a.colorMode)d.setAttribute("data-color-mode",a.colorMode);
+if(typeof a.reducedMotion==="boolean")d.setAttribute("data-reduced-motion",String(a.reducedMotion));
+else if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)d.setAttribute("data-reduced-motion","true");
+if(typeof a.largeText==="boolean")d.setAttribute("data-large-text",String(a.largeText));
+var ap=localStorage.getItem("mediflow.appearance")||"system";
+var dark=ap==="dark"||(ap!=="light"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
+d.setAttribute("data-theme",dark?"dark":"light");}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${manrope.variable} ${inter.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+      </head>
       <body>
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <AccessibilityProvider>
-          <div id="main-content">{children}</div>
-        </AccessibilityProvider>
+        <AppearanceProvider>
+          <AccessibilityProvider>
+            <div id="main-content">{children}</div>
+          </AccessibilityProvider>
+        </AppearanceProvider>
       </body>
     </html>
   );

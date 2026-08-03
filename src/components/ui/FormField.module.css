@@ -5,7 +5,7 @@
 }
 
 .label {
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -15,13 +15,13 @@
 }
 
 .hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   color: var(--color-text-secondary);
   margin: 0;
 }
 
 .error {
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
   font-weight: 600;
   color: var(--color-status-error-text);
   margin: 0;

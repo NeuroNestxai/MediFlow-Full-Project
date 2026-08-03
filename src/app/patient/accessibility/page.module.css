@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
@@ -29,7 +29,7 @@
   color: var(--color-action-primary);
   font-family: inherit;
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale));
   cursor: pointer;
 }
 
@@ -38,7 +38,7 @@
 }
 
 .previewHint {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--font-scale));
   color: var(--color-text-secondary);
 }
 

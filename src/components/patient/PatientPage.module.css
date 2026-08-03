@@ -40,20 +40,20 @@
 .title {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 26px;
+  font-size: calc(26px * var(--font-scale));
   line-height: 1.15;
   color: var(--color-text-primary);
 }
 
 @media (min-width: 768px) {
   .title {
-    font-size: 30px;
+    font-size: calc(30px * var(--font-scale));
   }
 }
 
 .description {
   margin-top: 6px;
-  font-size: 14px;
+  font-size: calc(14px * var(--font-scale));
   line-height: 1.55;
   color: var(--color-text-secondary);
   max-width: 640px;
@@ -84,7 +84,7 @@
 .sectionTitle {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 18px;
+  font-size: calc(18px * var(--font-scale));
   color: var(--color-text-primary);
 }
 
