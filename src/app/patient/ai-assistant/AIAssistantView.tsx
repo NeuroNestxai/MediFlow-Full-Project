@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { FloOrb, type FloState } from "@/components/ai/FloOrb";
 import { ChatBubble } from "@/components/ai/ChatBubble";
 import { PromptChip } from "@/components/ai/Chips";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
-import { fetchServices } from "@/lib/patient/client-data";
-import type { DirectoryService } from "@/lib/patient/types";
+import {
+  fetchServices,
+  fetchDoctors,
+  fetchAvailableSlots,
+  createAppointment,
+} from "@/lib/patient/client-data";
+import type { DirectoryDoctor, DirectoryService } from "@/lib/patient/types";
+import { ChatBookingCard, type BookingState } from "./ChatBookingCard";
 import styles from "./page.module.css";
 
 interface Message {
@@ -63,6 +69,42 @@ function looksLikeBooking(reply: string): boolean {
   return /\b(book|booking|appointment|schedule|slot|availab)/i.test(reply);
 }
 
+/** The doctor a reply names, matched against the real directory. */
+function namedDoctor(reply: string, doctors: DirectoryDoctor[]): DirectoryDoctor | null {
+  const haystack = matchKey(reply);
+  const hits = doctors.filter((d) => {
+    // Compare on the name without the honorific — the assistant writes
+    // "Dr. Samar Al Sinani", the directory stores "Dr. Samar Al Sinani" or
+    // "Samar Al Sinani" depending on the row.
+    const key = matchKey(d.fullName.replace(/^dr\.?\s*/i, ""));
+    return key.length > 5 && haystack.includes(key);
+  });
+  return hits.sort((a, b) => b.fullName.length - a.fullName.length)[0] ?? null;
+}
+
+/**
+ * The date/time the assistant appeared to propose, as `{date, time}` or null.
+ * Only used to preselect a slot that we have independently confirmed is free —
+ * it is never trusted as a booking on its own.
+ */
+function proposedDateTime(reply: string): { date: string | null; time: string | null } {
+  const iso = reply.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  const clock = reply.match(/\b(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+  let time: string | null = null;
+  if (clock) {
+    let h = Number(clock[1]);
+    const m = clock[2];
+    const mer = clock[3]?.toLowerCase();
+    if (mer === "pm" && h < 12) h += 12;
+    if (mer === "am" && h === 12) h = 0;
+    time = `${String(h).padStart(2, "0")}:${m}`;
+  }
+  return { date: iso ? `${iso[1]}-${iso[2]}-${iso[3]}` : null, time };
+}
+
+/** Max real slots offered inside the chat before sending them to the full flow. */
+const CHAT_SLOT_LIMIT = 6;
+
 const PROMPTS = [
   "Hello, what can you help me with?",
   "I need a dental cleaning.",
@@ -97,23 +139,105 @@ export function AIAssistantView() {
   const [lastFailed, setLastFailed] = useState<string | null>(null);
   const inputId = useId();
   const bottomRef = useRef<HTMLDivElement>(null);
-  /** MCC service directory, used only to offer a booking handover. */
+  /** MCC directory, used only to resolve what a reply names. */
   const servicesRef = useRef<DirectoryService[]>([]);
+  const doctorsRef = useRef<DirectoryDoctor[]>([]);
 
-  // Load the directory once so replies can be matched to real services. A
-  // failure here is silent by design: the chat still works, it simply cannot
-  // offer the shortcut.
+  /** Booking offer attached to the most recent reply, if one could be resolved. */
+  const [booking, setBooking] = useState<BookingState | null>(null);
+  const [slotId, setSlotId] = useState<string | null>(null);
+  /**
+   * Recent turns from BOTH sides.
+   *
+   * A booking is agreed across a conversation, not in one sentence — by the
+   * time the assistant says "what is your name?", the service and doctor were
+   * settled two turns earlier. Resolving against only the last reply misses
+   * almost every real booking.
+   */
+  const historyRef = useRef<string[]>([]);
+
+  // Load the directory once so replies can be matched to real services and
+  // doctors. A failure here is silent by design: the chat still works, it
+  // simply cannot offer the booking shortcut.
   useEffect(() => {
     let active = true;
-    fetchServices()
-      .then((list) => {
-        if (active) servicesRef.current = list;
+    Promise.all([fetchServices(), fetchDoctors()])
+      .then(([s, d]) => {
+        if (!active) return;
+        servicesRef.current = s;
+        doctorsRef.current = d;
       })
       .catch(() => {});
     return () => {
       active = false;
     };
   }, []);
+
+  /**
+   * Turn a reply into a bookable offer.
+   *
+   * Nothing the assistant says is trusted. The doctor and service must resolve
+   * to real directory rows, and the times come from `get_available_slots_v2`
+   * — so an invented or already-taken time can never be offered.
+   */
+  const openBooking = useCallback(
+    async (service: DirectoryService, doctor: DirectoryDoctor, reply: string) => {
+      setSlotId(null);
+      setBooking({ status: "resolving", service, doctor });
+      try {
+        const all = await fetchAvailableSlots(doctor.id, service.id);
+        if (!all.length) {
+          setBooking({ status: "unavailable", service, doctor });
+          return;
+        }
+        const want = proposedDateTime(reply);
+        const proposed =
+          all.find(
+            (s) =>
+              (!want.date || s.date === want.date) &&
+              (!want.time || s.time.slice(0, 5) === want.time),
+          ) ?? null;
+        // Show the proposed slot first when it is genuinely free, then the
+        // next real openings.
+        const rest = all.filter((s) => s.availabilityId !== proposed?.availabilityId);
+        const slots = (proposed ? [proposed, ...rest] : rest).slice(0, CHAT_SLOT_LIMIT);
+        setSlotId(proposed?.availabilityId ?? null);
+        setBooking({ status: "ready", service, doctor, slots, proposed });
+      } catch {
+        setBooking({ status: "unavailable", service, doctor });
+      }
+    },
+    [],
+  );
+
+  const confirmBooking = useCallback(async () => {
+    if (!booking || booking.status !== "ready" || !slotId) return;
+    const { service, doctor } = booking;
+    setBooking({ status: "booking", service, doctor });
+    const result = await createAppointment({
+      doctorId: doctor.id,
+      serviceId: service.id,
+      availabilityId: slotId,
+      notes: null,
+    });
+    if (result.ok) {
+      setBooking({
+        status: "booked",
+        service,
+        doctor,
+        reference: result.reference,
+        date: result.date,
+        time: result.time,
+      });
+    } else {
+      setBooking({ status: "failed", service, doctor, conflict: result.conflict });
+    }
+  }, [booking, slotId]);
+
+  const reopenBooking = useCallback(() => {
+    if (!booking) return;
+    void openBooking(booking.service, booking.doctor, "");
+  }, [booking, openBooking]);
 
   // Auto-scroll to the newest message (ref effect only — no state updates).
   useEffect(() => {
@@ -134,17 +258,30 @@ export function AIAssistantView() {
       const data = (await res.json()) as { reply?: unknown };
       const reply = typeof data.reply === "string" ? data.reply.trim() : "";
       if (!reply) throw new Error("empty_reply");
-      const suggested = suggestedServices(reply, servicesRef.current);
+      historyRef.current = [...historyRef.current, reply].slice(-8);
+      // Resolve against the recent conversation, newest first, so the most
+      // recently named service/doctor wins if the patient changed their mind.
+      const context = [...historyRef.current].reverse().join("\n");
+      const suggested = suggestedServices(context, servicesRef.current);
+      const doctor = namedDoctor(context, doctorsRef.current);
+      // Service + doctor both resolved → offer booking right here in the chat.
+      // Otherwise fall back to the pre-filled booking flow, or the picker.
+      const bookable = suggested.length === 1 && doctor ? { service: suggested[0], doctor } : null;
       setMessages((prev) => [
         ...prev,
         {
           id: `${Date.now()}-ai`,
           sender: "ai",
           text: reply,
-          suggested,
-          bookingIntent: suggested.length === 0 && looksLikeBooking(reply),
+          suggested: bookable ? [] : suggested,
+          bookingIntent: !bookable && suggested.length === 0 && looksLikeBooking(reply),
         },
       ]);
+      if (bookable) {
+        void openBooking(bookable.service, bookable.doctor, context);
+      } else {
+        setBooking(null);
+      }
       setLastFailed(null);
       setFloState("responding");
       window.setTimeout(() => setFloState("idle"), 800);
@@ -161,6 +298,10 @@ export function AIAssistantView() {
     const t = text.trim();
     if (!t || sending) return; // duplicate-submission prevention
     setMessages((prev) => [...prev, { id: `${Date.now()}-p`, sender: "patient", text: t }]);
+    // The patient's own words matter for resolution: they are usually the one
+    // who names the service ("I want Cleaning & whitening"), and matching a
+    // service name the patient typed themselves is not the assistant guessing.
+    historyRef.current = [...historyRef.current, t].slice(-8);
     setDraft("");
     void callApi(t);
   }
@@ -176,6 +317,11 @@ export function AIAssistantView() {
     setError(null);
     setLastFailed(null);
     setFloState("idle");
+    // A new conversation must not inherit the previous one's service/doctor,
+    // or the next booking offer could be for the wrong appointment entirely.
+    historyRef.current = [];
+    setBooking(null);
+    setSlotId(null);
   }
 
   function talkToReception() {
@@ -241,6 +387,15 @@ export function AIAssistantView() {
               ) : null}
             </div>
           ))}
+          {booking ? (
+            <ChatBookingCard
+              state={booking}
+              selectedId={slotId}
+              onSelect={setSlotId}
+              onConfirm={() => void confirmBooking()}
+              onRetry={reopenBooking}
+            />
+          ) : null}
           {sending ? (
             <p className={styles.subtitle} role="status">
               MediFlow is typing…
