@@ -4,12 +4,14 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthTabs } from "@/components/auth/AuthTabs";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
 import { createClient } from "@/lib/supabase/client";
 import { safeAuthMessage } from "@/lib/supabase/auth-messages";
-import styles from "./page.module.css";
+import styles from "@/components/auth/authForm.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -103,66 +105,71 @@ export function SignInForm({ confirmationError = false }: { confirmationError?: 
   }
 
   return (
-    <AuthShell active="sign-in">
+    <AuthShell>
       <div aria-live="assertive" className="sr-only">
         {announcement}
       </div>
-      <div>
-        <h1 className={styles.title}>Sign in to MediFlow</h1>
-        <p className={styles.subtitle}>Patients, doctors, and clinic staff sign in here.</p>
 
-        {formError ? (
-          <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
-            {formError}
-          </div>
-        ) : null}
+      <AuthTabs active="sign-in" />
 
-        <form onSubmit={onSubmit} noValidate className={styles.form}>
-          <FormField label="Email" htmlFor="email" error={errors.email} required>
-            {({ describedBy }) => (
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => handleEmailChange(e.target.value)}
-                invalid={Boolean(errors.email)}
-                aria-describedby={describedBy}
-                autoComplete="username"
-                disabled={submitting}
-              />
-            )}
-          </FormField>
+      <h1 className={styles.title}>Welcome back</h1>
+      <p className={styles.subtitle}>
+        Patients, doctors, and reception staff sign in using their assigned account.
+      </p>
 
-          <FormField label="Password" htmlFor="password" error={errors.password} required>
-            {({ describedBy }) => (
-              <Input
-                id="password"
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => handlePasswordChange(e.target.value)}
-                invalid={Boolean(errors.password)}
-                aria-describedby={describedBy}
-                autoComplete="current-password"
-                disabled={submitting}
-              />
-            )}
-          </FormField>
-
-          <Button type="submit" variant="primary" fullWidth disabled={submitting}>
-            {submitting ? "Signing In…" : "Sign In"}
-          </Button>
-        </form>
-
-        <div className={styles.links}>
-          <Link href="/auth/forgot-password" className={styles.link}>
-            Forgot Password?
-          </Link>
-          <Link href="/auth/patient/sign-up" className={styles.link}>
-            Create Patient Account
-          </Link>
+      {formError ? (
+        <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
+          {formError}
         </div>
+      ) : null}
+
+      <form onSubmit={onSubmit} noValidate className={styles.form}>
+        <FormField label="Email" htmlFor="email" error={errors.email} required>
+          {({ describedBy }) => (
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => handleEmailChange(e.target.value)}
+              invalid={Boolean(errors.email)}
+              aria-describedby={describedBy}
+              autoComplete="username"
+              disabled={submitting}
+            />
+          )}
+        </FormField>
+
+        <PasswordField
+          id="password"
+          label="Password"
+          value={password}
+          onChange={handlePasswordChange}
+          error={errors.password}
+          autoComplete="current-password"
+          placeholder="Your password"
+          disabled={submitting}
+        />
+
+        <Button
+          type="submit"
+          variant="primary"
+          fullWidth
+          disabled={submitting}
+          aria-busy={submitting}
+          className={styles.submit}
+        >
+          {submitting ? "Signing in…" : "Sign In"}
+        </Button>
+      </form>
+
+      <div className={styles.links}>
+        <Link href="/auth/forgot-password" className={styles.link}>
+          Forgot Password?
+        </Link>
+        <Link href="/auth/patient/sign-up" className={styles.link}>
+          Create Patient Account
+        </Link>
       </div>
     </AuthShell>
   );

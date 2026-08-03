@@ -1,160 +1,205 @@
-.page {
+.shell {
+  min-height: 100vh;
   min-height: 100dvh;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg-page);
+  overflow-x: hidden;
 }
 
-/* Two-up from tablet width. Below that the brand panel is dropped entirely
-   rather than stacked — on a phone it would push the form below the fold. */
-@media (min-width: 900px) {
-  .page {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-/* ---- Brand side ---- */
+/* ------------------------------------------------------------------ */
+/* Brand panel                                                         */
+/* ------------------------------------------------------------------ */
 .brand {
-  display: none;
   position: relative;
   overflow: hidden;
-  padding: var(--spacing-48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 28px calc(28px + env(safe-area-inset-top));
   background:
-    radial-gradient(circle at 18% 22%, var(--color-accent-teal-subtle) 0%, transparent 55%),
-    radial-gradient(circle at 78% 78%, var(--color-accent-violet-subtle) 0%, transparent 55%),
-    var(--color-bg-surface);
+    radial-gradient(120% 90% at 15% 10%, var(--color-accent-teal-subtle) 0%, transparent 55%),
+    radial-gradient(120% 90% at 90% 100%, var(--color-accent-violet-subtle) 0%, transparent 55%),
+    linear-gradient(160deg, #eef4f8 0%, #eef0f8 55%, #efeaf7 100%);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
-@media (min-width: 900px) {
-  .brand {
-    display: grid;
-    place-items: center;
-  }
+.decoration {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.14;
+  pointer-events: none;
 }
 
 .brandInner {
-  max-width: 30rem;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  gap: 12px;
+  max-width: 420px;
 }
 
 .brandMark {
-  display: block;
-  margin: 0 auto var(--spacing-24);
+  margin-bottom: 16px;
+}
+
+/* Compact brand for mobile: scale the mark down (its px size is fixed inline,
+   so a transform is the clean way to shrink it responsively). */
+@media (max-width: 859px) {
+  .brandMark {
+    transform: scale(0.66);
+    transform-origin: center bottom;
+    margin-bottom: -6px;
+  }
 }
 
 .brandName {
   font-family: var(--font-display);
-  font-size: var(--text-display-size);
-  line-height: var(--text-display-line);
   font-weight: 800;
+  font-size: 30px;
+  line-height: 1.1;
   color: var(--color-text-primary);
 }
 
-.tagline {
-  margin-top: var(--spacing-8);
+.brandTagline {
   font-family: var(--font-display);
-  font-size: var(--text-section-title-size);
-  line-height: var(--text-section-title-line);
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-action-primary);
 }
 
-.brandBody {
-  margin-top: var(--spacing-16);
-  font-size: var(--text-body-size);
-  line-height: var(--text-body-line);
+.brandDescription {
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--color-text-secondary);
+  max-width: 380px;
 }
 
-.chip {
-  display: inline-block;
-  margin-top: var(--spacing-24);
-  padding: var(--spacing-8) var(--spacing-16);
-  font-size: var(--text-supporting-size);
+.brandContext {
+  margin-top: 6px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-soft);
+  padding: 6px 14px;
 }
 
-/* ---- Form side ---- */
-.formSide {
-  display: grid;
-  place-items: center;
-  padding: var(--spacing-24);
+/* ------------------------------------------------------------------ */
+/* Form panel                                                          */
+/* ------------------------------------------------------------------ */
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.panelBar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 14px 16px;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+
+.formArea {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 20px calc(40px + env(safe-area-inset-bottom));
 }
 
 .card {
   width: 100%;
-  max-width: 30rem;
-  padding: var(--spacing-32);
+  max-width: 460px;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
+  padding: 32px;
 }
 
-@media (max-width: 480px) {
-  .card {
-    padding: var(--spacing-24);
-    border: 0;
-    box-shadow: none;
-    background: transparent;
-  }
-}
-
-.compactBrand {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--spacing-24);
-}
-
-@media (min-width: 900px) {
-  .compactBrand {
+/* ------------------------------------------------------------------ */
+/* Compact brand for mobile (default): keep symbol + name + tagline    */
+/* only, so the form is never pushed far down the page.                */
+/* ------------------------------------------------------------------ */
+@media (max-width: 859px) {
+  .brandDescription,
+  .brandContext {
     display: none;
   }
+  .brand {
+    padding: calc(20px + env(safe-area-inset-top)) 24px 20px;
+  }
+  .brandName {
+    font-size: 24px;
+  }
+  .brandTagline {
+    font-size: 14px;
+  }
+  .panelBar {
+    padding-top: 12px;
+  }
 }
 
-/* ---- Tabs ---- */
-.tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-  margin-bottom: var(--spacing-24);
-  background: var(--color-action-primary-subtle);
-  border-radius: var(--radius-full);
+@media (max-width: 380px) {
+  .card {
+    padding: 24px 20px;
+  }
+  .formArea {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
 }
 
-.tab {
-  display: grid;
-  place-items: center;
-  min-height: 44px;
-  padding: 0 var(--spacing-16);
-  font-size: var(--text-button-size);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  border-radius: var(--radius-full);
-  transition: background var(--motion-duration-fast) var(--motion-easing);
+/* ------------------------------------------------------------------ */
+/* Desktop / large tablet: true full-height split screen               */
+/* ------------------------------------------------------------------ */
+@media (min-width: 860px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 44fr 56fr;
+  }
+  .brand {
+    border-bottom: none;
+    border-right: 1px solid var(--color-border-default);
+    padding: 48px 40px;
+  }
+  .brandName {
+    font-size: 34px;
+  }
+  .formArea {
+    align-items: center;
+    padding: 24px 40px 48px;
+  }
+  .card {
+    max-width: 500px;
+  }
 }
 
-.tab:hover {
-  color: var(--color-text-primary);
+@media (min-width: 1200px) {
+  .grid,
+  .brand {
+    padding: 56px 56px;
+  }
+  .card {
+    padding: 40px;
+  }
 }
 
-/* The selected tab is marked by background, weight AND aria-current — not by
-   colour alone. */
-.tabActive {
-  color: var(--color-text-primary);
-  font-weight: 700;
-  background: var(--color-bg-surface);
-  box-shadow: var(--shadow-soft);
-}
-
-.tab:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
+/* Honour reduced motion: nothing animates here, but keep the promise
+   explicit so future edits don't regress it. */
+@media (prefers-reduced-motion: reduce) {
+  .decoration {
+    /* no animation to disable — decoration is intentionally static */
+  }
 }

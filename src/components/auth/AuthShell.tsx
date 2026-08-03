@@ -1,65 +1,95 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { Logo } from "@/components/ui/Logo";
+import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
 import styles from "./AuthShell.module.css";
 
 /**
- * Split-screen shell for the sign-in and sign-up screens: the MediFlow brand
- * on one side, the form on the other.
+ * Shared split-screen shell for every authentication screen (sign in, patient
+ * sign up, forgot / reset password, permission denied). The left brand panel
+ * and the right form panel are one layout; each page only supplies the form
+ * card content as `children`, so spacing, radius, shadow and the accessibility
+ * trigger stay identical across all auth routes.
  *
- * The two tabs are real links, not client state, so each view keeps its own
- * server component — and with it the "already signed in → go to your
- * dashboard" redirect that runs before anything renders.
+ * This is a presentational shell only — it never touches auth state, never
+ * offers a role selector, and does not change which route a form submits to.
  */
-export function AuthShell({
-  active,
-  children,
-}: {
-  active: "sign-in" | "create-account";
-  children: ReactNode;
-}) {
+export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <main className={styles.page}>
-      <section className={styles.brand} aria-hidden="true">
+    <div className={styles.shell}>
+      <aside className={styles.brand} aria-label="About MediFlow AI">
+        <BrandDecoration />
         <div className={styles.brandInner}>
-          <Logo variant="mark" size={260} className={styles.brandMark} />
-          <h2 className={styles.brandName}>MediFlow AI</h2>
-          <p className={styles.tagline}>Guiding you from symptoms to care.</p>
-          <p className={styles.brandBody}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static, pre-sized approved brand symbol; next/image adds no benefit and complicates SSR here */}
+          <img
+            src="/branding/mediflow-symbol.png"
+            alt=""
+            width={136}
+            height={136}
+            className={styles.brandMark}
+            decoding="async"
+          />
+          <p className={styles.brandName}>MediFlow AI</p>
+          <p className={styles.brandTagline}>Guiding you from symptoms to care.</p>
+          <p className={styles.brandDescription}>
             A secure MCC Clinic platform that helps patients explore services, find doctors,
             manage appointments, and stay connected throughout their clinic journey.
           </p>
-          <span className={styles.chip}>MCC Clinic · Patient &amp; staff portal</span>
+          <p className={styles.brandContext}>MCC Clinic · Patient &amp; staff portal</p>
         </div>
-      </section>
+      </aside>
 
-      <section className={styles.formSide}>
-        <div className={styles.card}>
-          {/* Visible only on narrow screens, where the brand panel is hidden. */}
-          <div className={styles.compactBrand}>
-            <Logo variant="lockup" size={30} />
-          </div>
-
-          <nav className={styles.tabs} aria-label="Account">
-            <Link
-              href="/auth/sign-in"
-              className={`${styles.tab} ${active === "sign-in" ? styles.tabActive : ""}`}
-              aria-current={active === "sign-in" ? "page" : undefined}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/auth/patient/sign-up"
-              className={`${styles.tab} ${active === "create-account" ? styles.tabActive : ""}`}
-              aria-current={active === "create-account" ? "page" : undefined}
-            >
-              Create account
-            </Link>
-          </nav>
-
-          {children}
+      <div className={styles.panel}>
+        <div className={styles.panelBar}>
+          <AccessibilityMenu variant="pill" />
         </div>
-      </section>
-    </main>
+        <main className={styles.formArea} id="auth-main">
+          <div className={styles.card}>{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/** Calm, static brand decoration: flowing guide paths + connected nodes in the
+ * approved teal/blue/violet palette. No motion, no glow, low contrast. */
+function BrandDecoration() {
+  return (
+    <svg
+      className={styles.decoration}
+      viewBox="0 0 400 600"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <linearGradient id="auth-path" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#12A9AE" />
+          <stop offset="55%" stopColor="#4A6FB0" />
+          <stop offset="100%" stopColor="#9179C6" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M-20 90 C120 140 90 250 200 300 C310 350 280 470 420 500"
+        fill="none"
+        stroke="url(#auth-path)"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M-20 200 C140 250 120 360 240 400 C340 434 340 520 440 540"
+        fill="none"
+        stroke="url(#auth-path)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+      <g fill="url(#auth-path)">
+        <circle cx="80" cy="118" r="6" />
+        <circle cx="200" cy="300" r="8" />
+        <circle cx="286" cy="360" r="5" />
+        <circle cx="330" cy="150" r="5" />
+        <circle cx="120" cy="470" r="6" />
+        <circle cx="360" cy="470" r="7" />
+      </g>
+    </svg>
   );
 }
