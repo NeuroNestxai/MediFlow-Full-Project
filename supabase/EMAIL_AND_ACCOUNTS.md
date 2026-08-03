@@ -33,13 +33,34 @@ already made and show you the state of all five.
 
 ---
 
-## Fix 2 — Use your own mail server (the real answer)
+## Fix 2 — Send through your own provider (the real answer)
 
-MCC already runs email on Hostinger at `mccoman.com`. Pointing Supabase at that
-mailbox removes the shared limit completely, and it is what any real deployment
-does — the built-in service is explicitly labelled as being for development only.
+Supabase's built-in mailer is labelled for development only. Any real
+deployment plugs in its own SMTP, which removes the shared limit completely.
 
-**Project Settings → Authentication → SMTP Settings → Enable Custom SMTP:**
+**Project Settings → Authentication → SMTP Settings → Enable Custom SMTP.**
+
+### Option A — SendGrid (recommended)
+
+| Field | Value |
+|---|---|
+| Host | `smtp.sendgrid.net` |
+| Port | `587` (STARTTLS) — or `465` for SSL |
+| Username | `apikey` — the literal word, not your key and not an address |
+| Password | the SendGrid API key (`SG.…`) |
+| Sender email | an address **verified in SendGrid** |
+| Sender name | `MediFlow AI` |
+
+The username tripping people up is the classic one: it really is the five
+letters `apikey` for every SendGrid account.
+
+The sender address must be verified in SendGrid first — either *Single Sender
+Verification* for one address, or *Domain Authentication* for all of
+`@mccoman.com`. Unverified senders are rejected outright. Domain authentication
+is the better option: it lets you send as `no-reply@mccoman.com`, and mail from
+the clinic's own domain is far less likely to land in spam.
+
+### Option B — Hostinger, where MCC mail already lives
 
 | Field | Value |
 |---|---|
@@ -47,20 +68,30 @@ does — the built-in service is explicitly labelled as being for development on
 | Port | `465` (SSL) — or `587` for STARTTLS |
 | Username | the full mailbox address, e.g. `no-reply@mccoman.com` |
 | Password | that mailbox's password |
-| Sender email | the same address |
-| Sender name | `MediFlow AI` |
 
-Confirm the exact host and port against Hostinger's own documentation before
-relying on it — providers change them.
+Confirm host and port against Hostinger's own documentation — providers change
+them.
 
-Two things worth knowing:
+### The setting almost everyone forgets
 
-- **Use a dedicated mailbox** such as `no-reply@mccoman.com`, not a person's
+Enabling custom SMTP is **not enough on its own**. Supabase applies its own cap
+on top:
+
+**Authentication → Rate Limits → "Rate limit for sending emails"**
+
+That stays at the low default until you raise it. If mail is still throttled
+after configuring SMTP correctly, this is why.
+
+### Two rules for the sender address
+
+- **Use a dedicated mailbox** such as `no-reply@mccoman.com`, never a person's
   account. Password resets should not arrive from a doctor's inbox, and nobody
-  should have to change application config because a staff member left.
-- Once custom SMTP is on, the rate limit becomes **your mail provider's**
-  limit. Hostinger's is far higher than Supabase's shared allowance, but it is
-  not infinite.
+  should have to edit application config because a staff member left.
+- After custom SMTP, the ceiling becomes **your provider's** limit. Far higher
+  than Supabase's shared allowance — but not infinite.
+
+The API key goes straight into the Supabase dashboard. It never belongs in the
+repository, in `.env.local`, or in a chat message.
 
 ---
 
