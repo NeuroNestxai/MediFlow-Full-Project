@@ -118,3 +118,30 @@
   font-family: var(--font-display);
   color: var(--color-text-primary);
 }
+
+/* ---------------------------------------------------------------------------
+   Booking handover.
+   The assistant proposes; the patient confirms in the real booking flow. This
+   block is the seam between the two, so it is styled as an action the patient
+   takes rather than as part of the assistant's reply.
+   --------------------------------------------------------------------------- */
+.handoff {
+  margin: var(--spacing-8) 0 var(--spacing-16);
+  padding: var(--spacing-16);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+
+.handoffNote {
+  margin-bottom: var(--spacing-8);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-line);
+  color: var(--color-text-secondary);
+}
+
+.handoffActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
