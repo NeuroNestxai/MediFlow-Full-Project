@@ -25,7 +25,11 @@ yarn-error.log*
 
 # local env files — never commit real secrets
 .env
-.env*.local
+.env*
+# …but the templates must ship: they contain no secrets, and without them
+# a fresh clone has nothing to copy to .env.local.
+!.env.example
+!.env*.example.local
 .env.development
 .env.production
 
@@ -36,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*
+# …but the templates must ship: they contain no secrets, and without them
+# a fresh clone has nothing to copy to .env.local.
+!.env.example
+!.env*.example
