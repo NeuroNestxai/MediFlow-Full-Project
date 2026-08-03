@@ -12,7 +12,15 @@ import type { DirectoryDoctor, PatientAppointment } from "@/lib/patient/types";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import styles from "./page.module.css";
 
-const UPCOMING_STATUSES = ["scheduled", "confirmed", "checked_in"];
+// Includes the in-clinic statuses: while a patient is waiting or with the
+// doctor, that visit is still the one their dashboard should be showing.
+const UPCOMING_STATUSES = [
+  "scheduled",
+  "confirmed",
+  "checked_in",
+  "waiting",
+  "in_consultation",
+];
 
 type LoadState =
   | { status: "loading" }

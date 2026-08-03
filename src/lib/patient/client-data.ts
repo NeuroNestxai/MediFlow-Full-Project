@@ -395,6 +395,76 @@ export async function deleteDocument(doc: PatientDocument): Promise<{ ok: boolea
   return { ok: !metaErr };
 }
 
+/** A doctor-approved follow-up as the patient sees it. */
+export interface PatientFollowUp {
+  id: string;
+  followUpType: string;
+  typeLabel: string;
+  dueDate: string;
+  instructions: string;
+  newAppointmentRequired: boolean;
+  doctorName: string | null;
+  createdAt: string;
+}
+
+const FOLLOW_UP_TYPE_LABEL: Record<string, string> = {
+  recheck: "Recheck",
+  test_review: "Test review",
+  medication_review: "Medication review",
+  general_check_in: "General check-in",
+};
+
+/**
+ * The signed-in patient's follow-ups.
+ *
+ * RLS returns only rows the doctor has actually approved — drafts are
+ * invisible here, and `internal_notes` is deliberately never selected. The
+ * status filter below is defence in depth, not the security boundary.
+ */
+export async function fetchMyFollowUps(): Promise<
+  { status: "ready"; followUps: PatientFollowUp[] } | { status: "unavailable" | "error" }
+> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("follow_ups")
+    .select(
+      "id, follow_up_type, due_date, instructions, new_appointment_required, created_at, doctor:doctors(full_name)",
+    )
+    .in("status", ["approved", "completed"])
+    .order("due_date", { ascending: true });
+
+  if (error) {
+    return { status: isMissingTable(error.code) ? "unavailable" : "error" };
+  }
+
+  interface Row {
+    id: string;
+    follow_up_type: string;
+    due_date: string;
+    instructions: string;
+    new_appointment_required: boolean;
+    created_at: string;
+    doctor: { full_name: string } | { full_name: string }[] | null;
+  }
+
+  const followUps = (data ?? []).map((row) => {
+    const r = row as unknown as Row;
+    const doctor = Array.isArray(r.doctor) ? r.doctor[0] : r.doctor;
+    return {
+      id: r.id,
+      followUpType: r.follow_up_type,
+      typeLabel: FOLLOW_UP_TYPE_LABEL[r.follow_up_type] ?? "Follow-up",
+      dueDate: r.due_date,
+      instructions: r.instructions,
+      newAppointmentRequired: r.new_appointment_required,
+      doctorName: doctor?.full_name ?? null,
+      createdAt: r.created_at,
+    };
+  });
+
+  return { status: "ready", followUps };
+}
+
 export type RescheduleResult =
   | { ok: true; reference: string; date: string; time: string; status: DbAppointmentStatus }
   | { ok: false; conflict: boolean };

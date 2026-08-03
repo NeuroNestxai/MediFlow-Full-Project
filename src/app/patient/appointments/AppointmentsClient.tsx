@@ -58,9 +58,17 @@ export function AppointmentsClient() {
   const visible = useMemo(() => {
     if (state.status !== "ready") return [];
     return state.appointments.filter((a) => {
-      if (tab === "Upcoming") return ["scheduled", "confirmed", "checked_in"].includes(a.status);
-      if (tab === "Completed") return a.status === "completed";
-      return a.status === "cancelled";
+      // Every status must fall into exactly one tab, or a visit disappears
+      // from the patient's history. `waiting` and `in_consultation` mean the
+      // patient is at the clinic right now, so they belong under Upcoming;
+      // `checked_out` is a finished visit, so it belongs under Completed.
+      if (tab === "Upcoming") {
+        return ["scheduled", "confirmed", "checked_in", "waiting", "in_consultation"].includes(
+          a.status,
+        );
+      }
+      if (tab === "Completed") return ["completed", "checked_out"].includes(a.status);
+      return ["cancelled", "no_show"].includes(a.status);
     });
   }, [state, tab]);
 

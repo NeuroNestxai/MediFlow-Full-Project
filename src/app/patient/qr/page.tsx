@@ -6,8 +6,19 @@ import { QRView } from "./QRView";
 
 export const dynamic = "force-dynamic";
 
-// A check-in QR is only meaningful for a still-active visit.
-const ACTIVE_QR_STATUSES = ["scheduled", "confirmed", "checked_in"];
+// The same QR is scanned twice: once by reception to check in, and again to
+// check out after the consultation. It must therefore stay active for the
+// whole visit — including `completed`, which is exactly when reception scans
+// it the second time. Only a finished (`checked_out`) or abandoned visit
+// retires the code.
+const ACTIVE_QR_STATUSES = [
+  "scheduled",
+  "confirmed",
+  "checked_in",
+  "waiting",
+  "in_consultation",
+  "completed",
+];
 
 export default async function QRPage({
   searchParams,
