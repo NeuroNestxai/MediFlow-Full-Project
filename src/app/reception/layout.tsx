@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
+import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
 import { ReceptionBottomNav } from "@/components/layout/ReceptionBottomNav";
 
 const links = [
@@ -25,6 +26,7 @@ export default function ReceptionLayout({ children }: { children: ReactNode }) {
         roleTag="Reception View"
         homeHref="/reception/dashboard"
       />
+      <MobileBrandBar homeHref="/reception/dashboard" />
       <main>{children}</main>
       <ReceptionBottomNav />
     </div>

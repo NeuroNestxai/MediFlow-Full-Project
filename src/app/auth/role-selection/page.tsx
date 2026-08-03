@@ -15,7 +15,7 @@ export default function RoleSelectionPage() {
   return (
     <main className={styles.page}>
       <div className={styles.header}>
-        <Logo variant="lockup" size={40} />
+        <Logo variant="header" size={46} />
         <p className={styles.tagline}>INQUIRY · DOCTOR · APPOINTMENT</p>
       </div>
 

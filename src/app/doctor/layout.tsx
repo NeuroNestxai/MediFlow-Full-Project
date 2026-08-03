@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
+import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
 import { DoctorBottomNav } from "@/components/layout/DoctorBottomNav";
 
 const links = [
@@ -25,6 +26,7 @@ export default function DoctorLayout({ children }: { children: ReactNode }) {
         roleTag="Clinician"
         homeHref="/doctor/dashboard"
       />
+      <MobileBrandBar homeHref="/doctor/dashboard" />
       <main>{children}</main>
       <DoctorBottomNav />
     </div>

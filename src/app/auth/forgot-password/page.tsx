@@ -2,12 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Logo } from "@/components/ui/Logo";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
 import { createClient } from "@/lib/supabase/client";
-import styles from "./page.module.css";
+import styles from "@/components/auth/authForm.module.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,62 +65,65 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className={styles.page}>
+    <AuthShell>
       <div aria-live="assertive" className="sr-only">
         {announcement}
       </div>
-      <div className={styles.headerRow}>
-        <Logo variant="lockup" size={28} />
-      </div>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Forgot your password?</h1>
-        <p className={styles.subtitle}>
-          Enter your email and we&rsquo;ll send you a link to reset it.
-        </p>
 
-        {sent ? (
-          <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status">
-            If an account exists for that email, a password reset link has been sent. Check your
-            inbox and follow the link to choose a new password.
-          </div>
-        ) : (
-          <>
-            {formError ? (
-              <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
-                {formError}
-              </div>
-            ) : null}
+      <h1 className={styles.title}>Forgot your password?</h1>
+      <p className={styles.subtitle}>
+        Enter your email and we&rsquo;ll send you a link to reset it.
+      </p>
 
-            <form onSubmit={onSubmit} noValidate className={styles.form}>
-              <FormField label="Email" htmlFor="email" error={error} required>
-                {({ describedBy }) => (
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => handleEmailChange(e.target.value)}
-                    invalid={Boolean(error)}
-                    aria-describedby={describedBy}
-                    autoComplete="email"
-                    disabled={submitting}
-                  />
-                )}
-              </FormField>
-
-              <Button type="submit" variant="primary" fullWidth disabled={submitting}>
-                {submitting ? "Sending…" : "Send Reset Link"}
-              </Button>
-            </form>
-          </>
-        )}
-
-        <div className={styles.links}>
-          <Link href="/auth/sign-in" className={styles.link}>
-            Back to Sign In
-          </Link>
+      {sent ? (
+        <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status">
+          If an account exists for that email, a password reset link has been sent. Check your inbox
+          and follow the link to choose a new password.
         </div>
+      ) : (
+        <>
+          {formError ? (
+            <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
+              {formError}
+            </div>
+          ) : null}
+
+          <form onSubmit={onSubmit} noValidate className={styles.form}>
+            <FormField label="Email" htmlFor="email" error={error} required>
+              {({ describedBy }) => (
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  invalid={Boolean(error)}
+                  aria-describedby={describedBy}
+                  autoComplete="email"
+                  disabled={submitting}
+                />
+              )}
+            </FormField>
+
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              disabled={submitting}
+              aria-busy={submitting}
+              className={styles.submit}
+            >
+              {submitting ? "Sending…" : "Send Reset Link"}
+            </Button>
+          </form>
+        </>
+      )}
+
+      <div className={`${styles.links} ${styles.linkCenter}`}>
+        <Link href="/auth/sign-in" className={styles.link}>
+          Back to Sign In
+        </Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

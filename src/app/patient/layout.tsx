@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
+import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
 import { PatientBottomNav } from "@/components/layout/PatientBottomNav";
 import { fetchUnreadCount } from "@/lib/patient/client-data";
 
@@ -39,6 +40,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   return (
     <div>
       <DesktopTopNav links={links} activeHref={pathname} homeHref="/patient/dashboard" />
+      <MobileBrandBar homeHref="/patient/dashboard" />
       <main>{children}</main>
       <PatientBottomNav />
     </div>

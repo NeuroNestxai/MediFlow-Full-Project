@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
+import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
 import styles from "./DesktopTopNav.module.css";
 
 export interface NavLinkItem {
@@ -23,8 +24,8 @@ export interface DesktopTopNavProps {
 export function DesktopTopNav({ links, activeHref, roleTag, homeHref }: DesktopTopNavProps) {
   return (
     <header className={styles.header}>
-      <Link href={homeHref} className={styles.logoLink} aria-label="Go to dashboard">
-        <Logo variant="lockup" size={28} />
+      <Link href={homeHref} className={styles.logoLink} aria-label="MediFlow AI — go to dashboard">
+        <Logo variant="header" size={32} alt="" />
       </Link>
       <nav aria-label="Primary" className={styles.nav}>
         {links.map((link) => {
@@ -41,7 +42,10 @@ export function DesktopTopNav({ links, activeHref, roleTag, homeHref }: DesktopT
           );
         })}
       </nav>
-      {roleTag ? <span className={styles.roleTag}>{roleTag}</span> : <span />}
+      <div className={styles.rightCluster}>
+        {roleTag ? <span className={styles.roleTag}>{roleTag}</span> : null}
+        <AccessibilityMenu variant="pill" />
+      </div>
     </header>
   );
 }

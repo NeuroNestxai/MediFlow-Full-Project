@@ -45,6 +45,13 @@
   color: #ffffff;
 }
 
+.rightCluster {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+}
+
 .roleTag {
   font-size: 11px;
   font-weight: 600;

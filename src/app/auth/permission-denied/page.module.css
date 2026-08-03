@@ -1,16 +1,11 @@
-.page {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 48px 20px 64px;
-  display: flex;
+.icon {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  max-width: 280px;
-  margin: 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-error-bg);
+  color: var(--color-status-error-text);
+  margin-bottom: 16px;
 }

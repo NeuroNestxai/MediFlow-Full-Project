@@ -1,78 +1,81 @@
-"use client";
-
-import { useId } from "react";
 import styles from "./Logo.module.css";
 
+export type LogoVariant = "full" | "header" | "compact" | "icon";
+
 interface LogoProps {
-  variant?: "mark" | "lockup";
+  /**
+   * Which approved lockup to show:
+   * - `full`    — symbol + wordmark + descriptor + tagline (large brand areas)
+   * - `header`  — symbol + "MediFlow" wordmark, horizontal (desktop/tablet header)
+   * - `compact` — same horizontal lockup, tuned for narrow headers
+   * - `icon`    — symbol only (favicon-scale identity, mobile mark)
+   */
+  variant?: LogoVariant;
+  /**
+   * Control size. For `icon`/`header`/`compact` this is the rendered HEIGHT in
+   * px; for `full` it is the rendered WIDTH in px. Aspect ratio is always
+   * preserved from the source artwork, so the logo never stretches or clips.
+   */
   size?: number;
+  /**
+   * Accessible text. Defaults to "MediFlow AI". Pass an empty string when the
+   * logo sits inside an already-labelled link (e.g. a dashboard home link) so
+   * assistive tech does not announce it twice.
+   */
+  alt?: string;
   className?: string;
+  /** Hint the browser to load this image eagerly (e.g. above-the-fold brand). */
+  priority?: boolean;
 }
 
 /**
- * MediFlow logo. Mirrors the Figma "Logo" component set
- * (Type=Mark / Type=Lockup). Text-only wordmark — no final approved
- * logo artwork is embedded here, matching the Figma source of truth.
+ * MediFlow logo — renders the APPROVED artwork extracted from MediFlow.pdf
+ * (see public/branding/). The old programmatically-drawn circular mark has been
+ * retired; this component is the single source for brand imagery across the app.
  *
- * Gradient IDs are generated with `useId()`: DesktopTopNav and MobileHeader
- * both render a Logo instance simultaneously (CSS just hides one per
- * breakpoint, it is never removed from the DOM), so hardcoded gradient IDs
- * would collide across instances on the same page. Each Logo now gets its
- * own unique gradient IDs regardless of how many are mounted at once.
+ * Colours and proportions are never altered here (no CSS filters, no forced
+ * width+height that would distort the ratio). Intrinsic dimensions are set on
+ * the <img> so the layout reserves the right box before the image loads.
  */
-export function Logo({ variant = "lockup", size = 32, className }: LogoProps) {
-  const reactId = useId();
-  const ringGradientId = `mediflow-ring-${reactId}`;
-  const riverGradientId = `mediflow-river-${reactId}`;
+const SOURCES: Record<LogoVariant, { src: string; ratio: number }> = {
+  // ratio = width / height of the source asset
+  full: { src: "/branding/mediflow-full.png", ratio: 820 / 865 },
+  header: { src: "/branding/mediflow-lockup.png", ratio: 1062 / 240 },
+  compact: { src: "/branding/mediflow-lockup.png", ratio: 1062 / 240 },
+  icon: { src: "/branding/mediflow-symbol.png", ratio: 1 },
+};
 
-  const mark = (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
-      role="img"
-      aria-label="MediFlow AI"
-      className={styles.mark}
-    >
-      <circle
-        cx="50"
-        cy="50"
-        r="38"
-        fill="none"
-        stroke={`url(#${ringGradientId})`}
-        strokeWidth="6"
-        strokeLinecap="round"
-        strokeDasharray="215 30"
-      />
-      <path
-        d="M29 37 C21 51 33 57 28 67"
-        fill="none"
-        stroke={`url(#${riverGradientId})`}
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-      <defs>
-        <linearGradient id={ringGradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#12A9AE" />
-          <stop offset="55%" stopColor="#3B4A87" />
-          <stop offset="100%" stopColor="#9179C6" />
-        </linearGradient>
-        <linearGradient id={riverGradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#9179C6" />
-          <stop offset="100%" stopColor="#3B4A87" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
+const DEFAULT_SIZE: Record<LogoVariant, number> = {
+  full: 320, // width
+  header: 34, // height
+  compact: 28, // height
+  icon: 28, // height
+};
 
-  if (variant === "mark") {
-    return <span className={className}>{mark}</span>;
-  }
+export function Logo({
+  variant = "header",
+  size,
+  alt = "MediFlow AI",
+  className,
+  priority,
+}: LogoProps) {
+  const { src, ratio } = SOURCES[variant];
+  const s = size ?? DEFAULT_SIZE[variant];
+
+  // `full` is sized by width; the lockups/icon are sized by height.
+  const width = variant === "full" ? s : Math.round(s * ratio);
+  const height = variant === "full" ? Math.round(s / ratio) : s;
 
   return (
-    <span className={`${styles.lockup} ${className ?? ""}`}>
-      {mark}
-      <span className={styles.wordmark}>MediFlow AI</span>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element -- static, pre-sized brand asset; next/image adds no benefit here and complicates SSR/client dual use
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      className={`${styles.logo} ${variant === "full" ? styles.full : styles.lockup} ${className ?? ""}`}
+      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+    />
   );
 }

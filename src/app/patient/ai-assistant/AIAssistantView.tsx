@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { FloOrb, type FloState } from "@/components/ai/FloOrb";
-import { ChatBubble } from "@/components/ai/ChatBubble";
+import { ChatBubble, ThinkingBubble } from "@/components/ai/ChatBubble";
 import { PromptChip } from "@/components/ai/Chips";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import styles from "./page.module.css";
@@ -15,14 +15,17 @@ interface Message {
 }
 
 const PROMPTS = [
-  "Hello, what can you help me with?",
+  "What can MediFlow help me with?",
   "I need a dental cleaning.",
   "I need a check-up for my child's teeth.",
   "Which doctors handle chronic care?",
 ];
 
+const GREETING = "Hello. How can MediFlow guide you today?";
 const SAFETY_LINE =
   "MediFlow can help you navigate MCC services and appointments. It does not diagnose, prescribe, assess severity or urgency, perform triage, or provide emergency decisions.";
+const PLACEHOLDER = "Ask about MCC services, doctors, or appointments…";
+const MAX_MESSAGE = 2000;
 
 const SESSION_KEY = "mediflow_chat_session";
 
@@ -48,11 +51,23 @@ export function AIAssistantView() {
   const [lastFailed, setLastFailed] = useState<string | null>(null);
   const inputId = useId();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const started = messages.length > 0;
 
   // Auto-scroll to the newest message (ref effect only — no state updates).
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "end" });
   }, [messages, sending, reducedMotion]);
+
+  // Auto-grow the composer to fit its content, capped so it never takes over
+  // the screen. Runs whenever the draft changes (incl. reset to empty).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [draft]);
 
   async function callApi(text: string) {
     setSending(true);
@@ -71,19 +86,22 @@ export function AIAssistantView() {
       setMessages((prev) => [...prev, { id: `${Date.now()}-ai`, sender: "ai", text: reply }]);
       setLastFailed(null);
       setFloState("responding");
-      window.setTimeout(() => setFloState("idle"), 800);
+      window.setTimeout(() => setFloState("idle"), 900);
     } catch {
       setError("MediFlow couldn't respond just now. Please try again.");
       setLastFailed(text);
-      setFloState("idle");
+      setFloState("error");
+      window.setTimeout(() => setFloState("idle"), 1400);
     } finally {
       setSending(false);
+      // Keep the composer usable for the next question.
+      window.setTimeout(() => textareaRef.current?.focus(), 0);
     }
   }
 
   function send(text: string) {
     const t = text.trim();
-    if (!t || sending) return; // duplicate-submission prevention
+    if (!t || sending || t.length > MAX_MESSAGE) return; // guard empty / busy / over-limit
     setMessages((prev) => [...prev, { id: `${Date.now()}-p`, sender: "patient", text: t }]);
     setDraft("");
     void callApi(t);
@@ -100,6 +118,7 @@ export function AIAssistantView() {
     setError(null);
     setLastFailed(null);
     setFloState("idle");
+    window.setTimeout(() => textareaRef.current?.focus(), 0);
   }
 
   function talkToReception() {
@@ -120,98 +139,133 @@ export function AIAssistantView() {
     }
   }
 
-  const started = messages.length > 0;
+  const nearLimit = draft.length > MAX_MESSAGE - 200;
+  const overLimit = draft.length > MAX_MESSAGE;
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.hero}>
-        <FloOrb state={started ? floState : "idle"} size={72} reducedMotion={reducedMotion} />
-        <h1 className={styles.title}>
-          {started ? "Ask MediFlow" : "Hello. How can MediFlow guide you today?"}
-        </h1>
-        <p className={styles.subtitle}>{SAFETY_LINE}</p>
-      </div>
-
-      {started ? (
-        <div className={styles.chatLog} aria-live="polite" aria-busy={sending}>
-          {messages.map((m) => (
-            <ChatBubble key={m.id} sender={m.sender} message={m.text} />
-          ))}
-          {sending ? (
-            <p className={styles.subtitle} role="status">
-              MediFlow is typing…
-            </p>
-          ) : null}
-          <div ref={bottomRef} />
-        </div>
-      ) : null}
-
-      {error ? (
-        <div
-          role="alert"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            flexWrap: "wrap",
-            color: "var(--color-danger-strong, #b91c1c)",
-            fontSize: 13,
-          }}
-        >
-          <span>{error}</span>
-          <Button variant="secondary" onClick={retry} disabled={sending || !lastFailed}>
-            Retry
-          </Button>
-        </div>
-      ) : null}
-
-      <form
-        className={styles.askBar}
-        onSubmit={(e) => {
-          e.preventDefault();
-          send(draft);
-        }}
-      >
+  const composer = (
+    <form
+      className={styles.composerForm}
+      onSubmit={(e) => {
+        e.preventDefault();
+        send(draft);
+      }}
+    >
+      <div className={styles.composer}>
         <label htmlFor={inputId} className="sr-only">
           Type your message. Press Enter to send, Shift+Enter for a new line.
         </label>
         <textarea
           id={inputId}
-          className={styles.askInput}
-          placeholder="Describe what you need…"
+          ref={textareaRef}
+          className={styles.composerInput}
+          placeholder={PLACEHOLDER}
           value={draft}
           rows={1}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKeyDown}
-          disabled={sending}
+          aria-describedby={nearLimit ? `${inputId}-count` : undefined}
         />
-        <Button variant="primary" type="submit" disabled={sending || !draft.trim()}>
-          {sending ? "Sending…" : "Send"}
-        </Button>
-      </form>
-
-      {!started ? (
-        <div className={styles.chipRow}>
-          {PROMPTS.map((p) => (
-            <PromptChip key={p} label={p} onClick={() => send(p)} />
-          ))}
-        </div>
-      ) : null}
-
-      <div className={styles.footerLinks}>
-        <Button variant="secondary" href="/patient/services">
-          Browse All Services
-        </Button>
-        <button type="button" className={styles.linkButton} onClick={talkToReception}>
-          Talk to Reception
+        <button
+          type="submit"
+          className={styles.sendButton}
+          disabled={sending || !draft.trim() || overLimit}
+          aria-busy={sending}
+        >
+          {sending ? (
+            <span className={styles.spinner} aria-hidden="true" />
+          ) : (
+            <span aria-hidden="true" className={styles.sendGlyph}>
+              ↑
+            </span>
+          )}
+          <span>Send</span>
         </button>
-        <button type="button" className={styles.linkButton} onClick={newConversation}>
-          Start New Conversation
-        </button>
-        <Button variant="tertiary" href="/patient/dashboard">
-          Back to Dashboard
-        </Button>
       </div>
+      {nearLimit ? (
+        <p
+          id={`${inputId}-count`}
+          className={`${styles.counter} ${overLimit ? styles.counterOver : ""}`}
+          aria-live="polite"
+        >
+          {draft.length} / {MAX_MESSAGE}
+          {overLimit ? " — message is too long to send" : ""}
+        </p>
+      ) : null}
+    </form>
+  );
+
+  const toolbar = (
+    <div className={styles.toolbar}>
+      <Button variant="secondary" href="/patient/services">
+        Browse Services
+      </Button>
+      <button type="button" className={styles.toolbarButton} onClick={talkToReception}>
+        Talk to Reception
+      </button>
+      <button type="button" className={styles.toolbarButton} onClick={newConversation}>
+        New Conversation
+      </button>
+    </div>
+  );
+
+  return (
+    <div className={styles.page}>
+      {!started ? (
+        <section className={styles.intro}>
+          <FloOrb state={floState} size={96} reducedMotion={reducedMotion} />
+          <h1 className={styles.greeting}>{GREETING}</h1>
+          <p className={styles.safety}>{SAFETY_LINE}</p>
+
+          {composer}
+
+          <div className={styles.chips} role="group" aria-label="Suggested questions">
+            {PROMPTS.map((p) => (
+              <PromptChip key={p} label={p} onClick={() => send(p)} />
+            ))}
+          </div>
+
+          {toolbar}
+        </section>
+      ) : (
+        <section className={styles.workspace}>
+          <header className={styles.workspaceHeader}>
+            <FloOrb state={floState} size={34} reducedMotion={reducedMotion} />
+            <div className={styles.workspaceTitleWrap}>
+              <h1 className={styles.workspaceTitle}>Ask MediFlow</h1>
+              <p className={styles.workspaceHint}>
+                Navigates MCC services &amp; appointments — no diagnosis or triage.
+              </p>
+            </div>
+          </header>
+
+          <div className={styles.card}>
+            <div className={styles.messages} aria-live="polite" aria-busy={sending}>
+              {messages.map((m) => (
+                <ChatBubble
+                  key={m.id}
+                  sender={m.sender}
+                  message={m.text}
+                  reducedMotion={reducedMotion}
+                />
+              ))}
+              {sending ? <ThinkingBubble reducedMotion={reducedMotion} /> : null}
+              {error ? (
+                <div className={styles.errorRow} role="alert">
+                  <p className={styles.errorText}>{error}</p>
+                  <Button variant="secondary" onClick={retry} disabled={sending || !lastFailed}>
+                    Retry
+                  </Button>
+                </div>
+              ) : null}
+              <div ref={bottomRef} />
+            </div>
+
+            <div className={styles.composerDock}>{composer}</div>
+          </div>
+
+          {toolbar}
+        </section>
+      )}
     </div>
   );
 }

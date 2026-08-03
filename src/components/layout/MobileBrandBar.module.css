@@ -1,0 +1,26 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-default);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+/* Desktop/tablet already have the full top nav — hide this bar there. */
+@media (min-width: 768px) {
+  .bar {
+    display: none;
+  }
+}

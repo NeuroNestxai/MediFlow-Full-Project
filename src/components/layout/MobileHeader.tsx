@@ -22,8 +22,8 @@ export function MobileHeader({ title, onBack, homeHref }: MobileHeaderProps) {
           ←
         </button>
       ) : (
-        <Link href={homeHref} aria-label="Go to dashboard" className={styles.logoLink}>
-          <Logo variant="mark" size={24} />
+        <Link href={homeHref} aria-label="MediFlow AI — go to dashboard" className={styles.logoLink}>
+          <Logo variant="icon" size={26} alt="" />
         </Link>
       )}
       <h1 className={styles.title}>{title}</h1>

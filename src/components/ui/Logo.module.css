@@ -1,17 +1,31 @@
-.lockup {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-8);
-}
+/* Approved MediFlow artwork (public/branding/*). The width/height attributes
+   on the <img> set the intrinsic box; these rules keep the image from
+   stretching, clipping, or overflowing its container while preserving ratio. */
 
-.mark {
+.logo {
   display: block;
-  flex-shrink: 0;
+  object-fit: contain;
+  /* Never let a narrow container clip or distort the mark. */
+  max-width: 100%;
+  height: auto;
+  /* Keep the artwork crisp and its approved colours intact — no filters. */
 }
 
-.wordmark {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 20px;
-  color: var(--color-action-primary);
+/* Horizontal lockups + icon are sized by height; width follows the ratio. */
+.lockup {
+  width: auto;
+}
+
+/* Full composition is sized by width; height follows the ratio. */
+.full {
+  width: 100%;
+  max-width: var(--logo-full-max, 340px);
+  height: auto;
+}
+
+/* In Large Text mode the surrounding UI grows; nudge header lockups up a
+   little so the wordmark keeps pace with enlarged nav text. */
+:global([data-large-text="true"]) .lockup {
+  transform: scale(1.08);
+  transform-origin: left center;
 }

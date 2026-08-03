@@ -3,12 +3,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Logo } from "@/components/ui/Logo";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { FormField } from "@/components/ui/FormField";
 import { createClient } from "@/lib/supabase/client";
-import styles from "./page.module.css";
+import styles from "@/components/auth/authForm.module.css";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -88,108 +87,95 @@ export function ResetPasswordView() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.headerRow}>
-        <Logo variant="lockup" size={28} />
+    <AuthShell>
+      {phase === "checking" && (
+        <>
+          <h1 className={styles.title}>Checking your link…</h1>
+          <p className={styles.subtitle}>One moment while we verify your reset link.</p>
+        </>
+      )}
+
+      {phase === "expired" && (
+        <>
+          <h1 className={styles.title}>This link has expired</h1>
+          <p className={styles.subtitle}>
+            Password reset links can only be used once and expire after a short time. Request a new
+            one to continue.
+          </p>
+          <div className={styles.actions}>
+            <Button href="/auth/forgot-password" variant="primary" fullWidth>
+              Request a New Link
+            </Button>
+          </div>
+        </>
+      )}
+
+      {phase === "ready" && (
+        <>
+          <h1 className={styles.title}>Choose a new password</h1>
+          <p className={styles.subtitle}>Enter and confirm your new password below.</p>
+
+          {formError ? (
+            <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
+              {formError}
+            </div>
+          ) : null}
+
+          <form onSubmit={onSubmit} noValidate className={styles.form}>
+            <PasswordField
+              id="password"
+              label="New password"
+              value={password}
+              onChange={setPassword}
+              error={errors.password}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              disabled={submitting}
+            />
+
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm new password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              error={errors.confirmPassword}
+              autoComplete="new-password"
+              placeholder="Re-enter your new password"
+              disabled={submitting}
+            />
+
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              disabled={submitting}
+              aria-busy={submitting}
+              className={styles.submit}
+            >
+              {submitting ? "Updating…" : "Update Password"}
+            </Button>
+          </form>
+        </>
+      )}
+
+      {phase === "done" && (
+        <>
+          <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status">
+            Your password has been updated.
+          </div>
+          <div className={styles.actions}>
+            <Button href="/auth/post-login" variant="primary" fullWidth>
+              Continue to Dashboard
+            </Button>
+          </div>
+        </>
+      )}
+
+      <div className={`${styles.links} ${styles.linkCenter}`}>
+        <Link href="/auth/sign-in" className={styles.link}>
+          Back to Sign In
+        </Link>
       </div>
-      <div className={styles.card}>
-        {phase === "checking" && (
-          <>
-            <h1 className={styles.title}>Checking your link…</h1>
-            <p className={styles.subtitle}>One moment while we verify your reset link.</p>
-          </>
-        )}
-
-        {phase === "expired" && (
-          <>
-            <h1 className={styles.title}>This link has expired</h1>
-            <p className={styles.subtitle}>
-              Password reset links can only be used once and expire after a short time. Request a
-              new one to continue.
-            </p>
-            <div className={styles.actions}>
-              <Button href="/auth/forgot-password" variant="primary" fullWidth>
-                Request a New Link
-              </Button>
-            </div>
-          </>
-        )}
-
-        {phase === "ready" && (
-          <>
-            <h1 className={styles.title}>Choose a new password</h1>
-            <p className={styles.subtitle}>Enter and confirm your new password below.</p>
-
-            {formError ? (
-              <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
-                {formError}
-              </div>
-            ) : null}
-
-            <form onSubmit={onSubmit} noValidate className={styles.form}>
-              <FormField label="New password" htmlFor="password" error={errors.password} required>
-                {({ describedBy }) => (
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="At least 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    invalid={Boolean(errors.password)}
-                    aria-describedby={describedBy}
-                    autoComplete="new-password"
-                    disabled={submitting}
-                  />
-                )}
-              </FormField>
-
-              <FormField
-                label="Confirm new password"
-                htmlFor="confirmPassword"
-                error={errors.confirmPassword}
-                required
-              >
-                {({ describedBy }) => (
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Re-enter your new password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    invalid={Boolean(errors.confirmPassword)}
-                    aria-describedby={describedBy}
-                    autoComplete="new-password"
-                    disabled={submitting}
-                  />
-                )}
-              </FormField>
-
-              <Button type="submit" variant="primary" fullWidth disabled={submitting}>
-                {submitting ? "Updating…" : "Update Password"}
-              </Button>
-            </form>
-          </>
-        )}
-
-        {phase === "done" && (
-          <>
-            <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status">
-              Your password has been updated.
-            </div>
-            <div className={styles.actions}>
-              <Button href="/auth/post-login" variant="primary" fullWidth>
-                Continue to Dashboard
-              </Button>
-            </div>
-          </>
-        )}
-
-        <div className={styles.links}>
-          <Link href="/auth/sign-in" className={styles.link}>
-            Back to Sign In
-          </Link>
-        </div>
-      </div>
-    </main>
+    </AuthShell>
   );
 }
