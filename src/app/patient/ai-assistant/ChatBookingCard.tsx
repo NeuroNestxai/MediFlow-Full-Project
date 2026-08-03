@@ -18,6 +18,12 @@ import styles from "./page.module.css";
  */
 
 export type BookingState =
+  /**
+   * The assistant named a doctor but no single MCC service — it often speaks
+   * in specialties ("General & Chronic Care") rather than service names. The
+   * patient picks the service instead of the code guessing one.
+   */
+  | { status: "chooseService"; doctor: DirectoryDoctor; services: DirectoryService[] }
   | { status: "resolving"; service: DirectoryService; doctor: DirectoryDoctor }
   | {
       status: "ready";
@@ -43,11 +49,39 @@ interface Props {
   state: BookingState;
   selectedId: string | null;
   onSelect: (availabilityId: string) => void;
+  onSelectService: (service: DirectoryService) => void;
   onConfirm: () => void;
   onRetry: () => void;
 }
 
-export function ChatBookingCard({ state, selectedId, onSelect, onConfirm, onRetry }: Props) {
+export function ChatBookingCard({
+  state,
+  selectedId,
+  onSelect,
+  onSelectService,
+  onConfirm,
+  onRetry,
+}: Props) {
+  if (state.status === "chooseService") {
+    return (
+      <div className={styles.handoff}>
+        <p className={styles.handoffTitle}>Book with {state.doctor.fullName}</p>
+        <p className={styles.handoffNote}>
+          {state.services.length
+            ? "Which service do you need? You'll pick a real available time next."
+            : `${state.doctor.fullName} has no bookable services listed at the moment.`}
+        </p>
+        <div className={styles.handoffActions}>
+          {state.services.map((s) => (
+            <Button key={s.id} variant="secondary" onClick={() => onSelectService(s)}>
+              {s.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const who = `${state.doctor.fullName} · ${state.service.name}`;
 
   if (state.status === "resolving") {

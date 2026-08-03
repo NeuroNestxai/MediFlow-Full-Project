@@ -155,6 +155,9 @@ export function AIAssistantView() {
    * almost every real booking.
    */
   const historyRef = useRef<string[]>([]);
+  /** Conversation text behind the current offer, so picking a service can
+   *  still preselect the time the assistant proposed. */
+  const lastReplyRef = useRef("");
 
   // Load the directory once so replies can be matched to real services and
   // doctors. A failure here is silent by design: the chat still works, it
@@ -181,8 +184,21 @@ export function AIAssistantView() {
    * — so an invented or already-taken time can never be offered.
    */
   const openBooking = useCallback(
-    async (service: DirectoryService, doctor: DirectoryDoctor, reply: string) => {
+    async (service: DirectoryService | null, doctor: DirectoryDoctor, reply: string) => {
       setSlotId(null);
+      lastReplyRef.current = reply;
+
+      // No single service resolved → let the patient choose from the ones this
+      // doctor actually offers, rather than inferring one from what they said.
+      if (!service) {
+        const byId = new Map(servicesRef.current.map((s) => [s.id, s]));
+        const offered = doctor.services
+          .map((ref) => byId.get(ref.id))
+          .filter((s): s is DirectoryService => Boolean(s));
+        setBooking({ status: "chooseService", doctor, services: offered });
+        return;
+      }
+
       setBooking({ status: "resolving", service, doctor });
       try {
         const all = await fetchAvailableSlots(doctor.id, service.id);
@@ -234,8 +250,16 @@ export function AIAssistantView() {
     }
   }, [booking, slotId]);
 
+  const chooseService = useCallback(
+    (service: DirectoryService) => {
+      if (!booking) return;
+      void openBooking(service, booking.doctor, lastReplyRef.current);
+    },
+    [booking, openBooking],
+  );
+
   const reopenBooking = useCallback(() => {
-    if (!booking) return;
+    if (!booking || booking.status === "chooseService") return;
     void openBooking(booking.service, booking.doctor, "");
   }, [booking, openBooking]);
 
@@ -266,19 +290,23 @@ export function AIAssistantView() {
       const doctor = namedDoctor(context, doctorsRef.current);
       // Service + doctor both resolved → offer booking right here in the chat.
       // Otherwise fall back to the pre-filled booking flow, or the picker.
-      const bookable = suggested.length === 1 && doctor ? { service: suggested[0], doctor } : null;
+      // A named doctor is enough to start. The assistant frequently speaks in
+      // specialties ("General & Chronic Care") rather than MCC service names,
+      // so requiring an exact service match meant the card almost never
+      // appeared — and the patient was left with the assistant's word that
+      // something was booked when nothing was.
       setMessages((prev) => [
         ...prev,
         {
           id: `${Date.now()}-ai`,
           sender: "ai",
           text: reply,
-          suggested: bookable ? [] : suggested,
-          bookingIntent: !bookable && suggested.length === 0 && looksLikeBooking(reply),
+          suggested: doctor ? [] : suggested,
+          bookingIntent: !doctor && suggested.length === 0 && looksLikeBooking(reply),
         },
       ]);
-      if (bookable) {
-        void openBooking(bookable.service, bookable.doctor, context);
+      if (doctor) {
+        void openBooking(suggested.length === 1 ? suggested[0] : null, doctor, context);
       } else {
         setBooking(null);
       }
@@ -392,6 +420,7 @@ export function AIAssistantView() {
               state={booking}
               selectedId={slotId}
               onSelect={setSlotId}
+              onSelectService={chooseService}
               onConfirm={() => void confirmBooking()}
               onRetry={reopenBooking}
             />
