@@ -149,3 +149,33 @@ export function StethoscopeIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function AccessibilityIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="8" cy="3.1" r="1.25" fill="currentColor" stroke="none" />
+      <path d="M2.6 5.6 C4 6.3 6 6.7 8 6.7 C10 6.7 12 6.3 13.4 5.6" />
+      <path d="M8 6.4 V10 M8 10 L5.5 14 M8 10 L10.5 14" />
+    </svg>
+  );
+}
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M1.5 8 C3 4.6 5.4 3.1 8 3.1 C10.6 3.1 13 4.6 14.5 8 C13 11.4 10.6 12.9 8 12.9 C5.4 12.9 3 11.4 1.5 8 Z" />
+      <circle cx="8" cy="8" r="2.1" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M2.5 2.5 L13.5 13.5" />
+      <path d="M6.3 3.5 C6.8 3.4 7.4 3.3 8 3.3 C10.6 3.3 13 4.8 14.5 8.2 C14 9.2 13.4 10.1 12.6 10.8" />
+      <path d="M9.9 10.6 C9.3 10.8 8.7 10.9 8 10.9 C5.4 10.9 3 9.4 1.5 8.2 C2.1 6.7 3.1 5.6 4.3 4.9" />
+      <path d="M6.6 6.8 A2 2 0 0 0 9.3 9.5" />
+    </svg>
+  );
+}

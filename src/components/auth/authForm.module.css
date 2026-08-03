@@ -1,0 +1,165 @@
+/* Shared styling for the content inside an AuthShell card. Every auth screen
+   uses these so headings, banners, fields and links stay consistent. */
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.banner {
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 18px;
+  border: 1px solid transparent;
+}
+
+.bannerError {
+  background: var(--color-status-error-bg);
+  border-color: var(--color-accent-coral);
+  color: var(--color-status-error-text);
+}
+
+.bannerSuccess {
+  background: var(--color-status-success-bg);
+  border-color: var(--color-accent-teal);
+  color: var(--color-status-success-text);
+}
+
+.bannerInfo {
+  background: var(--color-status-info-bg);
+  border-color: var(--color-accent-violet);
+  color: var(--color-status-info-text);
+}
+
+.submit {
+  margin-top: 4px;
+}
+
+/* Concise informational note (e.g. staff accounts are provisioned). */
+.note {
+  margin-top: 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-surface-blush);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-action-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.linkCenter {
+  justify-content: center;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* --- Segmented route tabs (Sign in / Create account) --- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-bg-surface-blush);
+  border-radius: var(--radius-full);
+  margin-bottom: 22px;
+}
+
+.tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--radius-full);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.tab:hover {
+  color: var(--color-action-primary);
+}
+
+.tabActive {
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+/* --- Password field with visibility toggle --- */
+.passwordWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput {
+  /* room for the toggle so text never sits under it */
+  padding-right: 46px;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.passwordToggle:hover {
+  color: var(--color-action-primary);
+}
