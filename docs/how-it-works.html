@@ -207,6 +207,51 @@
   .diagram { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
   .mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-top: 20px; overflow-x: auto; }
 
+  /* ---- Data flow diagrams ---- */
+  .figure {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px; margin-top: 20px;
+    overflow-x: auto;
+  }
+  .figure svg { display: block; width: 100%; height: auto; min-width: 560px; }
+  .figure-tall svg { min-width: 620px; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px 22px;
+    margin-top: 20px; font-size: 13.5px; color: var(--ink-soft);
+  }
+  .legend > span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend em { color: var(--ink); font-weight: 600; }
+  .key { width: 26px; height: 15px; flex: none; border-radius: 2px; }
+  .key-entity  { border: 1.5px solid var(--ink); background: transparent; }
+  .key-process { border: 1.5px solid var(--indigo); background: var(--indigo-bg); border-radius: 999px; }
+  .key-store   { border: 1.5px solid var(--teal); border-left: 0; border-right: 0; background: var(--teal-bg); border-radius: 0; }
+  .key-flow    { height: 0; border-top: 1.5px solid var(--ink-faint); border-radius: 0; }
+
+  /* SVG element styling, driven by the same tokens as the page */
+  .figure .entity rect { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+  .figure .entity text { fill: var(--ink); font-size: 14px; font-weight: 650; text-anchor: middle; }
+  .figure .entity text.sub { font-size: 11px; font-weight: 450; fill: var(--ink-faint); }
+
+  .figure .process rect,
+  .figure .process-shape {
+    fill: var(--indigo-bg); stroke: var(--indigo); stroke-width: 1.5;
+  }
+  .figure .process text { fill: var(--ink); font-size: 14px; font-weight: 600; text-anchor: middle; }
+  .figure .proc-num { fill: var(--indigo); font-size: 15px; font-weight: 700; text-anchor: middle; }
+  .figure .proc-num-sm { fill: var(--indigo); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: .06em; }
+  .figure .proc-name { fill: var(--ink); font-size: 17px; font-weight: 680; text-anchor: middle; }
+  .figure text.sub { fill: var(--ink-faint); font-size: 11.5px; text-anchor: middle; font-weight: 450; }
+
+  .figure .store path { fill: var(--teal-bg); stroke: var(--teal); stroke-width: 1.5; }
+  .figure .store text { fill: var(--teal); font-size: 12.5px; font-weight: 620; }
+
+  .figure .flow { fill: none; stroke: var(--ink-faint); stroke-width: 1.4; }
+  .figure .flow-dash { stroke-dasharray: 5 4; }
+  .figure .arrow-head { fill: var(--ink-faint); }
+  .figure .lbl { fill: var(--ink-soft); font-size: 11px; text-anchor: middle; }
+  .figure .lbl-sm { fill: var(--ink-soft); font-size: 10px; text-anchor: middle; }
+
   footer {
     margin-top: 72px; padding-top: 22px; border-top: 1px solid var(--line);
     color: var(--ink-faint); font-size: 14px;
@@ -301,6 +346,253 @@
         not a secret. Anything named <code>NEXT_PUBLIC_*</code> is visible to every
         visitor — view-source visible. Everything else stays on the server. This is
         why the chat goes through a proxy instead of calling n8n from React.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Data flow diagrams</h2>
+    <p class="lede">
+      Where data comes from, what transforms it, and where it rests. Read these
+      two together: the first says who the system talks to, the second says what
+      happens inside it.
+    </p>
+
+    <div class="legend">
+      <span><span class="key key-entity"></span> External entity — a person or system outside MediFlow</span>
+      <span><span class="key key-process"></span> Process — something the system <em>does</em></span>
+      <span><span class="key key-store"></span> Data store — a table where data rests</span>
+      <span><span class="key key-flow"></span> Data flow — what moves, and which way</span>
+    </div>
+
+    <h3>Context diagram (Level 0)</h3>
+    <p>
+      The whole system as one process, showing only what crosses its boundary.
+      Note that the patient never reaches the AI assistant directly — every
+      exchange passes through MediFlow, which is where the safety rules live.
+    </p>
+
+    <div class="figure">
+      <svg viewBox="0 0 780 430" role="img" aria-label="Context diagram: Patient, Reception and Doctor exchange data with the MediFlow AI system, which in turn exchanges message text with the n8n assistant.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="arrow-head"/>
+          </marker>
+        </defs>
+
+        <!-- external entities -->
+        <g class="entity">
+          <rect x="20" y="60" width="150" height="56" rx="4"/>
+          <text x="95" y="84">Patient</text>
+          <text x="95" y="102" class="sub">books, attends</text>
+        </g>
+        <g class="entity">
+          <rect x="20" y="290" width="150" height="56" rx="4"/>
+          <text x="95" y="314">Reception</text>
+          <text x="95" y="332" class="sub">checks in / out</text>
+        </g>
+        <g class="entity">
+          <rect x="610" y="60" width="150" height="56" rx="4"/>
+          <text x="685" y="84">Doctor</text>
+          <text x="685" y="102" class="sub">consults</text>
+        </g>
+        <g class="entity">
+          <rect x="610" y="290" width="150" height="56" rx="4"/>
+          <text x="685" y="314">n8n assistant</text>
+          <text x="685" y="332" class="sub">language model</text>
+        </g>
+
+        <!-- central process -->
+        <circle cx="390" cy="203" r="92" class="process-shape"/>
+        <text x="390" y="192" class="proc-num">0</text>
+        <text x="390" y="215" class="proc-name">MediFlow AI</text>
+        <text x="390" y="234" class="sub">clinic workflow system</text>
+
+        <!-- flows -->
+        <path d="M170,78 C260,78 250,140 305,163" class="flow" marker-end="url(#ar)"/>
+        <text x="243" y="96" class="lbl">booking request · reason · documents</text>
+
+        <path d="M305,196 C240,205 235,258 170,300" class="flow" marker-end="url(#ar)"/>
+        <text x="196" y="243" class="lbl">confirmation · QR · notifications</text>
+
+        <path d="M170,318 C260,330 275,290 315,248" class="flow" marker-end="url(#ar)"/>
+        <text x="252" y="345" class="lbl">identity confirmed · check-in / out</text>
+
+        <path d="M470,178 C540,150 545,110 610,90" class="flow" marker-end="url(#ar)"/>
+        <text x="545" y="132" class="lbl">schedule · patient summary</text>
+
+        <path d="M610,110 C545,175 540,196 478,200" class="flow" marker-end="url(#ar)"/>
+        <text x="556" y="196" class="lbl">notes · completion · follow-up</text>
+
+        <path d="M455,262 C520,300 545,312 610,316" class="flow" marker-end="url(#ar)"/>
+        <text x="520" y="286" class="lbl">message text only</text>
+
+        <path d="M610,334 C540,352 480,318 442,282" class="flow" marker-end="url(#ar)"/>
+        <text x="500" y="366" class="lbl">reply text</text>
+      </svg>
+    </div>
+
+    <div class="note">
+      <p>
+        <strong>What the boundary tells you:</strong> only <em>message text</em>
+        crosses to the assistant — no name, no email, no login token, no medical
+        record. And nothing comes back except text. The assistant can suggest;
+        it can never write to the clinic's records.
+      </p>
+    </div>
+
+    <h3>Level 1 — inside the system</h3>
+    <p>
+      The same journey broken into the seven processes that actually run, with
+      the tables each one touches. Every arrow into a data store is a write, and
+      every write goes through a process — never straight from a screen.
+    </p>
+
+    <div class="figure figure-tall">
+      <svg viewBox="0 0 800 1000" role="img" aria-label="Level 1 data flow diagram showing seven processes from authentication through follow-up, the external entities that trigger them, and the database tables each one reads or writes.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="arrow-head"/>
+          </marker>
+        </defs>
+
+        <!-- data stores (right) -->
+        <g class="store">
+          <path d="M600,64 H780 M600,100 H780 M600,64 V100"/>
+          <text x="616" y="87">D1 · user_roles</text>
+        </g>
+        <g class="store">
+          <path d="M600,190 H780 M600,226 H780 M600,190 V226"/>
+          <text x="616" y="213">D2 · doctors · services</text>
+        </g>
+        <g class="store">
+          <path d="M600,316 H780 M600,352 H780 M600,316 V352"/>
+          <text x="616" y="339">D3 · appointments</text>
+        </g>
+        <g class="store">
+          <path d="M600,442 H780 M600,478 H780 M600,442 V478"/>
+          <text x="616" y="465">D4 · status_history</text>
+        </g>
+        <g class="store">
+          <path d="M600,610 H780 M600,646 H780 M600,610 V646"/>
+          <text x="616" y="633">D5 · consultations</text>
+        </g>
+        <g class="store">
+          <path d="M600,778 H780 M600,814 H780 M600,778 V814"/>
+          <text x="616" y="801">D6 · follow_ups</text>
+        </g>
+        <g class="store">
+          <path d="M600,904 H780 M600,940 H780 M600,904 V940"/>
+          <text x="616" y="927">D7 · notifications</text>
+        </g>
+
+        <!-- entities (left) -->
+        <g class="entity">
+          <rect x="14" y="140" width="120" height="46" rx="4"/>
+          <text x="74" y="168">Patient</text>
+        </g>
+        <g class="entity">
+          <rect x="14" y="350" width="120" height="46" rx="4"/>
+          <text x="74" y="378">Reception</text>
+        </g>
+        <g class="entity">
+          <rect x="14" y="602" width="120" height="46" rx="4"/>
+          <text x="74" y="630">Doctor</text>
+        </g>
+
+        <!-- processes (centre) -->
+        <g class="process">
+          <rect x="230" y="52" width="300" height="60" rx="30"/>
+          <text x="380" y="78" class="proc-num-sm">1.0</text>
+          <text x="380" y="96">Authenticate &amp; resolve role</text>
+        </g>
+        <g class="process">
+          <rect x="230" y="178" width="300" height="60" rx="30"/>
+          <text x="380" y="204" class="proc-num-sm">2.0</text>
+          <text x="380" y="222">Book appointment</text>
+        </g>
+        <g class="process">
+          <rect x="230" y="304" width="300" height="60" rx="30"/>
+          <text x="380" y="330" class="proc-num-sm">3.0</text>
+          <text x="380" y="348">Verify QR &amp; check in</text>
+        </g>
+        <g class="process">
+          <rect x="230" y="430" width="300" height="60" rx="30"/>
+          <text x="380" y="456" class="proc-num-sm">4.0</text>
+          <text x="380" y="474">Manage live queue</text>
+        </g>
+        <g class="process">
+          <rect x="230" y="556" width="300" height="60" rx="30"/>
+          <text x="380" y="582" class="proc-num-sm">5.0</text>
+          <text x="380" y="600">Conduct consultation</text>
+        </g>
+        <g class="process">
+          <rect x="230" y="682" width="300" height="60" rx="30"/>
+          <text x="380" y="708" class="proc-num-sm">6.0</text>
+          <text x="380" y="726">Check out</text>
+        </g>
+        <g class="process">
+          <rect x="230" y="808" width="300" height="60" rx="30"/>
+          <text x="380" y="834" class="proc-num-sm">7.0</text>
+          <text x="380" y="852">Approve &amp; send follow-up</text>
+        </g>
+
+        <!-- entity → process -->
+        <path d="M134,152 C180,140 190,96 230,86" class="flow" marker-end="url(#ar2)"/>
+        <text x="150" y="120" class="lbl-sm">credentials</text>
+        <path d="M134,168 H230" class="flow" marker-end="url(#ar2)"/>
+        <text x="150" y="160" class="lbl-sm">slot choice · reason</text>
+        <path d="M134,362 C180,350 190,340 230,334" class="flow" marker-end="url(#ar2)"/>
+        <text x="146" y="330" class="lbl-sm">reference · identity</text>
+        <path d="M134,384 C180,400 190,450 230,460" class="flow" marker-end="url(#ar2)"/>
+        <text x="146" y="424" class="lbl-sm">queue action</text>
+        <path d="M134,614 C180,606 190,594 230,586" class="flow" marker-end="url(#ar2)"/>
+        <text x="150" y="580" class="lbl-sm">notes · completion</text>
+        <path d="M134,636 C180,700 190,820 230,838" class="flow" marker-end="url(#ar2)"/>
+        <text x="140" y="762" class="lbl-sm">approval</text>
+
+        <!-- Reception also performs checkout (6.0) -->
+        <path d="M134,392 C186,440 190,672 230,706" class="flow" marker-end="url(#ar2)"/>
+        <text x="196" y="690" class="lbl-sm">checkout scan</text>
+
+        <!-- process → store -->
+        <path d="M530,82 H600" class="flow" marker-end="url(#ar2)"/>
+        <text x="542" y="74" class="lbl-sm">read</text>
+        <path d="M530,200 H600 L600,208" class="flow" marker-end="url(#ar2)"/>
+        <text x="542" y="192" class="lbl-sm">read</text>
+        <path d="M530,220 C560,240 570,300 600,330" class="flow" marker-end="url(#ar2)"/>
+        <text x="536" y="266" class="lbl-sm">write</text>
+        <path d="M530,334 H600" class="flow" marker-end="url(#ar2)"/>
+        <text x="540" y="326" class="lbl-sm">status</text>
+        <path d="M530,352 C560,380 570,430 600,460" class="flow" marker-end="url(#ar2)"/>
+        <text x="536" y="404" class="lbl-sm">append</text>
+        <path d="M530,460 C560,462 570,462 600,462" class="flow" marker-end="url(#ar2)"/>
+        <text x="540" y="452" class="lbl-sm">status</text>
+        <path d="M530,586 C560,600 570,614 600,628" class="flow" marker-end="url(#ar2)"/>
+        <text x="536" y="600" class="lbl-sm">notes</text>
+        <path d="M530,706 C566,690 574,420 600,348" class="flow" marker-end="url(#ar2)"/>
+        <text x="562" y="640" class="lbl-sm">checked out</text>
+        <path d="M530,838 C560,830 570,808 600,796" class="flow" marker-end="url(#ar2)"/>
+        <text x="536" y="812" class="lbl-sm">approved</text>
+        <path d="M530,856 C560,880 570,910 600,922" class="flow" marker-end="url(#ar2)"/>
+        <text x="536" y="896" class="lbl-sm">notify</text>
+
+        <!-- Notifications and the approved follow-up return to the PATIENT.
+             Routed down the outer margin so it does not cut through the
+             Reception and Doctor entities on its way up the page. -->
+        <path d="M600,940 C420,992 140,992 10,900 L10,214 Q10,192 34,190" class="flow flow-dash" marker-end="url(#ar2)"/>
+        <text x="360" y="984" class="lbl-sm">notifications &amp; approved follow-up returned to the patient</text>
+      </svg>
+    </div>
+
+    <div class="note">
+      <p>
+        <strong>Read the arrows into D3 and D5.</strong> Nothing writes to
+        <code>appointments</code> or <code>consultations</code> except a
+        numbered process. There is no arrow from a screen straight to a table —
+        that is the stored-procedure rule drawn as a picture. It is also why a
+        double-click cannot corrupt a visit: the process, not the screen,
+        decides whether the change is legal.
       </p>
     </div>
   </section>
