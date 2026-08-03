@@ -1,6 +1,10 @@
-# Not needed to build or run the app — keeping these out makes each deploy
-# upload far less and start faster.
-.git
-docs
-supabase
-*.md
+# Excluded from the deploy upload — none of this is needed to build or run.
+#
+# Leading slashes matter. A bare `supabase` would also match
+# src/lib/supabase/, which silently removed the app's entire Supabase layer
+# and failed the build with "Can't resolve '@/lib/supabase/auth-roles'".
+# Anchor every entry to the project root.
+/.git
+/docs
+/supabase
+/README.md
