@@ -6,6 +6,9 @@ import styles from "./DesktopTopNav.module.css";
 export interface NavLinkItem {
   href: string;
   label: string;
+  /** Optional unread/count badge shown as a compact pill (keeps the label
+   * itself clean, e.g. "Notifications" instead of "Notifications (3)"). */
+  badge?: number;
 }
 
 export interface DesktopTopNavProps {
@@ -20,12 +23,13 @@ export interface DesktopTopNavProps {
 
 /** Desktop/tablet top navigation, shared shape across all three roles.
  * Uses a real <nav> landmark and marks the current page with
- * `aria-current="page"` instead of color alone. */
+ * `aria-current="page"` instead of color alone. Renders on one row only —
+ * below 1024px the mobile brand bar + bottom nav take over. */
 export function DesktopTopNav({ links, activeHref, roleTag, homeHref }: DesktopTopNavProps) {
   return (
     <header className={styles.header}>
       <Link href={homeHref} className={styles.logoLink} aria-label="MediFlow AI — go to dashboard">
-        <Logo variant="header" size={32} alt="" />
+        <Logo variant="header" size={42} alt="" priority />
       </Link>
       <nav aria-label="Primary" className={styles.nav}>
         {links.map((link) => {
@@ -38,6 +42,11 @@ export function DesktopTopNav({ links, activeHref, roleTag, homeHref }: DesktopT
               aria-current={isActive ? "page" : undefined}
             >
               {link.label}
+              {link.badge && link.badge > 0 ? (
+                <span className={styles.badge} aria-label={`${link.badge} unread`}>
+                  {link.badge > 99 ? "99+" : link.badge}
+                </span>
+              ) : null}
             </Link>
           );
         })}

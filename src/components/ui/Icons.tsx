@@ -140,6 +140,16 @@ export function UsersIcon(props: IconProps) {
   );
 }
 
+export function HelpIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M6.2 6.2 C6.2 5.1 7 4.4 8 4.4 C9 4.4 9.8 5.1 9.8 6 C9.8 7.2 8 7.2 8 8.6" />
+      <circle cx="8" cy="11.1" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function AccessibilityIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

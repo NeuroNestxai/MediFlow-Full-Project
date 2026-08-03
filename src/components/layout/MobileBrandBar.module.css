@@ -18,8 +18,9 @@
   min-height: 40px;
 }
 
-/* Desktop/tablet already have the full top nav — hide this bar there. */
-@media (min-width: 768px) {
+/* The single-row desktop top nav takes over at 1024px; below that this bar
+   (plus the bottom nav) is the navigation, so the desktop nav never wraps. */
+@media (min-width: 1024px) {
   .bar {
     display: none;
   }

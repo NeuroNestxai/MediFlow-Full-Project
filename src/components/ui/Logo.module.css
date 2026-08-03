@@ -1,31 +1,30 @@
-/* Approved MediFlow artwork (public/branding/*). The width/height attributes
-   on the <img> set the intrinsic box; these rules keep the image from
-   stretching, clipping, or overflowing its container while preserving ratio. */
+/* Approved MediFlow artwork (public/branding/*). Exact dimensions are set with
+   INLINE styles on the <img> (see Logo.tsx); this file only handles rendering
+   quality and must NOT set width/height to `auto`, or the image would fall back
+   to its large intrinsic size and blow out the application header. */
 
 .logo {
   display: block;
   object-fit: contain;
-  /* Never let a narrow container clip or distort the mark. */
-  max-width: 100%;
-  height: auto;
   /* Keep the artwork crisp and its approved colours intact — no filters. */
 }
 
-/* Horizontal lockups + icon are sized by height; width follows the ratio. */
+/* Horizontal lockups + icon: fixed by inline height/width. Never grow past
+   the container, and never shrink below their set size (headers are bounded
+   and the wrapper is flex-shrink:0). */
 .lockup {
-  width: auto;
+  max-width: 100%;
+  flex-shrink: 0;
 }
 
-/* Full composition is sized by width; height follows the ratio. */
+/* Full composition: sized by width via inline styles. */
 .full {
-  width: 100%;
-  max-width: var(--logo-full-max, 340px);
   height: auto;
 }
 
 /* In Large Text mode the surrounding UI grows; nudge header lockups up a
    little so the wordmark keeps pace with enlarged nav text. */
 :global([data-large-text="true"]) .lockup {
-  transform: scale(1.08);
+  transform: scale(1.06);
   transform-origin: left center;
 }

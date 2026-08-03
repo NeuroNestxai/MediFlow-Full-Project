@@ -1,36 +1,47 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FloOrb } from "@/components/ai/FloOrb";
+import { PatientPage, PatientPageHeader, PatientSection } from "@/components/patient/PatientPage";
+import { TourInvitation } from "@/components/tour/TourInvitation";
+import { PATIENT_TOURS } from "@/components/tour/tours";
 import { DoctorDirectoryCard } from "@/components/patient/DoctorDirectoryCard";
-import { AppointmentListCard } from "@/components/patient/AppointmentListCard";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
-import { fetchDoctors, fetchMyAppointments } from "@/lib/patient/client-data";
+import { CalendarIcon, StethoscopeIcon, InfoIcon, BellIcon } from "@/components/ui/Icons";
+import {
+  fetchDoctors,
+  fetchMyAppointments,
+  fetchNotifications,
+  type PatientNotification,
+} from "@/lib/patient/client-data";
+import {
+  DB_STATUS_LABEL,
+  DB_STATUS_TONE,
+  formatDate,
+  formatTime,
+  displayDoctorName,
+} from "@/lib/patient/types";
 import type { DirectoryDoctor, PatientAppointment } from "@/lib/patient/types";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import styles from "./page.module.css";
 
-// Includes the in-clinic statuses: while a patient is waiting or with the
-// doctor, that visit is still the one their dashboard should be showing.
-const UPCOMING_STATUSES = [
-  "scheduled",
-  "confirmed",
-  "checked_in",
-  "waiting",
-  "in_consultation",
-];
+const UPCOMING_STATUSES = ["scheduled", "confirmed", "checked_in", "waiting", "in_consultation"];
+const QR_ACTIVE_STATUSES = [...UPCOMING_STATUSES, "completed"];
 
 type LoadState =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; appointments: PatientAppointment[]; doctors: DirectoryDoctor[] };
+  | {
+      status: "ready";
+      appointments: PatientAppointment[];
+      doctors: DirectoryDoctor[];
+      notifications: PatientNotification[];
+    };
 
-/**
- * Patient Dashboard. The greeting name is resolved server-side; appointments
- * and doctors are live Supabase data.
- */
 export function DashboardClient({ greetingName }: { greetingName: string | null }) {
   const router = useRouter();
   const { reducedMotion } = useAccessibility();
@@ -39,9 +50,15 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchMyAppointments(), fetchDoctors()])
-      .then(([appointments, doctors]) => {
-        if (active) setState({ status: "ready", appointments, doctors });
+    Promise.all([fetchMyAppointments(), fetchDoctors(), fetchNotifications()])
+      .then(([appointments, doctors, notif]) => {
+        if (!active) return;
+        setState({
+          status: "ready",
+          appointments,
+          doctors,
+          notifications: notif.status === "ready" ? notif.notifications : [],
+        });
       })
       .catch(() => {
         if (active) setState({ status: "error" });
@@ -62,50 +79,29 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
   }, [state]);
 
   const ready = state.status === "ready";
-  const nextAppointment = upcoming[0] ?? null;
+  const next = upcoming[0] ?? null;
+  const recentNotifications = ready ? state.notifications.slice(0, 3) : [];
+  const featuredDoctors = ready ? state.doctors.slice(0, 3) : [];
 
   return (
-    <div className={styles.page}>
-      <h1 className={styles.greeting}>
-        {greetingName ? `Good day, ${greetingName}.` : "Welcome"}
-      </h1>
-      <p className={styles.subGreeting}>Here&rsquo;s what&rsquo;s happening with your care at MCC Clinic.</p>
+    <PatientPage width="wide">
+      <PatientPageHeader
+        title={greetingName ? `Good day, ${greetingName}.` : "Welcome"}
+        description="Here's what's happening with your care at MCC Clinic."
+        tour={PATIENT_TOURS.dashboard}
+      />
 
-      <section className={styles.heroRow} aria-label="MediFlow AI assistant">
-        <div className={styles.aiHero}>
-          <FloOrb state="idle" size={72} reducedMotion={reducedMotion} />
-          <p className={styles.aiKicker}>MEDIFLOW AI ASSISTANT</p>
-          <h2 className={styles.aiTitle}>How can MediFlow guide you today?</h2>
-          <Button href="/patient/ai-assistant" variant="secondary">
-            Ask MediFlow
-          </Button>
-        </div>
-        <div className={styles.countCard}>
-          <span className={styles.countNumber}>{ready ? upcoming.length : "—"}</span>
-          <p className={styles.countLabel}>Upcoming appointments</p>
-          {ready && upcoming.length === 0 ? (
-            <Button href="/patient/booking" variant="secondary">
-              Book Appointment
-            </Button>
-          ) : (
-            <Button href="/patient/appointments" variant="secondary">
-              View All
-            </Button>
-          )}
-        </div>
-      </section>
+      <TourInvitation tour={PATIENT_TOURS.dashboard} />
 
-      <section aria-labelledby="next-appointment-heading">
-        <h2 id="next-appointment-heading" className={styles.sectionTitle}>
-          Next appointment
-        </h2>
-
+      {/* 1 — Next appointment */}
+      <PatientSection title="Next appointment" id="next-appointment" tourId="patient-next-appointment">
         {state.status === "loading" && <LoadingState label="Loading your appointment…" />}
         {state.status === "error" && <ErrorState onRetry={retry} />}
-        {ready && !nextAppointment && (
+        {ready && !next && (
           <EmptyState
+            icon={<CalendarIcon />}
             title="No upcoming appointments"
-            body="When you book a visit, it will show up here."
+            body="When you book a visit, it will appear here with its details and QR code."
             action={
               <Button href="/patient/booking" variant="primary">
                 Book an Appointment
@@ -113,26 +109,132 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
             }
           />
         )}
-        {ready && nextAppointment && (
-          <AppointmentListCard
-            appointment={nextAppointment}
-            onViewDetails={() => router.push("/patient/appointments")}
+        {ready && next && (
+          <article className={styles.nextCard}>
+            <div className={styles.nextTop}>
+              <div>
+                <h3 className={styles.nextDoctor}>
+                  {next.doctorName ? displayDoctorName(next.doctorName) : "Doctor"}
+                </h3>
+                <p className={styles.nextService}>{next.serviceName ?? "Service"}</p>
+              </div>
+              <StatusBadge tone={DB_STATUS_TONE[next.status]} label={DB_STATUS_LABEL[next.status]} />
+            </div>
+            <dl className={styles.nextMeta}>
+              <div>
+                <dt>Date</dt>
+                <dd>{formatDate(next.date)}</dd>
+              </div>
+              <div>
+                <dt>Time</dt>
+                <dd>{formatTime(next.time)}</dd>
+              </div>
+              <div>
+                <dt>Reference</dt>
+                <dd>{next.reference}</dd>
+              </div>
+            </dl>
+            <div className={styles.nextActions}>
+              <Button variant="secondary" onClick={() => router.push("/patient/appointments")}>
+                View Details
+              </Button>
+              {QR_ACTIVE_STATUSES.includes(next.status) ? (
+                <Button variant="secondary" href={`/patient/qr?ref=${encodeURIComponent(next.reference)}`}>
+                  Show QR
+                </Button>
+              ) : null}
+              <Button variant="tertiary" href="/patient/appointments">
+                Manage
+              </Button>
+            </div>
+          </article>
+        )}
+      </PatientSection>
+
+      {/* 2 — Ask MediFlow */}
+      <PatientSection tourId="patient-ask-mediflow">
+        <div className={styles.aiCard}>
+          <FloOrb state="idle" size={64} reducedMotion={reducedMotion} />
+          <div className={styles.aiText}>
+            <p className={styles.aiKicker}>MEDIFLOW AI ASSISTANT</p>
+            <h2 className={styles.aiTitle}>How can MediFlow guide you today?</h2>
+            <p className={styles.aiBody}>
+              Find services, doctors and appointments. MediFlow does not diagnose, prescribe, or
+              handle emergencies.
+            </p>
+          </div>
+          <Button href="/patient/ai-assistant" variant="primary">
+            Ask MediFlow
+          </Button>
+        </div>
+      </PatientSection>
+
+      {/* 3 — Quick actions */}
+      <PatientSection title="Quick actions" id="quick-actions" tourId="patient-quick-actions">
+        <div className={styles.quickGrid}>
+          <QuickAction href="/patient/booking" icon={<CalendarIcon />} label="Book appointment" />
+          <QuickAction href="/patient/services" icon={<InfoIcon />} label="Browse services" />
+          <QuickAction href="/patient/doctors" icon={<StethoscopeIcon />} label="Find a doctor" />
+          <QuickAction href="/patient/appointments" icon={<CalendarIcon />} label="My appointments" />
+        </div>
+      </PatientSection>
+
+      {/* 4 — Recent notifications */}
+      <PatientSection
+        title="Recent notifications"
+        id="recent-notifications"
+        tourId="patient-recent-notifications"
+        actions={
+          <Link href="/patient/notifications" className={styles.seeAll}>
+            View all
+          </Link>
+        }
+      >
+        {state.status === "loading" && <LoadingState label="Loading notifications…" />}
+        {ready && recentNotifications.length === 0 && (
+          <EmptyState
+            icon={<BellIcon />}
+            title="You're all caught up"
+            body="New updates about your appointments and documents will appear here."
           />
         )}
-      </section>
+        {ready && recentNotifications.length > 0 && (
+          <ul className={styles.notifList}>
+            {recentNotifications.map((n) => (
+              <li key={n.id} className={`${styles.notifItem} ${n.isRead ? "" : styles.notifUnread}`}>
+                <span className={styles.notifIcon} aria-hidden="true">
+                  <BellIcon />
+                </span>
+                <div className={styles.notifText}>
+                  <p className={styles.notifTitle}>
+                    {n.title}
+                    {!n.isRead ? <span className={styles.unreadDot} aria-label="Unread" /> : null}
+                  </p>
+                  <p className={styles.notifBody}>{n.message}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PatientSection>
 
-      <section aria-labelledby="doctors-heading">
-        <h2 id="doctors-heading" className={styles.sectionTitle}>
-          Meet our doctors
-        </h2>
+      {/* 5 — Featured doctors (small subset, never the full directory) */}
+      <PatientSection
+        title="Featured doctors"
+        id="featured-doctors"
+        actions={
+          <Link href="/patient/doctors" className={styles.seeAll}>
+            See all doctors
+          </Link>
+        }
+      >
         {state.status === "loading" && <LoadingState label="Loading doctors…" />}
-        {state.status === "error" && <ErrorState onRetry={retry} />}
-        {ready && state.doctors.length === 0 && (
+        {ready && featuredDoctors.length === 0 && (
           <EmptyState title="No doctors available" body="Please check back later." />
         )}
-        {ready && state.doctors.length > 0 && (
-          <div className={styles.cardGrid}>
-            {state.doctors.map((doctor) => (
+        {ready && featuredDoctors.length > 0 && (
+          <div className={styles.doctorGrid}>
+            {featuredDoctors.map((doctor) => (
               <DoctorDirectoryCard
                 key={doctor.id}
                 doctor={doctor}
@@ -142,7 +244,18 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
             ))}
           </div>
         )}
-      </section>
-    </div>
+      </PatientSection>
+    </PatientPage>
+  );
+}
+
+function QuickAction({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
+  return (
+    <Link href={href} className={styles.quickAction}>
+      <span className={styles.quickIcon} aria-hidden="true">
+        {icon}
+      </span>
+      <span className={styles.quickLabel}>{label}</span>
+    </Link>
   );
 }

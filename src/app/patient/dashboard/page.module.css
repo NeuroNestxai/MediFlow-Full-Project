@@ -1,140 +1,249 @@
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 16px 88px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-@media (min-width: 768px) {
-  .page {
-    padding: 32px 40px 64px;
-  }
-}
-
-.greeting {
-  font-size: 22px;
-  font-weight: 800;
-  font-family: var(--font-display);
-  color: var(--color-text-primary);
-}
-
-@media (min-width: 768px) {
-  .greeting {
-    font-size: 28px;
-  }
-}
-
-.subGreeting {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-
-.heroRow {
+/* ---- Next appointment card (prominent) ---- */
+.nextCard {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-@media (min-width: 768px) {
-  .heroRow {
-    flex-direction: row;
-  }
+.nextTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.aiHero {
-  flex: 1;
-  background: linear-gradient(135deg, #3b4a87, #262d5c);
-  border-radius: var(--radius-xl);
-  padding: 24px;
-  color: #ffffff;
+.nextDoctor {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.nextService {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.nextMeta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  margin: 0;
+}
+
+.nextMeta div {
+  min-width: 90px;
+}
+
+.nextMeta dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.nextMeta dd {
+  margin: 3px 0 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.nextActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ---- Ask MediFlow card ---- */
+.aiCard {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--color-accent-teal-subtle) 0%, var(--color-accent-violet-subtle) 100%);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px;
+}
+
+.aiText {
+  flex: 1;
+  min-width: 200px;
 }
 
 .aiKicker {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  opacity: 0.75;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-accent-violet);
 }
 
 .aiTitle {
-  font-size: 20px;
-  font-weight: 700;
+  margin-top: 2px;
   font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--color-text-primary);
 }
 
-.countCard {
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
-  padding: 24px;
+.aiBody {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  max-width: 520px;
+}
+
+/* ---- Quick actions ---- */
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .quickGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.quickAction {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 200px;
-}
-
-.countNumber {
-  font-size: 32px;
-  font-weight: 800;
-  font-family: var(--font-display);
-  color: var(--color-text-primary);
-}
-
-.countLabel {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  text-align: center;
-}
-
-.sectionHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.sectionTitle {
-  font-size: 17px;
-  font-weight: 700;
-  font-family: var(--font-display);
-  color: var(--color-text-primary);
-  margin-bottom: 12px;
-}
-
-.demoToggleLabel {
-  display: inline-flex;
-}
-
-.demoToggle {
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
-  color: var(--color-text-secondary);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  min-height: 88px;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing),
+    box-shadow var(--motion-duration-fast) var(--motion-easing);
 }
 
-.cardGrid {
+.quickAction:hover {
+  border-color: var(--color-action-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.quickIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-action-primary-subtle);
+  color: var(--color-action-primary);
+}
+
+.quickLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---- Notifications preview ---- */
+.seeAll {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-action-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.notifList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notifItem {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.notifUnread {
+  border-left: 3px solid var(--color-action-primary);
+  background: var(--color-action-primary-subtle);
+}
+
+.notifIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface-blush);
+  color: var(--color-action-primary);
+}
+
+.notifText {
+  min-width: 0;
+}
+
+.notifTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-action-primary);
+  flex-shrink: 0;
+}
+
+.notifBody {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ---- Featured doctors ---- */
+.doctorGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 14px;
 }
 
 @media (min-width: 640px) {
-  .cardGrid {
+  .doctorGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 1024px) {
-  .cardGrid {
+  .doctorGrid {
     grid-template-columns: repeat(3, 1fr);
   }
 }

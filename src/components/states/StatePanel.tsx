@@ -49,12 +49,16 @@ export function EmptyState({
   title = "Nothing here yet",
   body = "Once there is activity, it will appear here.",
   action,
+  icon,
 }: {
   title?: string;
   body?: string;
   action?: ReactNode;
+  /** Page-specific icon (defaults to a bell). Pass a relevant icon so
+   * unrelated empty states don't all show a notification bell. */
+  icon?: ReactNode;
 }) {
-  return <StatePanel icon={<BellIcon />} title={title} body={body} dashed action={action} />;
+  return <StatePanel icon={icon ?? <BellIcon />} title={title} body={body} dashed action={action} />;
 }
 
 export function ErrorState({ onRetry }: { onRetry?: () => void }) {

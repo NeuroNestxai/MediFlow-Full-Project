@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
 import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
 import { PatientBottomNav } from "@/components/layout/PatientBottomNav";
+import { TourProvider } from "@/components/tour/TourProvider";
 import { fetchUnreadCount } from "@/lib/patient/client-data";
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
@@ -30,19 +31,16 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
     { href: "/patient/services", label: "Services" },
     { href: "/patient/doctors", label: "Doctors" },
     { href: "/patient/appointments", label: "Appointments" },
-    {
-      href: "/patient/notifications",
-      label: unread > 0 ? `Notifications (${unread})` : "Notifications",
-    },
+    { href: "/patient/notifications", label: "Notifications", badge: unread },
     { href: "/patient/profile", label: "Profile" },
   ];
 
   return (
-    <div>
+    <TourProvider>
       <DesktopTopNav links={links} activeHref={pathname} homeHref="/patient/dashboard" />
       <MobileBrandBar homeHref="/patient/dashboard" />
       <main>{children}</main>
       <PatientBottomNav />
-    </div>
+    </TourProvider>
   );
 }

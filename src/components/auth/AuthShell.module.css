@@ -48,6 +48,16 @@
   margin-bottom: 4px;
 }
 
+/* Compact brand for mobile: scale the mark down (its px size is fixed inline,
+   so a transform is the clean way to shrink it responsively). */
+@media (max-width: 859px) {
+  .brandMark {
+    transform: scale(0.66);
+    transform-origin: center bottom;
+    margin-bottom: -6px;
+  }
+}
+
 .brandName {
   font-family: var(--font-display);
   font-weight: 800;

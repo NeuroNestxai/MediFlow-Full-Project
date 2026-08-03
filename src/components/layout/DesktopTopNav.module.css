@@ -2,13 +2,17 @@
   display: none;
 }
 
-@media (min-width: 768px) {
+/* Show the single-row desktop header only when there is room for the whole
+   nav on one line; below this the mobile brand bar + bottom nav take over
+   (so the desktop nav never wraps to two lines). */
+@media (min-width: 1024px) {
   .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-16);
-    padding: 12px 32px;
+    padding: 14px 28px;
+    min-height: 72px;
     background: var(--color-bg-surface);
     border-bottom: 1px solid var(--color-border-default);
     position: sticky;
@@ -19,19 +23,26 @@
 
 .logoLink {
   display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .nav {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
 }
 
 .link {
-  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
   border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--color-text-secondary);
   text-decoration: none;
 }
@@ -43,6 +54,26 @@
 .active {
   background: var(--color-action-primary);
   color: #ffffff;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-coral);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.active .badge {
+  background: #ffffff;
+  color: var(--color-action-primary);
 }
 
 .rightCluster {

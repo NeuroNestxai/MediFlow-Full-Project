@@ -1,0 +1,84 @@
+.launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.launcher:hover {
+  background: var(--color-action-primary-subtle);
+  border-color: var(--color-action-primary);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* First-visit invitation */
+.invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-accent-violet);
+  background: var(--color-accent-violet-subtle);
+}
+
+.inviteText {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.inviteActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inviteStart {
+  min-height: 40px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-action-primary);
+  color: #ffffff;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.inviteStart:hover {
+  background: var(--color-action-primary-hover);
+}
+
+.inviteGhost {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-action-primary);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.inviteGhost:hover {
+  background: var(--color-bg-surface);
+}

@@ -1,0 +1,150 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+/* Spotlight: a transparent window over the target with a huge surrounding
+   shadow that dims the rest of the page, plus a visible ring so the target is
+   marked by more than dimming alone. */
+.spotlight {
+  position: fixed;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 9999px rgba(20, 26, 48, 0.55);
+  outline: 3px solid var(--color-accent-violet-bright);
+  outline-offset: 2px;
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+  pointer-events: none;
+}
+
+.dimAll {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 26, 48, 0.55);
+}
+
+.popover {
+  position: fixed;
+  width: calc(100vw - 24px);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lift);
+  padding: 16px 18px 14px;
+  z-index: 1;
+}
+
+.popHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.progress {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.close {
+  border: none;
+  background: none;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+}
+
+.close:hover {
+  background: var(--color-action-primary-subtle);
+  color: var(--color-action-primary);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+}
+
+.body {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.navBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.primary,
+.secondary,
+.skip {
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--color-action-primary);
+  color: #ffffff;
+}
+
+.primary:hover {
+  background: var(--color-action-primary-hover);
+}
+
+.secondary {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+}
+
+.secondary:hover {
+  background: var(--color-action-primary-subtle);
+}
+
+.skip {
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  padding-left: 4px;
+}
+
+.skip:hover {
+  color: var(--color-action-primary);
+  text-decoration: underline;
+}
+
+@media (min-width: 480px) {
+  .popover {
+    width: 320px;
+  }
+}
+
+/* Reduced motion: no spotlight glide. */
+.noMotion .spotlight {
+  transition: none;
+}

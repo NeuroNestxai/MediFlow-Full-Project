@@ -19,7 +19,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <aside className={styles.brand} aria-label="About MediFlow AI">
         <BrandDecoration />
         <div className={styles.brandInner}>
-          <Logo variant="icon" size={72} className={styles.brandMark} alt="" priority />
+          <Logo variant="icon" size={128} className={styles.brandMark} alt="" priority />
           <p className={styles.brandName}>MediFlow AI</p>
           <p className={styles.brandTagline}>Guiding you from symptoms to care.</p>
           <p className={styles.brandDescription}>

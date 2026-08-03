@@ -66,6 +66,16 @@ export function Logo({
   const width = variant === "full" ? s : Math.round(s * ratio);
   const height = variant === "full" ? Math.round(s / ratio) : s;
 
+  // Size is enforced with INLINE styles so no stylesheet (or a stray
+  // `width:auto`/`height:auto`) can make the <img> fall back to its very large
+  // intrinsic size — the bug that blew up the application headers. `full`
+  // fills its bounded wrapper by width; the lockups/icon are fixed by height
+  // with width following the ratio.
+  const style =
+    variant === "full"
+      ? { width: "100%", maxWidth: `${s}px`, height: "auto" as const }
+      : { height: `${height}px`, width: `${width}px` };
+
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static, pre-sized brand asset; next/image adds no benefit here and complicates SSR/client dual use
     <img
@@ -73,6 +83,7 @@ export function Logo({
       alt={alt}
       width={width}
       height={height}
+      style={style}
       className={`${styles.logo} ${variant === "full" ? styles.full : styles.lockup} ${className ?? ""}`}
       decoding="async"
       loading={priority ? "eager" : "lazy"}
