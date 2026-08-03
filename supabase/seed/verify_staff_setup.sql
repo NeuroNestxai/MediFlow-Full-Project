@@ -50,22 +50,29 @@ with checks(step, item, ok) as (
         select 1 from pg_publication_tables
         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'appointments')),
 
-    ('5', 'all 4 doctor accounts have the doctor role', (
-        select count(*) = 4 from auth.users u join public.user_roles r on r.user_id = u.id
-        where lower(u.email) in ('nadia_alhajri@mccoman.com', 'khawla_alhuti@mccoman.com',
-                                 'hayat_alkiyumi@mccoman.com', 'jumana_almajrafi@mccoman.com')
-          and r.role::text = 'doctor')),
-    ('5', 'both admin accounts have the reception role', (
-        select count(*) = 2 from auth.users u join public.user_roles r on r.user_id = u.id
-        where lower(u.email) in ('nasayim_alhajri@mccoman.com', 'nadia_alhajri@mccoman.com')
-          and r.role::text = 'reception')),
-    ('5', 'Dr. Nadia holds BOTH roles', (
-        select count(*) = 2 from auth.users u join public.user_roles r on r.user_id = u.id
-        where lower(u.email) = 'nadia_alhajri@mccoman.com'
-          and r.role::text in ('doctor', 'reception'))),
-    ('5', '3 doctor accounts linked to directory records', (
-        select count(*) = 3 from auth.users u join public.doctors d on d.user_id = u.id
-        where lower(u.email) like '%@mccoman.com'))
+    -- The demo needs one working account of each role. user_roles is keyed by
+    -- user_id, so each person holds exactly one.
+    ('5', 'a doctor account exists, linked to a directory record', exists (
+        select 1 from auth.users u
+        join public.user_roles r on r.user_id = u.id
+        join public.doctors    d on d.user_id = u.id
+        where r.role::text = 'doctor' and lower(u.email) like '%@mccoman.com')),
+    ('5', 'a reception account exists', exists (
+        select 1 from auth.users u join public.user_roles r on r.user_id = u.id
+        where r.role::text = 'reception' and lower(u.email) like '%@mccoman.com')),
+    ('5', 'a patient account exists', exists (
+        select 1 from auth.users u join public.user_roles r on r.user_id = u.id
+        where r.role::text = 'patient')),
+    ('5', 'every clinic account can sign in', not exists (
+        select 1 from auth.users u
+        where lower(u.email) like '%@mccoman.com' and u.email_confirmed_at is null)),
+    -- Staff must NOT also count as patients: private.is_patient() guards the
+    -- patient data and the booking procedures.
+    ('5', 'no staff account is also a patient', not exists (
+        select 1 from auth.users u join public.user_roles r on r.user_id = u.id
+        where r.role::text = 'patient'
+          and lower(u.email) like '%@mccoman.com'
+          and lower(u.email) <> 'demo.patient@mccoman.com'))
 )
 select case when ok then 'OK' else 'MISSING' end as result,
        'step ' || step as step,

@@ -50,16 +50,41 @@ do $$ begin
   end if;
 end $$;
 
+-- Mirrors the REAL live table (verified 2026-08-03 against the project):
+--   PRIMARY KEY (user_id) — one role per user, NOT a composite key.
+-- Getting this wrong locally is what caused the staff-role script to silently
+-- discard its inserts, so it is reproduced exactly here.
 create table if not exists public.user_roles (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role    public.app_role not null,
-  primary key (user_id, role)
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  role        public.app_role not null,
+  assigned_at timestamptz default now(),
+  assigned_by uuid references auth.users(id),
+  constraint user_roles_pkey primary key (user_id)
 );
 alter table public.user_roles enable row level security;
 grant select on public.user_roles to authenticated;
 drop policy if exists user_roles_select_own on public.user_roles;
 create policy user_roles_select_own on public.user_roles
   for select to authenticated using (user_id = (select auth.uid()));
+
+-- The live project has an `on_auth_user_created` trigger on auth.users that
+-- creates a profile and assigns the `patient` role to EVERY new account —
+-- including staff accounts created from the dashboard. Reproduced so scripts
+-- are tested against the same starting conditions.
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.profiles (id) values (new.id) on conflict (id) do nothing;
+  insert into public.user_roles (user_id, role) values (new.id, 'patient')
+    on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 -- Minimal storage stub so the patient_documents migration's policies apply.
 create table if not exists storage.buckets (
