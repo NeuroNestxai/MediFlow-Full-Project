@@ -33,6 +33,28 @@
   height: 40px;
 }
 
+/* Deterministic trigger icon: both are in the DOM (identical SSR + client
+   markup); CSS reveals the one matching the live theme. Default (light or no
+   attribute yet) shows the sun; dark shows the moon. */
+.sunIcon,
+.moonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.moonIcon {
+  display: none;
+}
+
+:global(:root[data-theme="dark"]) .sunIcon {
+  display: none;
+}
+
+:global(:root[data-theme="dark"]) .moonIcon {
+  display: inline-flex;
+}
+
 .menu {
   position: absolute;
   top: calc(100% + 8px);

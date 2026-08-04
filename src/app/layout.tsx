@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Manrope, Inter } from "next/font/google";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { AppearanceProvider } from "@/components/appearance/AppearanceProvider";
@@ -45,10 +46,15 @@ d.setAttribute("data-theme",dark?"dark":"light");}catch(e){}})();`;
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${manrope.variable} ${inter.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
-      </head>
       <body>
+        {/* Applies saved theme + accessibility preferences to <html> before the
+            first paint (no flash, no wrong theme). Rendered via next/script with
+            the beforeInteractive strategy so Next injects it into the initial
+            HTML — React never treats it as a component-rendered <script>, so
+            there is no runtime warning. */}
+        <Script id="mediflow-no-flash" strategy="beforeInteractive">
+          {NO_FLASH_SCRIPT}
+        </Script>
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

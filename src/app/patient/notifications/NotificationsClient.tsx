@@ -91,8 +91,16 @@ export function NotificationsClient() {
   // initial fetch (and manual retry) if Realtime is unavailable.
   useEffect(() => {
     const supabase = createClient();
+    // Unique topic per subscription: the browser client is a singleton, so a
+    // static channel name could collide with another subscriber or a Strict-Mode
+    // remount ("cannot add postgres_changes callbacks after subscribe()").
+    const topic = `patient-notifications:${
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    }`;
     const channel = supabase
-      .channel("patient-notifications")
+      .channel(topic)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "patient_notifications" },

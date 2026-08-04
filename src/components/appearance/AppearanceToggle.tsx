@@ -24,7 +24,7 @@ const OPTIONS: { value: Appearance; label: string }[] = [
  * prefers-color-scheme. The trigger icon reflects the currently applied theme.
  */
 export function AppearanceToggle({ variant = "pill", className }: AppearanceToggleProps) {
-  const { appearance, setAppearance, theme } = useAppearance();
+  const { appearance, setAppearance } = useAppearance();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -57,7 +57,17 @@ export function AppearanceToggle({ variant = "pill", className }: AppearanceTogg
         aria-label="Appearance"
         title="Appearance"
       >
-        {theme === "dark" ? <MoonIcon /> : <SunIcon />}
+        {/* Both icons are always rendered so the SSR and first client render are
+            identical (no hydration mismatch). CSS shows the one matching the
+            live <html data-theme> attribute — which the no-flash script sets
+            before paint and the AppearanceProvider keeps in sync — so the
+            correct icon appears immediately and updates on every theme change. */}
+        <span className={styles.sunIcon} aria-hidden="true">
+          <SunIcon />
+        </span>
+        <span className={styles.moonIcon} aria-hidden="true">
+          <MoonIcon />
+        </span>
       </button>
 
       {open ? (

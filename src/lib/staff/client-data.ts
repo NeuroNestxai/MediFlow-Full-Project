@@ -40,6 +40,23 @@ function isMissingObject(code?: string): boolean {
   return code === "PGRST205" || code === "PGRST202" || code === "42P01" || code === "42883";
 }
 
+/**
+ * A collision-proof suffix for Realtime channel topics. The browser Supabase
+ * client is a singleton, so every subscription must own a distinct channel name
+ * — otherwise a second subscriber (or a Strict-Mode remount) would try to add
+ * handlers to an already-subscribed channel and Supabase would throw.
+ */
+function uniqueId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    // fall through to the timestamp/random fallback
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 // ---------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------
@@ -316,8 +333,14 @@ export async function createFollowUp(input: FollowUpInput): Promise<CreateFollow
  */
 export function subscribeToAppointments(onChange: () => void): () => void {
   const supabase = createClient();
+  // The browser Supabase client is a singleton, so a static channel topic would
+  // be shared by every subscriber (dashboards, lists, the unread-count hook) and
+  // adding a second `.on()` to that already-subscribed channel throws
+  // "cannot add postgres_changes callbacks after subscribe()". A unique topic
+  // per call gives each subscriber (and each Strict-Mode remount) its own
+  // channel, torn down precisely in the returned cleanup.
   const channel = supabase
-    .channel("staff-appointments")
+    .channel(`staff-appointments:${uniqueId()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () =>
       onChange(),
     )
@@ -394,7 +417,7 @@ export async function markAllStaffNotificationsRead(): Promise<{ ok: boolean }> 
 export function subscribeToStaffNotifications(onChange: () => void): () => void {
   const supabase = createClient();
   const channel = supabase
-    .channel("staff-notifications")
+    .channel(`staff-notifications:${uniqueId()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications" }, () =>
       onChange(),
     )
