@@ -156,6 +156,15 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
             <Button variant="secondary" href="/doctor/patients">
               Open Patient List
             </Button>
+            <Button variant="secondary" href="/doctor/availability">
+              Manage Availability
+            </Button>
+            <Button variant="secondary" href="/doctor/consultation-notes">
+              Consultation Notes
+            </Button>
+            <Button variant="secondary" href="/doctor/notifications">
+              Notifications
+            </Button>
           </div>
         </section>
 

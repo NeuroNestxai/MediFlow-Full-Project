@@ -13,10 +13,14 @@ import {
 import type {
   AppointmentLookup,
   Consultation,
+  DoctorAvailabilitySlot,
+  DoctorConsultationSummary,
   FollowUp,
   FollowUpType,
+  PatientSearchResult,
   ReportedHealth,
   StaffAppointment,
+  StaffNotification,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -320,5 +324,396 @@ export function subscribeToAppointments(onChange: () => void): () => void {
     .subscribe();
   return () => {
     void supabase.removeChannel(channel);
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Staff notifications (public.staff_notifications).
+// Shared by Doctor + Reception; RLS decides which rows each role receives.
+// Degrades to "unavailable" until the migration is applied.
+// ---------------------------------------------------------------------------
+
+export type StaffNotificationsLoad =
+  | { status: "ready"; notifications: StaffNotification[] }
+  | { status: "unavailable" }
+  | { status: "error" };
+
+interface StaffNotificationRow {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  related_appointment_id: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export async function fetchStaffNotifications(): Promise<StaffNotificationsLoad> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("staff_notifications")
+    .select("id, type, title, message, related_appointment_id, is_read, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) return { status: isMissingObject(error.code) ? "unavailable" : "error" };
+  const notifications = ((data ?? []) as StaffNotificationRow[]).map((r) => ({
+    id: r.id,
+    type: r.type,
+    title: r.title,
+    message: r.message,
+    relatedAppointmentId: r.related_appointment_id,
+    isRead: r.is_read,
+    createdAt: r.created_at,
+  }));
+  return { status: "ready", notifications };
+}
+
+/** Unread badge count. Returns 0 (never throws) so a missing table can't break the nav. */
+export async function fetchStaffUnreadCount(): Promise<number> {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from("staff_notifications")
+    .select("*", { head: true, count: "exact" })
+    .eq("is_read", false);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function markStaffNotificationRead(id: string): Promise<{ ok: boolean }> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("staff_mark_notification_read", { p_id: id });
+  return { ok: !error };
+}
+
+export async function markAllStaffNotificationsRead(): Promise<{ ok: boolean }> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("staff_mark_all_notifications_read");
+  return { ok: !error };
+}
+
+export function subscribeToStaffNotifications(onChange: () => void): () => void {
+  const supabase = createClient();
+  const channel = supabase
+    .channel("staff-notifications")
+    .on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications" }, () =>
+      onChange(),
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Doctor availability management (public.doctor_availability via RPCs).
+// Every write re-derives the doctor from auth.uid(); booked slots are protected.
+// ---------------------------------------------------------------------------
+
+export type AvailabilityLoad =
+  | { status: "ready"; slots: DoctorAvailabilitySlot[] }
+  | { status: "unavailable" }
+  | { status: "error" };
+
+interface AvailabilityRow {
+  availability_id: string;
+  available_date: string;
+  start_time: string;
+  is_active: boolean;
+  is_booked: boolean;
+}
+
+export async function fetchDoctorAvailability(
+  from: string,
+  to: string,
+): Promise<AvailabilityLoad> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("doctor_list_availability", {
+    p_from: from,
+    p_to: to,
+  });
+  if (error) return { status: isMissingObject(error.code) ? "unavailable" : "error" };
+  const slots = ((data ?? []) as AvailabilityRow[]).map((r) => ({
+    id: r.availability_id,
+    date: r.available_date,
+    time: r.start_time,
+    isActive: r.is_active,
+    isBooked: r.is_booked,
+  }));
+  return { status: "ready", slots };
+}
+
+export type AvailabilityMutation =
+  | { ok: true }
+  | { ok: false; reason: "unavailable" | "past" | "booked" | "invalid" | "error" };
+
+function toAvailabilityMutation(error: { code?: string; message?: string } | null): AvailabilityMutation {
+  if (!error) return { ok: true };
+  if (isMissingObject(error.code)) return { ok: false, reason: "unavailable" };
+  const msg = String(error.message ?? "");
+  if (msg.includes("date_in_past")) return { ok: false, reason: "past" };
+  if (msg.includes("slot_booked")) return { ok: false, reason: "booked" };
+  if (msg.includes("invalid_range") || msg.includes("invalid_input")) return { ok: false, reason: "invalid" };
+  return { ok: false, reason: "error" };
+}
+
+export async function addDoctorAvailability(
+  date: string,
+  time: string,
+): Promise<AvailabilityMutation> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("doctor_add_availability", {
+    p_date: date,
+    p_start_time: time,
+  });
+  return toAvailabilityMutation(error);
+}
+
+export async function setDoctorAvailabilityActive(
+  id: string,
+  active: boolean,
+): Promise<AvailabilityMutation> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("doctor_set_availability_active", {
+    p_availability_id: id,
+    p_active: active,
+  });
+  return toAvailabilityMutation(error);
+}
+
+export type BlockAvailabilityResult =
+  | { ok: true; blocked: number }
+  | { ok: false; reason: "unavailable" | "past" | "booked" | "invalid" | "error" };
+
+export async function blockDoctorAvailability(
+  date: string,
+  start: string,
+  end: string,
+): Promise<BlockAvailabilityResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("doctor_block_availability", {
+    p_date: date,
+    p_start_time: start,
+    p_end_time: end,
+  });
+  if (error) {
+    const m = toAvailabilityMutation(error);
+    return { ok: false, reason: m.ok ? "error" : m.reason };
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as { blocked_count: number } | undefined;
+  return { ok: true, blocked: row?.blocked_count ?? 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Doctor consultation notes workspace (public.consultations joined to the
+// appointment). RLS returns ONLY the signed-in doctor's own consultations.
+// ---------------------------------------------------------------------------
+
+export type ConsultationsLoad =
+  | { status: "ready"; consultations: DoctorConsultationSummary[] }
+  | { status: "unavailable" }
+  | { status: "error" };
+
+interface ConsultationListRow {
+  id: string;
+  appointment_id: string;
+  notes: string | null;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  updated_at: string;
+  appointment:
+    | {
+        reference: string;
+        appointment_date: string;
+        appointment_time: string;
+        status: string;
+        patient: { full_name: string | null; preferred_name: string | null } | { full_name: string | null; preferred_name: string | null }[] | null;
+        service: { name: string } | { name: string }[] | null;
+      }
+    | null;
+}
+
+export async function fetchDoctorConsultations(): Promise<ConsultationsLoad> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("consultations")
+    .select(
+      "id, appointment_id, notes, status, started_at, completed_at, updated_at, " +
+        "appointment:appointments(reference, appointment_date, appointment_time, status, " +
+        "patient:profiles(full_name, preferred_name), service:services(name))",
+    )
+    .order("updated_at", { ascending: false });
+  if (error) return { status: isMissingObject(error.code) ? "unavailable" : "error" };
+
+  const one = <T,>(v: T | T[] | null | undefined): T | null =>
+    Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+
+  const consultations = ((data ?? []) as unknown as ConsultationListRow[]).map((r) => {
+    const appt = r.appointment;
+    const patient = one(appt?.patient);
+    const service = one(appt?.service);
+    const name =
+      patient?.preferred_name?.trim() || patient?.full_name?.trim() || "Patient";
+    return {
+      id: r.id,
+      appointmentId: r.appointment_id,
+      status: r.status === "completed" ? ("completed" as const) : ("draft" as const),
+      updatedAt: r.updated_at,
+      startedAt: r.started_at,
+      completedAt: r.completed_at,
+      hasNotes: Boolean(r.notes && r.notes.trim()),
+      reference: appt?.reference ?? "—",
+      date: appt?.appointment_date ?? "",
+      time: appt?.appointment_time ?? "",
+      appointmentStatus: (appt?.status ?? "scheduled") as DbAppointmentStatus,
+      patientName: name,
+      serviceName: service?.name ?? null,
+    };
+  });
+  return { status: "ready", consultations };
+}
+
+// ---------------------------------------------------------------------------
+// Clinic availability overview (reception). Reads public.doctor_availability
+// directly — RLS returns all active rows to reception, own rows to a doctor.
+// Used only to compute "next available slot" on the Reception Doctors board;
+// booking still goes through the role-gated RPCs below.
+// ---------------------------------------------------------------------------
+
+export interface ClinicSlot {
+  doctorId: string;
+  date: string;
+  time: string;
+}
+
+export async function fetchClinicAvailability(fromDate: string): Promise<ClinicSlot[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("doctor_availability")
+    .select("doctor_id, available_date, start_time")
+    .eq("is_active", true)
+    .gte("available_date", fromDate)
+    .order("available_date", { ascending: true })
+    .order("start_time", { ascending: true })
+    .limit(2000);
+  if (error) return [];
+  interface Row {
+    doctor_id: string;
+    available_date: string;
+    start_time: string;
+  }
+  return ((data ?? []) as Row[]).map((r) => ({
+    doctorId: r.doctor_id,
+    date: r.available_date,
+    time: r.start_time,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Reception-assisted booking (public.staff_* RPCs).
+// ---------------------------------------------------------------------------
+
+export async function staffSearchPatients(query: string): Promise<PatientSearchResult[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("staff_search_patients", { p_query: query });
+  if (error) return [];
+  interface Row {
+    patient_id: string;
+    full_name: string | null;
+    preferred_name: string | null;
+    phone: string | null;
+  }
+  return ((data ?? []) as Row[]).map((r) => ({
+    patientId: r.patient_id,
+    name: r.preferred_name?.trim() || r.full_name?.trim() || "Patient",
+    phone: r.phone,
+  }));
+}
+
+interface StaffSlotRow {
+  availability_id: string;
+  available_date: string;
+  start_time: string;
+  is_demo: boolean;
+  source_label: string | null;
+}
+
+export interface StaffSlot {
+  availabilityId: string;
+  date: string;
+  time: string;
+  isDemo: boolean;
+  sourceLabel: string | null;
+}
+
+export type StaffSlotsLoad =
+  | { status: "ready"; slots: StaffSlot[] }
+  | { status: "unavailable" }
+  | { status: "error" };
+
+export async function staffFetchAvailableSlots(
+  doctorId: string,
+  serviceId: string,
+): Promise<StaffSlotsLoad> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("staff_get_available_slots", {
+    p_doctor_id: doctorId,
+    p_service_id: serviceId,
+  });
+  if (error) return { status: isMissingObject(error.code) ? "unavailable" : "error" };
+  const slots = ((data ?? []) as StaffSlotRow[]).map((r) => ({
+    availabilityId: r.availability_id,
+    date: r.available_date,
+    time: r.start_time,
+    isDemo: r.is_demo,
+    sourceLabel: r.source_label,
+  }));
+  return { status: "ready", slots };
+}
+
+export type StaffCreateAppointmentResult =
+  | { ok: true; reference: string; date: string; time: string; status: DbAppointmentStatus }
+  | { ok: false; reason: "conflict" | "unavailable" | "invalid" | "error" };
+
+export async function staffCreateAppointment(input: {
+  patientId: string;
+  doctorId: string;
+  serviceId: string;
+  availabilityId: string;
+  notes: string | null;
+}): Promise<StaffCreateAppointmentResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("staff_create_appointment", {
+    p_patient_id: input.patientId,
+    p_doctor_id: input.doctorId,
+    p_service_id: input.serviceId,
+    p_availability_id: input.availabilityId,
+    p_patient_notes: input.notes,
+  });
+  if (error) {
+    if (isMissingObject(error.code)) return { ok: false, reason: "unavailable" };
+    const msg = String(error.message ?? "");
+    if (error.code === "23505" || msg.includes("slot_unavailable")) return { ok: false, reason: "conflict" };
+    if (
+      msg.includes("invalid_patient") ||
+      msg.includes("invalid_doctor") ||
+      msg.includes("invalid_service") ||
+      msg.includes("service_not_offered") ||
+      msg.includes("invalid_availability")
+    ) {
+      return { ok: false, reason: "invalid" };
+    }
+    return { ok: false, reason: "error" };
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { reference: string; appointment_date: string; appointment_time: string; status: string }
+    | undefined;
+  if (!row) return { ok: false, reason: "error" };
+  return {
+    ok: true,
+    reference: row.reference,
+    date: row.appointment_date,
+    time: row.appointment_time,
+    status: row.status as DbAppointmentStatus,
   };
 }

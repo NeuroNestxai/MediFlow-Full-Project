@@ -1,0 +1,220 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.stepTitle {
+  margin: 0;
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.hint {
+  margin: 0;
+  font-size: calc(12.5px * var(--font-scale));
+  color: var(--color-text-secondary);
+}
+
+.selectedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-action-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-status-info-bg);
+}
+
+.selectedName {
+  margin: 0;
+  font-weight: 700;
+  font-size: calc(14.5px * var(--font-scale));
+  color: var(--color-text-primary);
+}
+
+.selectedMeta {
+  margin: 0;
+  font-size: calc(12.5px * var(--font-scale));
+  color: var(--color-text-secondary);
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resultBtn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  font-family: var(--font-body);
+}
+
+.resultBtn:hover {
+  border-color: var(--color-action-primary);
+  background: var(--color-status-info-bg);
+}
+
+.doctorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.doctorCard {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  font-family: var(--font-body);
+  text-align: left;
+}
+
+.doctorActive {
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 1px var(--color-action-primary);
+  background: var(--color-status-info-bg);
+}
+
+.doctorName {
+  font-weight: 700;
+  font-size: calc(13.5px * var(--font-scale));
+  color: var(--color-text-primary);
+}
+
+.demoNote {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(12.5px * var(--font-scale));
+  color: var(--color-text-secondary);
+}
+
+.dateChips,
+.timeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  cursor: pointer;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: calc(13px * var(--font-scale));
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+.chipActive {
+  border-color: var(--color-action-primary);
+  background: var(--color-action-primary);
+  color: var(--color-on-primary);
+}
+
+.review {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface-blush);
+}
+
+.reviewRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: calc(13.5px * var(--font-scale));
+}
+
+.reviewRow dt {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.reviewRow dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: right;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-status-error-text);
+  font-size: calc(13px * var(--font-scale));
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.successCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 24px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-status-success-text);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.successTitle {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: calc(22px * var(--font-scale));
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.successMeta {
+  margin: 0;
+  font-size: calc(14px * var(--font-scale));
+  color: var(--color-text-secondary);
+}
+
+.successRef {
+  margin: 6px 0 0;
+  font-size: calc(14px * var(--font-scale));
+  color: var(--color-text-primary);
+}

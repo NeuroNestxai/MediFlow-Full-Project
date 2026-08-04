@@ -127,8 +127,11 @@ export function DashboardClient({ displayName }: { displayName: string }) {
           <p className={styles.liveTag}>Live updates active</p>
         </div>
         <div className={styles.headActions}>
-          <Button variant="primary" href="/reception/qr-scan">
-            Scan QR
+          <Button variant="primary" href="/reception/check-in">
+            Check In
+          </Button>
+          <Button variant="secondary" href="/reception/booking">
+            Book Appointment
           </Button>
           <Button variant="secondary" href="/reception/queue">
             Open Live Queue

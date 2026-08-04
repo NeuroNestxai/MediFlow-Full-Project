@@ -32,6 +32,14 @@
   flex-wrap: nowrap;
   gap: 2px;
   min-width: 0;
+  /* Safety net: if a role has many links, the nav scrolls within itself rather
+     than pushing the page into horizontal overflow. Rarely engaged. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
 }
 
 .link {

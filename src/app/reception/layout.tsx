@@ -5,19 +5,22 @@ import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
 import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
 import { ReceptionBottomNav } from "@/components/layout/ReceptionBottomNav";
-
-const links = [
-  { href: "/reception/dashboard", label: "Dashboard" },
-  { href: "/reception/qr-scan", label: "Mobile QR" },
-  { href: "/reception/queue", label: "Live Queue" },
-  { href: "/reception/appointments", label: "Appointments" },
-  { href: "/reception/patients", label: "Patients" },
-  { href: "/reception/doctors", label: "Doctors" },
-  { href: "/reception/notifications", label: "Notifications" },
-];
+import { useStaffUnreadCount } from "@/hooks/useStaffUnreadCount";
 
 export default function ReceptionLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const unread = useStaffUnreadCount();
+  const links = [
+    { href: "/reception/dashboard", label: "Dashboard" },
+    { href: "/reception/check-in", label: "Check-In" },
+    { href: "/reception/queue", label: "Live Queue" },
+    { href: "/reception/appointments", label: "Appointments" },
+    { href: "/reception/booking", label: "Booking" },
+    { href: "/reception/patients", label: "Patients" },
+    { href: "/reception/doctors", label: "Doctors" },
+    { href: "/reception/notifications", label: "Notifications", badge: unread },
+    { href: "/reception/profile", label: "Profile" },
+  ];
   return (
     <div>
       <DesktopTopNav

@@ -1,21 +1,22 @@
+import { Suspense } from "react";
 import { requireReception } from "@/lib/supabase/staff-auth";
-import { StaffNotice } from "@/components/staff/StaffNotice";
-import { CalendarIcon } from "@/components/ui/Icons";
+import { StaffPage, StaffPageHeader } from "@/components/staff/StaffPage";
+import { ReceptionBooking } from "@/components/staff/ReceptionBooking";
+import { LoadingState } from "@/components/states/StatePanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReceptionBookingPage() {
   await requireReception();
   return (
-    <StaffNotice
-      title="Booking"
-      icon={<CalendarIcon />}
-      panelTitle="Manage existing appointments"
-      panelBody="Appointments are created through the patient booking flow against real availability. Reception can find, check in and manage existing appointments from Appointments and the Queue."
-      links={[
-        { label: "Appointments", href: "/reception/appointments", variant: "primary" },
-        { label: "Live Queue", href: "/reception/queue" },
-      ]}
-    />
+    <StaffPage>
+      <StaffPageHeader
+        title="Book an Appointment"
+        description="Book for a patient against real availability. This creates the same appointment record and booking reference as patient self-booking."
+      />
+      <Suspense fallback={<LoadingState label="Loading booking…" />}>
+        <ReceptionBooking />
+      </Suspense>
+    </StaffPage>
   );
 }

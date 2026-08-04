@@ -80,6 +80,50 @@ export const FOLLOW_UP_TYPE_LABEL: Record<FollowUpType, string> = {
   general_check_in: "General check-in",
 };
 
+/** One row of the shared staff notification feed (Doctor or Reception). */
+export interface StaffNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  relatedAppointmentId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+/** A doctor's own availability slot, with a booked flag (no patient identity). */
+export interface DoctorAvailabilitySlot {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM:SS
+  isActive: boolean;
+  isBooked: boolean;
+}
+
+/** A consultation in the doctor's notes workspace, joined to its appointment. */
+export interface DoctorConsultationSummary {
+  id: string;
+  appointmentId: string;
+  status: "draft" | "completed";
+  updatedAt: string;
+  startedAt: string;
+  completedAt: string | null;
+  hasNotes: boolean;
+  reference: string;
+  date: string;
+  time: string;
+  appointmentStatus: DbAppointmentStatus;
+  patientName: string;
+  serviceName: string | null;
+}
+
+/** A patient returned by the reception search (operational contact only). */
+export interface PatientSearchResult {
+  patientId: string;
+  name: string;
+  phone: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Operational groupings used by the dashboards and the live queue.
 // ---------------------------------------------------------------------------

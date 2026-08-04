@@ -5,19 +5,22 @@ import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
 import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
 import { DoctorBottomNav } from "@/components/layout/DoctorBottomNav";
-
-const links = [
-  { href: "/doctor/dashboard", label: "Dashboard" },
-  { href: "/doctor/schedule", label: "Schedule" },
-  { href: "/doctor/patients", label: "Patients" },
-  { href: "/doctor/appointments", label: "Appointments" },
-  { href: "/doctor/follow-ups", label: "Follow-Ups" },
-  { href: "/doctor/notifications", label: "Notifications" },
-  { href: "/doctor/profile", label: "Profile" },
-];
+import { useStaffUnreadCount } from "@/hooks/useStaffUnreadCount";
 
 export default function DoctorLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const unread = useStaffUnreadCount();
+  const links = [
+    { href: "/doctor/dashboard", label: "Dashboard" },
+    { href: "/doctor/schedule", label: "Schedule" },
+    { href: "/doctor/availability", label: "Availability" },
+    { href: "/doctor/patients", label: "Patients" },
+    { href: "/doctor/appointments", label: "Appointments" },
+    { href: "/doctor/consultation-notes", label: "Notes" },
+    { href: "/doctor/follow-ups", label: "Follow-Ups" },
+    { href: "/doctor/notifications", label: "Notifications", badge: unread },
+    { href: "/doctor/profile", label: "Profile" },
+  ];
   return (
     <div>
       <DesktopTopNav
