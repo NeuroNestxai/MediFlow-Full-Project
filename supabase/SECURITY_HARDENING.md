@@ -65,6 +65,8 @@ Applied migrations (`supabase/migrations/`, versions match the live DB history):
 | `…153139_sec_06` | Approval flow: booking → pending; `approve_appointment` → scheduled + Gmail |
 | `…153238_sec_07` | `agent` schema + `mediflow_agent` role + grants |
 | `…153739_sec_08` | Role-scoped dashboard views; denormalized `patient_ref` (MF) on appointments |
+| `…161728_sec_09` | Enforce doctor "no PII": remove doctors' read of `public.profiles` (applied) |
+| `…161936_sec_10` | True column-level lockdown of `civil_id_encrypted` (table grant overrode the column revoke) |
 
 ## 3. Verification evidence
 
@@ -166,13 +168,22 @@ API.
 **Auth.** Enable *Leaked password protection*: Dashboard → Authentication →
 Sign In / Providers → Password → enable HaveIBeenPwned check.
 
-## 7. Cutover
+## 7. Cutover — APPLIED
 
-`supabase/security-cutover/20260811_sec_09_enforce_doctor_no_pii.sql` removes
-doctors' legacy read of `public.profiles`, closing the name leak at the DB layer.
-Run it **after** the doctor dashboard is deployed against the ID-only views. See
-that folder's README. Until then the ID-only views are live and safe; only the
-legacy `profiles` read remains open to doctors.
+The doctor "no PII" enforcement (`sec_09`) and the civil_id column lockdown
+(`sec_10`) are now **applied live**. Doctors can no longer read patient
+names/phone from `public.profiles` at all, and the encrypted civil_id is
+unreadable except through `admin_get_patient_civil_id()`.
+
+Consequence for the frontend: the **doctor** dashboard must read from
+`public.dashboard_doctor_appointments` / `dashboard_doctor_patient_summary`
+(which carry no name). Until it is repointed, the current doctor page will show
+blank where the patient name used to be. Reception/admin/patient dashboards are
+unaffected.
+
+A final privacy audit returned **zero findings**: every public table has RLS,
+nothing is exposed to `anon`/`public`, no doctor path to any name, civil_id
+ciphertext unreadable by API roles, and the agent role reaches no PII table.
 
 ## 8. Backup & restore
 
