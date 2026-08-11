@@ -30,6 +30,11 @@ Companion to `SECURITY_HARDENING.md`, `N8N_DEVELOPER_HANDOFF.md`, and
 | MFA gate helpers | `private.has_aal2`, `private.require_aal2` | Functions | Database -> Functions | new |
 | Auto no-show sweep | `auto_mark_no_shows` + cron `mediflow-auto-no-show` | Function/cron | Database -> Functions; Integrations/SQL: `cron.job` | new |
 | Auto-expire offers | cron `mediflow-expire-offers` | cron job | `select * from cron.job` | new |
+| Security alert recipient | `app_settings` (`security_alert_email`) | Table | Table Editor (admin-only) | new |
+| Security alerting | high-risk actions -> `email_outbox` alert (via `log_audit`) | in-DB hook | Database -> Functions (`private.log_audit`) | new |
+| Right-to-erasure | `admin_delete_patient_data` | Function | Database -> Functions | new |
+| AI-data transparency | `dashboard_my_ai_data` | View | Table Editor (public) | new |
+| Anti-abuse cap | pending-request limit in `create_patient_appointment` | Function | Database -> Functions | new |
 | Civil-ID encrypt/decrypt (admin) | `admin_set_patient_civil_id`, `admin_get_patient_civil_id` | Functions | Database -> Functions | |
 | Agent write functions | `agent.record_symptoms`, `agent.write_visit_summary` | Functions | Database -> Functions | |
 | Status list (incl. pending_approval, rejected) | `appointment_status` | Enum type | Database -> Types / SQL editor | new values |

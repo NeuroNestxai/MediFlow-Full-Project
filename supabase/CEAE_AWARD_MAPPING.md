@@ -37,17 +37,18 @@ Assessed for **the MediFlow project** (not the whole clinic):
 | 4 | **Governance & Policy (15%)** | Audit trail, documented security design (repo docs), role model, human-in-the-loop approval, change control via migrations | **Mature** | A short project security policy + risk register (this doc) |
 | 5 | **Innovation & Continuous Improvement (5%)** | Privacy-by-design, least-privilege AI-agent boundary, human-in-the-loop, cancellation-waitlist automation, audit + MFA gating; advisor-driven iteration | **Excellence** | Keep measuring improvements |
 | 6 | **Compliance & Assurance (10%)** | Advisor findings addressed, audit_log evidence, tested (rolled-back E2E) migrations | **Mature** | Regulatory mapping (PDPL/MOH), independent test/pen-test |
-| 7 | **Awareness & Training (10%)** | Data-use disclaimer/consent record; secure-by-design build practices | **Developing** | User privacy notice + a short secure-development note |
-| 8 | **Monitoring & Incident Response (15%)** | `audit_log` of sensitive actions + Supabase logs | **Developing - Mature** | Alerting on high-risk actions + a project IR runbook |
+| 7 | **Awareness & Training (10%)** | Data-use disclaimer/consent record, **privacy notice** (PRIVACY_NOTICE.md), **AI-data transparency view**, secure-by-design build practices | **Mature** | Frontend to display the notice/transparency page |
+| 8 | **Monitoring & Incident Response (15%)** | `audit_log` + **email alerting on high-risk actions** + **IR runbook** (INCIDENT_RESPONSE.md) + Supabase logs | **Mature** | Wire n8n Gmail node so alerts deliver; optional SIEM |
 
 **Honest read (project scope):** strong-to-excellent on the data-centric and
-identity domains (1, 2, 5), and Mature on infrastructure/governance/compliance
-(3, 4, 6) because the project rides a hardened managed platform with documented,
-version-controlled change. The two genuinely thinner areas are **Awareness (7)**
-and **Monitoring & IR (8)** — both closable with a privacy notice, an alerting
-hook, and a short IR runbook. Realistic overall **project maturity: Mature (75-89),
-trending to Excellence** once those two are addressed. This is a credible,
-on-theme submission for the "Secure Digital Transformation Project" category.
+identity domains (1, 2, 5), and Mature across infrastructure, governance,
+compliance, **awareness, and monitoring/IR** (3, 4, 6, 7, 8) — the last two were
+lifted from *Developing* by adding a privacy notice + AI-data transparency view
+(awareness) and email alerting on high-risk actions + an IR runbook (monitoring).
+The remaining lifts are mostly **frontend display** (show the disclaimer /
+transparency page) and **wiring** (n8n Gmail so alerts deliver). Realistic overall
+**project maturity: solid Mature (75-89), trending to Excellence** once wired.
+A credible, on-theme submission for the "Secure Digital Transformation Project".
 
 ## 2. The 13 control areas - coverage
 
@@ -86,16 +87,17 @@ Likelihood/impact are indicative; controls listed are IMPLEMENTED unless noted.
 | 11 | Monitoring | Undetected malicious action | Breach goes unnoticed | Medium | Medium | Medium | `audit_log` of sensitive actions; SIEM/alerting = to build |
 | 12 | Insider misuse | Staff snoops PII | Privacy violation | Medium | High | Medium | RLS, MFA-gated civil_id, audit trail (non-repudiation), doctor ID-only |
 
-## 4. Gaps we can close in the database (to raise maturity)
+## 4. Database gaps - status
 
-| Gap | Action (DB) | Domain helped |
-|---|---|---|
-| Data retention / erasure | `admin_delete_patient_data(user_id)` (anonymize PII, keep audit) | Data protection, Compliance |
-| Booking abuse | Cap open pending requests per patient | IAM/robustness |
-| Detection | Alerting hook on high-risk audit actions (e.g. civil_id_decrypt) via `pg_net`/webhook | Monitoring & IR |
-| Transparency | Patient view "what the AI receives about me" | Data protection, Awareness |
-| Backup assurance | Documented + tested restore drill from the snapshot | Backup & recovery |
-| Advisor polish | Add FK indexes, consolidate duplicate RLS policies | Infrastructure/assurance |
+| Gap | Action (DB) | Domain helped | Status |
+|---|---|---|---|
+| Data retention / erasure | `admin_delete_patient_data(user_id)` (anonymize PII, keep audit) | Data protection, Compliance | DONE (sec_24) |
+| Booking abuse | Cap open pending requests per patient (max 3) | IAM/robustness | DONE (sec_22) |
+| Detection / alerting | High-risk audited actions email an alert (`app_settings` recipient) | Monitoring & IR | DONE (sec_23) |
+| Transparency | `dashboard_my_ai_data` ("what the AI receives about me") | Data protection, Awareness | DONE (sec_24) |
+| Advisor polish | FK covering indexes | Infrastructure/assurance | DONE (sec_21) |
+| Backup assurance | Documented + tested restore drill from the snapshot | Backup & recovery | TODO (ops) |
+| Instant push alerts | `pg_net` webhook (in addition to email) | Monitoring & IR | Optional |
 
 ## 5. Project evidence still worth preparing (lightweight, project-scoped)
 
