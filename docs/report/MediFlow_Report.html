@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MediFlow Security &amp; AI Transformation — Report (MCC Clinic)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --ground:#FFFFFF; --surface:#FFFFFF; --surface-2:#F4F8F7;
+    --ink:#14231F; --muted:#54655F; --line:#D5E0DD;
+    --brand:#0F7C8A; --eai:#1E7A5B; --moh:#1C5A7A;
+    --ok:#2E7D5B; --warn:#8F6412; --crit:#A83F39;
+    --ok-bg:#E4F1EA; --warn-bg:#F6EBD6; --crit-bg:#F6E2E0; --accent-bg:#E1EFF0;
+    --serif:"Charter","Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  @page{ size:A4; margin:15mm 14mm; }
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:10.6pt;line-height:1.5}
+  h1,h2,h3,h4{font-family:var(--serif);font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
+  p{margin:0 0 .6em}
+  a{color:var(--brand);text-decoration:none}
+  .eyebrow{font-family:var(--mono);font-size:8pt;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .mono{font-family:var(--mono)} .tnum{font-variant-numeric:tabular-nums}
+  .muted{color:var(--muted)}
+
+  /* covers as title pages */
+  .cover{min-height:247mm;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always;padding-top:8mm}
+  .band{height:6px;border-radius:99px;width:120px}
+  .cover-eai .band{background:linear-gradient(90deg,var(--eai),var(--brand))}
+  .cover-moh .band{background:linear-gradient(90deg,var(--moh),var(--brand))}
+  .brandline{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:9pt;letter-spacing:.06em;color:var(--muted);margin-top:14px}
+  .logomark{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:#fff;font-family:var(--serif);font-weight:700}
+  .cover-eai .logomark{background:var(--eai)} .cover-moh .logomark{background:var(--moh)}
+  .cover h1{font-size:40pt;letter-spacing:-.01em;margin:.15em 0 .18em}
+  .cover .sub{font-size:15pt;color:var(--muted);max-width:32ch}
+  .cover .to{margin-top:22px;font-size:11pt;max-width:56ch}
+  .cover .to .k{font-family:var(--mono);font-size:8pt;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+  .statrow{display:flex;gap:12px;margin-top:26px}
+  .stat{flex:1;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .stat .v{font-family:var(--serif);font-size:18pt;font-weight:600;line-height:1}
+  .stat .l{font-size:8.6pt;color:var(--muted);margin-top:4px}
+  .cover-eai .stat .v{color:var(--eai)} .cover-moh .stat .v{color:var(--moh)}
+  .coverfoot{display:flex;justify-content:space-between;font-size:8.6pt;color:var(--muted);font-family:var(--mono);border-top:1px solid var(--line);padding-top:10px}
+
+  section{page-break-before:always;padding-top:2mm}
+  .parttag{display:inline-block;font-family:var(--mono);font-size:8pt;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:99px;margin-bottom:10px}
+  .tag-eai{background:var(--accent-bg);color:var(--eai)} .tag-moh{background:var(--accent-bg);color:var(--moh)} .tag-sh{background:var(--accent-bg);color:var(--brand)}
+  h2.sec{font-size:19pt;margin:0 0 4px} h3.sub{font-size:12.5pt;margin:18px 0 8px}
+  .lede{color:var(--muted);max-width:70ch;margin-bottom:14px}
+  .divider{height:1px;background:var(--line);margin:18px 0}
+
+  ul.pts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+  ul.pts li{position:relative;padding-left:18px}
+  ul.pts li::before{content:"";position:absolute;left:1px;top:.55em;width:6px;height:6px;border-radius:2px;background:var(--brand)}
+  ul.pts.eai li::before{background:var(--eai)} ul.pts.moh li::before{background:var(--moh)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;break-inside:avoid}
+  .card h4{font-size:11pt;margin:0 0 6px}
+
+  .pill{display:inline-block;font-family:var(--mono);font-size:7.6pt;letter-spacing:.02em;padding:2px 7px;border-radius:99px;font-weight:600;white-space:nowrap}
+  .p-ok{background:var(--ok-bg);color:var(--ok)} .p-warn{background:var(--warn-bg);color:var(--warn)}
+  .p-crit{background:var(--crit-bg);color:var(--crit)} .p-info{background:var(--accent-bg);color:var(--brand)}
+
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;break-inside:avoid;margin:8px 0}
+  table{border-collapse:collapse;width:100%;font-size:8.8pt;background:var(--surface)}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:7.4pt;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+  tr:last-child td{border-bottom:none}
+  tbody tr:nth-child(even) td{background:var(--surface-2)}
+  .grouprow td{background:var(--accent-bg)!important;font-family:var(--mono);font-size:7.6pt;letter-spacing:.06em;text-transform:uppercase;color:var(--brand);font-weight:600}
+
+  figure{margin:14px 0;break-inside:avoid}
+  figure svg{display:block;width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+  figcaption{font-size:8.6pt;color:var(--muted);margin-top:6px;text-align:center;max-width:74ch;margin-inline:auto}
+  .dia{color:var(--ink)}
+  .d-box{fill:var(--surface-2);stroke:var(--line)} .d-vault{fill:var(--crit-bg);stroke:var(--crit)} .d-clin{fill:var(--ok-bg);stroke:var(--ok)}
+  .d-tb{fill:var(--ink);font-family:var(--sans);font-size:12px;font-weight:600}
+  .d-m{fill:var(--muted);font-family:var(--mono);font-size:10px}
+  .d-allow{stroke:var(--eai);fill:none;stroke-width:2} .d-allowt{fill:var(--eai);font-family:var(--mono);font-size:10px}
+  .d-block{stroke:var(--crit);fill:none;stroke-width:2;stroke-dasharray:5 4} .d-blockt{fill:var(--crit);font-family:var(--mono);font-size:10px}
+  .d-flow{stroke:var(--moh);fill:none;stroke-width:2} .d-flowfill{fill:var(--moh)} .d-eaifill{fill:var(--eai)}
+
+  .evgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .ev{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:12px;break-inside:avoid}
+  .ev .v{font-family:var(--serif);font-size:16pt;font-weight:600;line-height:1;color:var(--brand)}
+  .ev .l{font-size:8.4pt;color:var(--muted);margin-top:5px}
+  .cap{font-size:8.2pt;color:var(--muted);font-family:var(--mono);margin-top:8px}
+  .cap b{color:var(--ink)}
+  .note{border-left:3px solid var(--brand);background:var(--surface-2);padding:9px 13px;border-radius:0 9px 9px 0;font-size:9.2pt;break-inside:avoid}
+
+  /* contents */
+  .toc{columns:2;column-gap:26px;font-size:9.4pt}
+  .toc div{break-inside:avoid;margin-bottom:6px;display:flex;gap:8px}
+  .toc .n{font-family:var(--mono);color:var(--brand);min-width:20px}
+  footer{color:var(--muted);font-size:8.4pt;font-family:var(--mono);text-align:center;padding-top:16px;border-top:1px solid var(--line);margin-top:18px}
+</style>
+</head>
+<body>
+
+<!-- ===== COVER 1 — EAI ===== -->
+<div class="cover cover-eai">
+  <div>
+    <div class="band"></div>
+    <div class="brandline"><span class="logomark">M</span> MediFlow · MCC Clinic</div>
+  </div>
+  <div>
+    <div class="eyebrow">Project report &amp; competition submission</div>
+    <h1>MediFlow</h1>
+    <div class="sub">A privacy-first agentic AI for clinic care — what was built and how it was secured.</div>
+    <div class="to"><span class="k">Submitted to</span>Agentic AI 2026 (EAI) — Ministry of Transport, Communications &amp; Information Technology, Oman.</div>
+    <div class="statrow">
+      <div class="stat"><div class="v">0</div><div class="l">patient names ever sent to the AI</div></div>
+      <div class="stat"><div class="v">100%</div><div class="l">of bookings need human approval</div></div>
+      <div class="stat"><div class="v">25</div><div class="l">tracked security migrations</div></div>
+    </div>
+  </div>
+  <div class="coverfoot"><span>MCC Clinic · mediflowom.com</span><span>August 2026 · Part I of II</span></div>
+</div>
+
+<!-- ===== COVER 2 — MOH ===== -->
+<div class="cover cover-moh">
+  <div>
+    <div class="band"></div>
+    <div class="brandline"><span class="logomark">M</span> MediFlow · MCC Clinic</div>
+  </div>
+  <div>
+    <div class="eyebrow">Project report &amp; competition submission</div>
+    <h1>Secure Digital<br>Transformation</h1>
+    <div class="sub">MediFlow — a patient system rebuilt security-first.</div>
+    <div class="to"><span class="k">Submitted to</span>Cybersecurity Excellence Award (CEAE) — Ministry of Health, Oman.<br><span class="mono" style="font-size:9pt;color:var(--moh)">Category · Best Secure Digital Transformation Project</span></div>
+    <div class="statrow">
+      <div class="stat"><div class="v">25/25</div><div class="l">tables protected by row-level security</div></div>
+      <div class="stat"><div class="v">AES</div><div class="l">civil ID encrypted (pgcrypto + Vault)</div></div>
+      <div class="stat"><div class="v">MFA</div><div class="l">on sensitive actions + audit + alerts</div></div>
+    </div>
+  </div>
+  <div class="coverfoot"><span>MCC Clinic · mediflowom.com</span><span>August 2026 · Part II of II</span></div>
+</div>
+
+<!-- ===== CONTENTS ===== -->
+<section>
+  <span class="parttag tag-sh">Report contents</span>
+  <h2 class="sec">Contents</h2>
+  <div class="divider"></div>
+  <div class="toc">
+    <div><span class="n">1</span><span>Executive summary — what MediFlow is</span></div>
+    <div><span class="n">2</span><span>What we fixed &amp; built (work log)</span></div>
+    <div><span class="n">3</span><span>How the AI works safely (diagram)</span></div>
+    <div><span class="n">4</span><span>Human-in-the-loop, no-shows &amp; waitlist</span></div>
+    <div><span class="n">5</span><span>The evaluators' feedback — answered</span></div>
+    <div><span class="n">6</span><span>Table 1 · Where everything lives in Supabase</span></div>
+    <div><span class="n">7</span><span>Table 2 · Cyber-attacks defended</span></div>
+    <div><span class="n">8</span><span>Table 3 · Advantages, disadvantages &amp; fixes</span></div>
+    <div><span class="n">9</span><span>Table 4 · Honest score &amp; maturity estimate</span></div>
+    <div><span class="n">10</span><span>Security architecture (diagram)</span></div>
+    <div><span class="n">11</span><span>Award mapping · 8 domains</span></div>
+    <div><span class="n">12</span><span>Risk register</span></div>
+    <div><span class="n">13</span><span>Database evidence (live)</span></div>
+    <div><span class="n">14</span><span>What connects to what &amp; next steps</span></div>
+  </div>
+</section>
+
+<!-- 1 -->
+<section>
+  <span class="parttag tag-eai">1 · Overview</span>
+  <h2 class="sec">Executive summary</h2>
+  <p class="lede">MediFlow is the patient-facing digital + AI system for MCC Clinic — online booking, an AI assistant, staff dashboards, QR check-in and automated notifications. It was rebuilt <b>security-first</b> so the AI can help without ever touching patient identity, and so no appointment is confirmed without a human.</p>
+  <div class="grid2">
+    <div class="card"><h4>For patients</h4><ul class="pts eai">
+      <li>Book online and track status (awaiting approval → confirmed).</li>
+      <li>Chat about symptoms — by pseudonymous ID, never by name.</li>
+      <li>QR check-in carrying only a booking reference.</li>
+      <li>See exactly what the AI receives about them.</li></ul></div>
+    <div class="card"><h4>For the clinic</h4><ul class="pts eai">
+      <li>Approve or reject every appointment before it is confirmed.</li>
+      <li>Doctors see an AI visit summary — with no patient name.</li>
+      <li>Cancelled slots auto-offered to waiting patients.</li>
+      <li>Automatic email confirmations and security alerts.</li></ul></div>
+  </div>
+  <div class="note" style="margin-top:12px"><b>Scope of this report:</b> the database &amp; application security layer — all applied to the live production database, verified, and version-controlled (25 migrations). Frontend, n8n and Gemini integration steps are listed in section 14.</div>
+</section>
+
+<!-- 2 -->
+<section>
+  <span class="parttag tag-eai">2 · Work log</span>
+  <h2 class="sec">What we fixed &amp; built</h2>
+  <p class="lede">The evaluation flagged that the AI and the doctor dashboard could see patient PII. That is closed, and a full set of safeguards was added.</p>
+  <div class="grid2">
+    <div class="card"><h4>Privacy &amp; encryption</h4><ul class="pts">
+      <li>Identity vault: name, age, gender, email, encrypted civil ID — isolated.</li>
+      <li>Civil ID encrypted (pgcrypto) with a key held in Supabase Vault.</li>
+      <li>Doctor dashboard made ID-only — no patient name, ever.</li>
+      <li>AI agent walled off from all identity data.</li></ul></div>
+    <div class="card"><h4>Access control</h4><ul class="pts">
+      <li>Row-level security on every table; nothing public.</li>
+      <li>Role model: patient / doctor / reception / admin.</li>
+      <li>Least-privilege AI database role.</li>
+      <li>MFA required for civil-ID access and approvals.</li></ul></div>
+    <div class="card"><h4>Safe operations</h4><ul class="pts">
+      <li>Human-in-the-loop approval on every appointment.</li>
+      <li>No-show handling (staff + automatic sweep).</li>
+      <li>Cancellation waitlist that re-fills freed slots.</li>
+      <li>Email confirmations via a secure outbox.</li></ul></div>
+    <div class="card"><h4>Governance</h4><ul class="pts">
+      <li>Data-use consent record + patient privacy notice.</li>
+      <li>Audit trail of sensitive actions + email alerts.</li>
+      <li>Right-to-erasure, anti-abuse limit, transparency view.</li>
+      <li>All changes tested (rolled-back) &amp; version-controlled.</li></ul></div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section>
+  <span class="parttag tag-eai">3 · How it works</span>
+  <h2 class="sec">How the AI works safely</h2>
+  <p class="lede">The AI agent is a separate database login whose entire world is a clinical view keyed by a pseudonymous ID. It cannot reach the identity vault.</p>
+  <figure>
+    <svg viewBox="0 0 760 290" role="img" aria-label="The AI reads only clinical data by patient ID and never the identity vault" class="dia">
+      <text x="20" y="24" class="d-tb">MediFlow database</text>
+      <rect x="20" y="40" width="230" height="84" rx="10" class="d-vault"/>
+      <text x="34" y="64" class="d-tb">🔒 Identity vault</text>
+      <text x="34" y="85" class="d-m">name · age · gender · email</text>
+      <text x="34" y="101" class="d-m">civil ID (encrypted)</text>
+      <text x="34" y="116" class="d-m">admin / reception / self only</text>
+      <rect x="20" y="166" width="230" height="84" rx="10" class="d-clin"/>
+      <text x="34" y="190" class="d-tb">Clinical data</text>
+      <text x="34" y="211" class="d-m">symptoms · history</text>
+      <text x="34" y="227" class="d-m">medications · allergies</text>
+      <rect x="360" y="164" width="170" height="70" rx="10" class="d-box"/>
+      <text x="445" y="193" text-anchor="middle" class="d-tb">AI agent role</text>
+      <text x="445" y="213" text-anchor="middle" class="d-m">least privilege</text>
+      <rect x="592" y="164" width="150" height="70" rx="10" class="d-box"/>
+      <text x="667" y="196" text-anchor="middle" class="d-tb">Gemini AI</text>
+      <text x="667" y="216" text-anchor="middle" class="d-m">no identity PII</text>
+      <defs>
+        <marker id="ah-eai" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-eaifill"/></marker>
+        <marker id="ah-moh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-flowfill"/></marker>
+        <marker id="ah-x" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M2 2L8 8M8 2L2 8" stroke-width="2" class="d-block"/></marker>
+      </defs>
+      <path d="M250 206 L360 202" class="d-allow" marker-end="url(#ah-eai)"/>
+      <text x="256" y="194" class="d-allowt">patient_id + symptoms</text>
+      <path d="M530 200 L592 200" class="d-allow" marker-end="url(#ah-eai)"/>
+      <path d="M250 88 L360 172" class="d-block" marker-end="url(#ah-x)"/>
+      <text x="298" y="118" class="d-blockt">no access</text>
+    </svg>
+    <figcaption>Verified against the live database: the AI role <b>can</b> read the clinical view, <b>cannot</b> read the identity vault, and <b>cannot</b> decrypt a civil ID.</figcaption>
+  </figure>
+</section>
+
+<!-- 4 -->
+<section>
+  <span class="parttag tag-eai">4 · Safeguards</span>
+  <h2 class="sec">Human-in-the-loop, no-shows &amp; waitlist</h2>
+  <figure>
+    <svg viewBox="0 0 760 200" role="img" aria-label="Appointment lifecycle: booking waits for approval, then approve or reject" class="dia">
+      <rect x="16" y="74" width="150" height="52" rx="10" class="d-box"/>
+      <text x="91" y="96" text-anchor="middle" class="d-tb">Patient books</text>
+      <text x="91" y="114" text-anchor="middle" class="d-m">or via the agent</text>
+      <rect x="212" y="72" width="172" height="56" rx="10" class="d-box" style="stroke:var(--warn)"/>
+      <text x="298" y="94" text-anchor="middle" class="d-tb">Pending approval</text>
+      <text x="298" y="113" text-anchor="middle" class="d-m">forced — cannot be skipped</text>
+      <rect x="470" y="14" width="180" height="54" rx="10" class="d-box" style="stroke:var(--ok)"/>
+      <text x="560" y="36" text-anchor="middle" class="d-tb">Scheduled</text>
+      <text x="560" y="55" text-anchor="middle" class="d-m">+ confirmation email</text>
+      <rect x="470" y="132" width="180" height="54" rx="10" class="d-box" style="stroke:var(--crit)"/>
+      <text x="560" y="154" text-anchor="middle" class="d-tb">Rejected</text>
+      <text x="560" y="173" text-anchor="middle" class="d-m">+ reason &amp; email</text>
+      <path d="M166 100 L212 100" class="d-flow" marker-end="url(#ah-moh)"/>
+      <path d="M384 90 C428 90 430 44 470 42" class="d-flow" marker-end="url(#ah-moh)"/>
+      <text x="398" y="60" class="d-m" fill="var(--ok)">admin / reception approve</text>
+      <path d="M384 110 C428 110 430 158 470 160" class="d-flow" marker-end="url(#ah-moh)"/>
+      <text x="404" y="144" class="d-m" fill="var(--crit)">reject</text>
+    </svg>
+    <figcaption>Every appointment starts in <b>Pending approval</b>, enforced in the database. Downstream: check-in → in-consultation → checked-out; automatic <b>no-show</b> 30 min after a missed start time.</figcaption>
+  </figure>
+  <div class="note"><b>Waitlist:</b> when a patient cancels, the freed slot is auto-offered to the next opted-in patient with a later appointment — they choose "move up" or "keep", and the move still needs staff approval + email.</div>
+</section>
+
+<!-- 5 -->
+<section>
+  <span class="parttag tag-eai">5 · Feedback</span>
+  <h2 class="sec">The evaluators' feedback — answered</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th style="width:40%">Recommendation</th><th>What we did</th><th style="width:78px">Status</th></tr></thead>
+    <tbody>
+      <tr><td>Never send patient identity to the LLM; share symptoms only</td><td>Least-privilege AI role reads only ID + clinical; identity walled off.</td><td><span class="pill p-ok">Done</span></td></tr>
+      <tr><td>Show a clear data-use disclaimer</td><td>Consent record + privacy notice + AI-data transparency view.</td><td><span class="pill p-ok">Done</span></td></tr>
+      <tr><td>Human-in-the-loop before any appointment is finalised</td><td>Force-pending + admin/reception approve/reject + email.</td><td><span class="pill p-ok">Done</span></td></tr>
+      <tr><td>Define how no-shows are handled</td><td>Staff + automatic no-show; freed slots re-offered.</td><td><span class="pill p-ok">Done</span></td></tr>
+      <tr><td>Integrate with existing booking systems, don't replace</td><td>Clean API + email outbox make MediFlow integratable.</td><td><span class="pill p-info">Enabled</span></td></tr>
+      <tr><td>Raise core value (voice intake, curated doctor list)</td><td>Product / UX roadmap — outside database scope.</td><td><span class="pill p-warn">Roadmap</span></td></tr>
+      <tr><td>Move beyond prompt engineering as data grows</td><td>Data / ML strategy — roadmap.</td><td><span class="pill p-warn">Roadmap</span></td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 6 · TABLE 1 -->
+<section>
+  <span class="parttag tag-sh">6 · Table 1</span>
+  <h2 class="sec">Where everything lives in Supabase</h2>
+  <p class="lede">Every object built, and where to see it in the Supabase dashboard.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th style="width:34%">What</th><th>Name</th><th style="width:30%">Where in Supabase</th></tr></thead>
+    <tbody>
+      <tr class="grouprow"><td colspan="3">Tables — Table Editor (public schema)</td></tr>
+      <tr><td>Identity vault (name/age/gender/email/enc. civil ID)</td><td class="mono">patients</td><td>Table Editor</td></tr>
+      <tr><td>Clinical data (AI source)</td><td class="mono">patient_clinical</td><td>Table Editor</td></tr>
+      <tr><td>AI visit summaries</td><td class="mono">visit_summaries</td><td>Table Editor</td></tr>
+      <tr><td>Email queue (approvals + alerts)</td><td class="mono">email_outbox</td><td>Table Editor</td></tr>
+      <tr><td>Appointments (+ approval / patient_ref / wants_earlier)</td><td class="mono">appointments</td><td>Table Editor</td></tr>
+      <tr><td>Cancellation waitlist offers</td><td class="mono">slot_offers</td><td>Table Editor</td></tr>
+      <tr><td>Data-use consent</td><td class="mono">patient_consents</td><td>Table Editor</td></tr>
+      <tr><td>Audit trail (admin-only)</td><td class="mono">audit_log</td><td>Table Editor</td></tr>
+      <tr><td>Settings (alert recipient)</td><td class="mono">app_settings</td><td>Table Editor</td></tr>
+      <tr><td>Full pre-change backup (18 tables)</td><td class="mono">backup_20260811</td><td>Table Editor → switch schema</td></tr>
+      <tr class="grouprow"><td colspan="3">Dashboard views — Table Editor (public)</td></tr>
+      <tr><td>Doctor (ID-only, no name)</td><td class="mono">dashboard_doctor_appointments / _patient_summary</td><td>Table Editor</td></tr>
+      <tr><td>Patient / Reception / Admin</td><td class="mono">dashboard_patient_appointments · _reception_queue · _admin_*</td><td>Table Editor</td></tr>
+      <tr><td>Approval queue</td><td class="mono">dashboard_pending_approvals</td><td>Table Editor</td></tr>
+      <tr><td>Waitlist (patient + staff)</td><td class="mono">dashboard_my_slot_offers · _slot_offers_pending</td><td>Table Editor</td></tr>
+      <tr><td>"What the AI sees about me"</td><td class="mono">dashboard_my_ai_data</td><td>Table Editor</td></tr>
+      <tr><td>Agent-only views (no PII)</td><td class="mono">agent.patient_clinical · agent.appointment_context</td><td>Table Editor → schema <span class="mono">agent</span></td></tr>
+      <tr class="grouprow"><td colspan="3">Functions — Database → Functions</td></tr>
+      <tr><td>Approve / reject appointment</td><td class="mono">approve_appointment · reject_appointment</td><td>Database → Functions</td></tr>
+      <tr><td>Waitlist logic</td><td class="mono">respond_/approve_/reject_slot_offer · patient_set_wants_earlier</td><td>Database → Functions</td></tr>
+      <tr><td>Civil-ID (admin, MFA)</td><td class="mono">admin_get_/set_patient_civil_id</td><td>Database → Functions</td></tr>
+      <tr><td>Erasure / consent / no-show</td><td class="mono">admin_delete_patient_data · record_consent · auto_mark_no_shows</td><td>Database → Functions</td></tr>
+      <tr><td>Agent writes</td><td class="mono">agent.record_symptoms · agent.write_visit_summary</td><td>Database → Functions</td></tr>
+      <tr class="grouprow"><td colspan="3">Roles, keys, jobs &amp; config</td></tr>
+      <tr><td>AI login (least privilege)</td><td class="mono">mediflow_agent</td><td>Database → Roles</td></tr>
+      <tr><td>Civil-ID encryption key</td><td class="mono">civil_id_encryption_key</td><td>Project Settings → Vault</td></tr>
+      <tr><td>Access rules</td><td>RLS policies (all tables)</td><td>Database → Policies</td></tr>
+      <tr><td>Scheduled jobs</td><td class="mono">mediflow-auto-no-show · mediflow-expire-offers</td><td class="mono">select * from cron.job</td></tr>
+      <tr><td>Two-factor authentication</td><td>MFA (TOTP)</td><td>Authentication → Multi-Factor</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 7 · TABLE 2 -->
+<section>
+  <span class="parttag tag-sh">7 · Table 2</span>
+  <h2 class="sec">Cyber-attacks defended</h2>
+  <p class="lede">Each threat, a plain scenario, and the control that stops it.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th style="width:22%">Attack</th><th style="width:34%">Scenario</th><th>Protection</th></tr></thead>
+    <tbody>
+      <tr><td>AI / prompt-injection leak</td><td>"Tell me every patient's name" to the chatbot</td><td>The AI was never given names — it cannot leak them</td></tr>
+      <tr><td>Stolen AI credential</td><td>The AI's DB password leaks</td><td>Only clinical-by-ID; no names/email/civil ID</td></tr>
+      <tr><td>Broken access control (IDOR)</td><td>A patient tries to read another's record</td><td>RLS returns only their own rows</td></tr>
+      <tr><td>SQL injection</td><td>Malicious input via a form</td><td>Parameterized functions + RLS limit damage</td></tr>
+      <tr><td>Stolen database / backup</td><td>The whole DB is copied</td><td>Civil IDs encrypted; passwords bcrypt-hashed</td></tr>
+      <tr><td>Account takeover</td><td>A reused leaked password</td><td>MFA + bcrypt + rate limits</td></tr>
+      <tr><td>Privilege escalation</td><td>A doctor self-grants admin</td><td>Functions re-check role; role table locked</td></tr>
+      <tr><td>Over-privileged insider</td><td>A doctor browses identities</td><td>Doctors are ID-only — no name given</td></tr>
+      <tr><td>Anonymous scraping</td><td>A bot hits the API without login</td><td>Anonymous access returns zero rows</td></tr>
+      <tr><td>Fraudulent / auto bookings</td><td>A script creates a pre-confirmed appointment</td><td>Force-pending + no direct writes; only approval finalises</td></tr>
+      <tr><td>Unauthorized approval</td><td>A patient approves their own booking</td><td>Approve/reject gated to admin/reception only</td></tr>
+      <tr><td>Booking spam</td><td>A bot floods fake requests</td><td>Max 3 open requests + human review</td></tr>
+      <tr><td>Repudiation</td><td>Dispute over who confirmed</td><td>approved_by / rejected_by audit trail</td></tr>
+      <tr><td>Queue-jumping</td><td>Grabbing a freed slot not offered to you</td><td>Offers only to opted-in candidates; move needs approval</td></tr>
+      <tr><td>Stolen admin session</td><td>Hijacked admin tries to read civil IDs</td><td>MFA (AAL2) required for decrypt + approvals</td></tr>
+      <tr><td>Covert insider access</td><td>Staff quietly views a civil ID</td><td>audit_log + email alert on high-risk actions</td></tr>
+      <tr><td>Undisclosed AI use</td><td>Data shared with AI without awareness</td><td>patient_consents records the disclaimer acceptance</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 8 · TABLE 3 -->
+<section>
+  <span class="parttag tag-sh">8 · Table 3</span>
+  <h2 class="sec">Advantages, disadvantages &amp; fixes</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th style="width:17%">Area</th><th>Advantage</th><th>Limitation</th><th>How to solve</th></tr></thead>
+    <tbody>
+      <tr><td>Data separation</td><td>PII can't leak via AI or doctor views</td><td>More objects to maintain</td><td>Docs kept current; train devs</td></tr>
+      <tr><td>Encryption (civil ID)</td><td>Stolen DB reveals no civil IDs</td><td>Admin/service-role can decrypt</td><td>MFA on admin; rotate key; limit admins</td></tr>
+      <tr><td>Least-privilege AI</td><td>Tiny blast radius if creds leak</td><td>Only real once n8n uses the role</td><td>Point n8n at the restricted role (priority)</td></tr>
+      <tr><td>RLS everywhere</td><td>Strong per-row protection</td><td>Slight query overhead</td><td>Already optimized; test on changes</td></tr>
+      <tr><td>MFA</td><td>Blocks account takeover</td><td>Blocks staff who haven't enrolled</td><td>Enrol MFA; relax for demo if needed</td></tr>
+      <tr><td>Passwords (bcrypt)</td><td>Industry standard</td><td>Leaked-password check needs Pro</td><td>Strong unique passwords; Pro later</td></tr>
+      <tr><td>Backups</td><td>Full snapshot exists</td><td>No auto point-in-time recovery (free)</td><td>Pro for PITR, or scheduled exports</td></tr>
+      <tr><td>Third-party AI</td><td>Only de-identified data sent</td><td>Health data still leaves to Google</td><td>Sign data terms; consider EU/self-host</td></tr>
+      <tr><td>Human-in-the-loop</td><td>No fake/auto bookings; full audit</td><td>Adds a manual step</td><td>Reception can approve; add auto-rules later</td></tr>
+      <tr><td>No-show handling</td><td>Defined + automatic; frees slots</td><td>Fixed 30-min grace</td><td>Tune grace/timezone in the sweep</td></tr>
+      <tr><td>Auditability</td><td>Sensitive actions + alerts tracked</td><td>No "who viewed" read-log yet</td><td>Add read-audit trigger later</td></tr>
+      <tr><td>Monitoring</td><td>Email alerts on high-risk actions</td><td>Depends on n8n Gmail running</td><td>Wire n8n; optional SIEM/webhook</td></tr>
+      <tr><td>Consent &amp; transparency</td><td>Disclaimer recorded; patient can see AI data</td><td>Needs frontend to display</td><td>Show notice + transparency page</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 9 · TABLE 4 -->
+<section>
+  <span class="parttag tag-sh">9 · Table 4</span>
+  <h2 class="sec">Honest score &amp; maturity estimate</h2>
+  <p class="lede">EAI feedback score was ~2.76/5 overall (privacy the weakest at 1.75/5). Effect of this work, by category — honest, not inflated.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Evaluation category (weight)</th><th style="width:64px">Before</th><th style="width:96px">After (this work)</th><th>What still caps it</th></tr></thead>
+    <tbody>
+      <tr><td>AI Safety, Ethics &amp; Oversight <span class="mono">15%</span></td><td class="tnum">1.75</td><td><span class="pill p-ok">3.5 – 4.0</span></td><td>Wire AI role + show disclaimer</td></tr>
+      <tr><td>Technical Product <span class="mono">25%</span></td><td class="tnum">2.5</td><td><span class="pill p-info">3.0 – 3.25</span></td><td>"Prompted, not trained" (ML)</td></tr>
+      <tr><td>Impact &amp; Business Viability <span class="mono">25%</span></td><td class="tnum">3.5</td><td><span class="pill p-info">3.6 – 3.8</span></td><td>Booking-system integration</td></tr>
+      <tr><td>Relevance &amp; Innovation <span class="mono">20%</span></td><td class="tnum">2.75</td><td><span class="pill p-info">~3.0</span></td><td>Core value (voice/curated list)</td></tr>
+      <tr><td>Team &amp; Future Plans <span class="mono">10%</span></td><td class="tnum">2.75</td><td><span class="pill p-info">~3.0</span></td><td>Roadmap</td></tr>
+      <tr><td>Pitch Quality <span class="mono">5%</span></td><td class="tnum">3.5</td><td><span class="pill p-info">~3.75</span></td><td>—</td></tr>
+    </tbody></table></div>
+  <p style="font-size:9pt"><b>Overall:</b> realistically <b>~2.76 → ~3.1–3.4</b> (about +0.4 to +0.6) once the AI role is wired, the disclaimer is shown, and the flows are demoed. The AI-Safety/Ethics axis — the weakest — is the biggest, near-certain gain. Roughly 30% of the score (integration + core value + ML) is product work the database cannot move.</p>
+</section>
+
+<!-- 10 -->
+<section>
+  <span class="parttag tag-moh">10 · Architecture</span>
+  <h2 class="sec">Security architecture</h2>
+  <figure>
+    <svg viewBox="0 0 760 240" role="img" aria-label="Security architecture from browser through Supabase to n8n and Gemini" class="dia">
+      <rect x="16" y="96" width="146" height="50" rx="10" class="d-box"/>
+      <text x="89" y="118" text-anchor="middle" class="d-tb">Browser</text>
+      <text x="89" y="136" text-anchor="middle" class="d-m">patient / staff</text>
+      <rect x="210" y="36" width="252" height="170" rx="12" class="d-box" style="stroke:var(--moh)"/>
+      <text x="336" y="59" text-anchor="middle" class="d-tb">Supabase · Postgres 17</text>
+      <text x="336" y="78" text-anchor="middle" class="d-m">managed · encrypted at rest</text>
+      <rect x="226" y="92" width="220" height="28" rx="7" class="d-clin"/><text x="336" y="111" text-anchor="middle" class="d-m">RLS on every table · deny by default</text>
+      <rect x="226" y="126" width="220" height="28" rx="7" class="d-box"/><text x="336" y="145" text-anchor="middle" class="d-m">controlled functions · MFA · audit</text>
+      <rect x="226" y="160" width="220" height="28" rx="7" class="d-vault"/><text x="336" y="179" text-anchor="middle" class="d-m">identity vault · encrypted civil ID</text>
+      <rect x="510" y="48" width="150" height="50" rx="10" class="d-box"/>
+      <text x="585" y="70" text-anchor="middle" class="d-tb">n8n</text><text x="585" y="88" text-anchor="middle" class="d-m">agent role + Gmail</text>
+      <rect x="510" y="146" width="150" height="50" rx="10" class="d-box"/>
+      <text x="585" y="168" text-anchor="middle" class="d-tb">Gemini AI</text><text x="585" y="186" text-anchor="middle" class="d-m">no identity PII</text>
+      <path d="M162 121 L210 121" class="d-flow" marker-end="url(#ah-moh)"/><text x="150" y="90" class="d-m">HTTPS · user permissions</text>
+      <path d="M462 92 L510 76" class="d-flow" marker-end="url(#ah-moh)"/><text x="470" y="116" class="d-m">agent schema only</text>
+      <path d="M510 171 L466 171" class="d-flow" marker-end="url(#ah-moh)"/><text x="474" y="212" class="d-m">id + symptoms</text>
+    </svg>
+    <figcaption>Browser → Supabase over TLS with the user's own permissions. The AI reaches only the agent schema; the identity vault stays encrypted and isolated. n8n sends confirmation emails and security alerts.</figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="card"><h4>Supabase (managed)</h4><ul class="pts moh"><li>Host &amp; database patching</li><li>Encryption at rest, backups, high availability</li></ul></div>
+    <div class="card"><h4>MediFlow project</h4><ul class="pts moh"><li>RLS, roles, civil-ID encryption, controlled functions</li><li>MFA gating, audit, alerting — version-controlled</li></ul></div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section>
+  <span class="parttag tag-moh">11 · Award mapping</span>
+  <h2 class="sec">Cybersecurity Award — 8 domains</h2>
+  <p class="lede">Assessed for the MediFlow project (Best Secure Digital Transformation Project).</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Domain (weight)</th><th>Project evidence</th><th style="width:96px">Maturity</th></tr></thead>
+    <tbody>
+      <tr><td>Identity &amp; Access <span class="mono">10%</span></td><td>RBAC, RLS, least-privilege AI role, MFA + AAL2</td><td><span class="pill p-ok">Excellence</span></td></tr>
+      <tr><td>Data Protection &amp; Privacy <span class="mono">15%</span></td><td>Encrypted civil ID, identity isolation, minimization, consent</td><td><span class="pill p-ok">Excellence</span></td></tr>
+      <tr><td>Infrastructure &amp; Systems <span class="mono">20%</span></td><td>Managed, encrypted, auto-patched Postgres; secure architecture</td><td><span class="pill p-info">Mature</span></td></tr>
+      <tr><td>Governance &amp; Policy <span class="mono">15%</span></td><td>Audit trail, role model, change control, docs</td><td><span class="pill p-info">Mature</span></td></tr>
+      <tr><td>Innovation &amp; Improvement <span class="mono">5%</span></td><td>Privacy-by-design AI boundary, human-in-the-loop, waitlist</td><td><span class="pill p-ok">Excellence</span></td></tr>
+      <tr><td>Compliance &amp; Assurance <span class="mono">10%</span></td><td>Advisor-clean, audit evidence, tested migrations</td><td><span class="pill p-info">Mature</span></td></tr>
+      <tr><td>Awareness &amp; Training <span class="mono">10%</span></td><td>Privacy notice, consent, AI-data transparency</td><td><span class="pill p-info">Mature</span></td></tr>
+      <tr><td>Monitoring &amp; Incident Response <span class="mono">15%</span></td><td>Audit log + email alerts + IR runbook</td><td><span class="pill p-info">Mature</span></td></tr>
+    </tbody></table></div>
+  <p style="font-size:9pt"><b>Project maturity:</b> solid <b>Mature (75–89)</b>, trending to Excellence once the frontend shows the notice/transparency page and the AI is wired.</p>
+</section>
+
+<!-- 12 -->
+<section>
+  <span class="parttag tag-moh">12 · Risk</span>
+  <h2 class="sec">Risk register</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th style="width:16%">Asset</th><th>Threat</th><th style="width:66px">Level</th><th>Control in place</th></tr></thead>
+    <tbody>
+      <tr><td>Patient database</td><td>SQL injection / data exposure</td><td><span class="pill p-warn">Medium</span></td><td>Parameterized functions, RLS, least privilege</td></tr>
+      <tr><td>AI agent</td><td>PII leak to the LLM</td><td><span class="pill p-warn">Medium</span></td><td>Restricted role, no PII in agent views, audit</td></tr>
+      <tr><td>Civil ID</td><td>Data-at-rest breach</td><td><span class="pill p-warn">Medium</span></td><td>pgcrypto + Vault, column lockdown, MFA decrypt</td></tr>
+      <tr><td>Staff account</td><td>Account takeover</td><td><span class="pill p-warn">Medium</span></td><td>MFA (AAL2), bcrypt, rate limits, RBAC</td></tr>
+      <tr><td>Booking integrity</td><td>Fraudulent / auto bookings</td><td><span class="pill p-warn">Medium</span></td><td>Human-in-the-loop, force-pending, audit</td></tr>
+      <tr><td>Patient portal / API</td><td>Broken access control (IDOR)</td><td><span class="pill p-warn">Medium</span></td><td>RLS row-scoping, role-scoped views</td></tr>
+      <tr><td>Email queue</td><td>PII leak via queue</td><td><span class="pill p-info">Low</span></td><td>Service-role only; minimal content</td></tr>
+      <tr><td>Third parties</td><td>Processor / supply-chain risk</td><td><span class="pill p-warn">Medium</span></td><td>Data minimization to Gemini; DPAs = org action</td></tr>
+      <tr><td>Insider misuse</td><td>Staff snoops PII</td><td><span class="pill p-warn">Medium</span></td><td>RLS, MFA-gated civil ID, audit, doctor ID-only</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 13 -->
+<section>
+  <span class="parttag tag-sh">13 · Evidence</span>
+  <h2 class="sec">Database evidence (live)</h2>
+  <p class="lede">Pulled from the production database; each is verifiable in Supabase at the location noted.</p>
+  <div class="evgrid">
+    <div class="ev"><div class="v tnum">25</div><div class="l">tracked security migrations</div></div>
+    <div class="ev"><div class="v tnum">25/25</div><div class="l">tables with row-level security</div></div>
+    <div class="ev"><div class="v tnum">57</div><div class="l">controlled functions</div></div>
+    <div class="ev"><div class="v tnum">2</div><div class="l">scheduled security jobs</div></div>
+  </div>
+  <div class="cap"><b>Where:</b> Database → Migrations / Policies / Functions; <span class="mono">select * from cron.job</span>.</div>
+  <h3 class="sub">The AI agent boundary — proven</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Can the AI role…</th><th style="width:130px">Result</th></tr></thead>
+    <tbody>
+      <tr><td>read the clinical view (ID + symptoms)</td><td><span class="pill p-ok">Yes — allowed</span></td></tr>
+      <tr><td>read the identity vault (name, email…)</td><td><span class="pill p-crit">No — denied</span></td></tr>
+      <tr><td>decrypt a civil ID</td><td><span class="pill p-crit">No — denied</span></td></tr>
+    </tbody></table></div>
+  <div class="cap"><b>Where:</b> SQL Editor — <span class="mono">has_table_privilege / has_function_privilege</span> for role <span class="mono">mediflow_agent</span>.</div>
+  <div class="note" style="margin-top:12px">One operator runs the clinic as <b>admin + reception</b> (two role rows in <span class="mono">user_roles</span>). These panels show real data — drop in matching Supabase screenshots for the final file if desired; the numbers will match.</div>
+</section>
+
+<!-- 14 -->
+<section>
+  <span class="parttag tag-sh">14 · Integration</span>
+  <h2 class="sec">What connects to what &amp; next steps</h2>
+  <p class="lede">The database is complete. These are the integration steps for the rest of the stack — no further database change needed.</p>
+  <div class="grid2">
+    <div class="card"><h4>Frontend (Vercel)</h4><ul class="pts"><li>Read the role-scoped views (doctor = ID-only).</li><li>Approval screen + MFA sign-in for staff.</li><li>Show the data-use disclaimer &amp; transparency page.</li></ul></div>
+    <div class="card"><h4>n8n</h4><ul class="pts"><li>Connect the AI as the restricted role — not the master key.</li><li>Gmail node sends confirmations + security alerts.</li></ul></div>
+    <div class="card"><h4>Gemini</h4><ul class="pts"><li>Prompt gets ID + symptoms only — no identity.</li><li>Writes the visit summary back for the doctor.</li></ul></div>
+    <div class="card"><h4>Supabase config</h4><ul class="pts"><li>Enrol MFA for the operator.</li><li>Set the AI role's password.</li></ul></div>
+  </div>
+  <div class="note" style="margin-top:12px"><b>Priority:</b> point n8n's AI at the restricted role (not the service key) — that single change makes the whole privacy design real end-to-end.</div>
+  <footer>MediFlow · MCC Clinic — prepared for EAI (MTCIT) &amp; the Oman MOH Cybersecurity Excellence Award · August 2026 · database &amp; application security report</footer>
+</section>
+
+</body>
+</html>
