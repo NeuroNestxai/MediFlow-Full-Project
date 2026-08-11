@@ -1,35 +1,53 @@
 # MediFlow — Oman MOH Cybersecurity Excellence Award (CEAE): control mapping
 
-Maps MediFlow's implemented **database/application security** to the award's
-evaluation domains, with an honest maturity read and the gaps. Reference
-framework: the award's 8 weighted domains + the 13 control areas, aligned to
-common practice (ISO/IEC 27001, national cybersecurity controls). The Oman CDC
-library (cdc.gov.om) is the authoritative national reference — pull the current
-control documents from there when preparing the final submission.
+**Award participation category: "Best Secure Digital Transformation Project"
+(أفضل مشروع تحول رقمي آمن).**
 
-> Scope note: this project is the **Supabase database + application layer**. Much
-> of the award (physical/network infrastructure, endpoint, awareness training,
-> formal incident-response and business-continuity programs) is **institution-level**
-> and owned by the clinic, not the database. This document is honest about that
-> split so the evidence you submit is credible.
+Maps the MediFlow **secure digital transformation** to the award's 8 weighted
+domains + 13 control areas, with an honest maturity read and the gaps. Reference
+framework aligned to common practice (ISO/IEC 27001, national cybersecurity
+controls). The Oman CDC library (cdc.gov.om) is the authoritative national
+reference — pull the current control documents from there for the final submission.
+
+> Scope note: because the category judges **the project**, not the whole clinic,
+> the unit of evaluation is MediFlow itself — how securely it was designed, built
+> and transformed. That makes the database/application security work the **core
+> evidence**, and lets the Infrastructure and Awareness domains count the
+> **project's** secure architecture and privacy-by-design (not the clinic's
+> building/network). A few items (formal IR runbook, BC/DR, independent test,
+> DPAs) are still worth having as project evidence — noted below.
+
+## Why this category fits MediFlow
+
+"Best Secure Digital Transformation Project" is almost a description of this work:
+a patient-facing digital + AI transformation rebuilt **security-first** —
+privacy-by-design (no PII to the LLM), encryption of sensitive data, least-
+privilege AI-agent isolation, human-in-the-loop safeguards, full RLS, MFA-gated
+sensitive actions, and an audit trail. That is a strong, on-theme narrative.
 
 ## 1. Award domains (8, weighted) - evidence & maturity
 
-| # | Domain (weight) | What MediFlow provides as evidence | DB maturity | Owner of remaining gap |
-|---|---|---|---|---|
-| 1 | **Identity & Access Mgmt (10%)** | RBAC (`user_roles` + `private.is_*`), RLS on every table (deny-by-default, no anon), least-privilege agent role, MFA (TOTP) + **AAL2 required** for civil-id + approvals | **Mature - Excellence** | Org: staff joiner/mover/leaver process, privileged-access mgmt across infra |
-| 2 | **Data Protection & Privacy (15%)** | civil_id encrypted (pgcrypto + Vault), PII isolation (identity vault), agent sees no PII, doctor ID-only, column lockdown, **consent record**, TLS in transit + at-rest encryption (Supabase), data snapshot backup | **Mature - Excellence** | Org: signed DPAs (Google/Supabase), data-retention & erasure policy, PDPL alignment |
-| 3 | **Infrastructure & Systems (20%)** | Managed Postgres (Supabase auto-patched), advisor-clean config, migration-controlled changes | **Partial** | Org/infra: clinic network, servers, medical devices, patching program |
-| 4 | **Governance & Policy (15%)** | Technical governance: audit trail, documented security design (this repo's docs), role model, human-in-the-loop approval, change control via migrations | **Partial** | Org: written policies, risk-management program, defined roles/responsibilities |
-| 5 | **Innovation & Continuous Improvement (5%)** | Privacy-by-design, least-privilege AI agent boundary, human-in-the-loop, cancellation-waitlist automation, audit + MFA gating; continuous fixing via advisor + migrations | **Mature** | Keep iterating; measure improvements |
-| 6 | **Compliance & Assurance (10%)** | Advisor findings addressed (assurance), audit_log evidence, tested (rolled-back E2E) migrations | **Partial** | Org: regulatory mapping (PDPL/MOH), independent assessment/pen-test |
-| 7 | **Awareness & Training (10%)** | Data-use disclaimer/consent (patient-facing awareness) | **Minimal** | Org: staff training, phishing simulations, measured impact |
-| 8 | **Monitoring & Incident Response (15%)** | `audit_log` of sensitive actions + Supabase logs (the data source) | **Partial** | Org: SIEM/SOC, alerting, incident-response plan & playbooks |
+Assessed for **the MediFlow project** (not the whole clinic):
 
-**Honest read:** our work is strong evidence for **domains 1 & 2** (25% of the score),
-meaningful partial evidence for **4, 5, 6, 8** (45%), and little for **3 & 7** (30%,
-infrastructure + training). A realistic **DB-layer** maturity is **Mature (75-89)**;
-overall institution maturity depends on the org-level domains the clinic must cover.
+| # | Domain (weight) | Project evidence | Project maturity | Gap to close |
+|---|---|---|---|---|
+| 1 | **Identity & Access Mgmt (10%)** | RBAC (`user_roles` + `private.is_*`), RLS on every table (deny-by-default, no anon), least-privilege agent role, MFA (TOTP) + **AAL2 required** for civil-id + approvals | **Excellence** | Document the role model; enrol MFA for the operator |
+| 2 | **Data Protection & Privacy (15%)** | civil_id encrypted (pgcrypto + Vault), PII isolation (identity vault), agent sees no PII, doctor ID-only, column lockdown, **consent record**, TLS + at-rest encryption (Supabase), snapshot backup | **Excellence** | DPAs (Google/Supabase), retention/erasure, PDPL note |
+| 3 | **Infrastructure & Systems (20%)** | Project on managed, encrypted Postgres (Supabase, auto-patched), secure architecture (schema isolation, API boundary via RLS), advisor-clean, migration-controlled change | **Mature** | Document the secure architecture + shared-responsibility model; add FK-index polish |
+| 4 | **Governance & Policy (15%)** | Audit trail, documented security design (repo docs), role model, human-in-the-loop approval, change control via migrations | **Mature** | A short project security policy + risk register (this doc) |
+| 5 | **Innovation & Continuous Improvement (5%)** | Privacy-by-design, least-privilege AI-agent boundary, human-in-the-loop, cancellation-waitlist automation, audit + MFA gating; advisor-driven iteration | **Excellence** | Keep measuring improvements |
+| 6 | **Compliance & Assurance (10%)** | Advisor findings addressed, audit_log evidence, tested (rolled-back E2E) migrations | **Mature** | Regulatory mapping (PDPL/MOH), independent test/pen-test |
+| 7 | **Awareness & Training (10%)** | Data-use disclaimer/consent record; secure-by-design build practices | **Developing** | User privacy notice + a short secure-development note |
+| 8 | **Monitoring & Incident Response (15%)** | `audit_log` of sensitive actions + Supabase logs | **Developing - Mature** | Alerting on high-risk actions + a project IR runbook |
+
+**Honest read (project scope):** strong-to-excellent on the data-centric and
+identity domains (1, 2, 5), and Mature on infrastructure/governance/compliance
+(3, 4, 6) because the project rides a hardened managed platform with documented,
+version-controlled change. The two genuinely thinner areas are **Awareness (7)**
+and **Monitoring & IR (8)** — both closable with a privacy notice, an alerting
+hook, and a short IR runbook. Realistic overall **project maturity: Mature (75-89),
+trending to Excellence** once those two are addressed. This is a credible,
+on-theme submission for the "Secure Digital Transformation Project" category.
 
 ## 2. The 13 control areas - coverage
 
@@ -79,14 +97,22 @@ Likelihood/impact are indicative; controls listed are IMPLEMENTED unless noted.
 | Backup assurance | Documented + tested restore drill from the snapshot | Backup & recovery |
 | Advisor polish | Add FK indexes, consolidate duplicate RLS policies | Infrastructure/assurance |
 
-## 5. Owned by the clinic (org/infra - not the database)
+## 5. Project evidence still worth preparing (lightweight, project-scoped)
 
-Written security policies; risk-management program; network security & segmentation;
-endpoint/medical-device security; patching program for non-Supabase systems;
-SIEM/SOC + alerting + incident-response plan & playbooks; business-continuity/DR
-plan with tested restores; staff awareness training + phishing simulations;
-independent assessment / penetration test; signed data-processing agreements with
-Supabase, Google (Gemini) and Vercel; PDPL/MOH regulatory mapping.
+For a **project** submission these are documents about MediFlow, not a clinic-wide
+program — most are a page or two:
+
+- A short **project security policy** + this **risk register**.
+- A **secure architecture diagram** + shared-responsibility note (what Supabase
+  secures vs what the project configures).
+- A **project incident-response runbook** (who does what if MediFlow data is
+  breached; how the `audit_log` is used).
+- A **backup/restore drill** note (restore tested from the snapshot).
+- **Data-processing agreements** with Supabase, Google (Gemini) and Vercel, and a
+  short **PDPL/MOH** alignment note.
+- A **user privacy notice** (the data-use disclaimer text) + a brief
+  **secure-development** summary (privacy-by-design, code review, migrations).
+- Optional but strong: an **independent review / penetration test** of the project.
 
 ---
 
