@@ -25,6 +25,11 @@ Companion to `SECURITY_HARDENING.md`, `N8N_DEVELOPER_HANDOFF.md`, and
 | Cancellation waitlist offers | `slot_offers` (+ `appointments.wants_earlier`) | Table/col | Table Editor (public) | new |
 | Waitlist functions | `patient_set_wants_earlier`, `respond_slot_offer`, `approve_slot_offer`, `reject_slot_offer`, `expire_stale_slot_offers`, `open_slot_offer_for_slot` | Functions | Database -> Functions | new |
 | Waitlist views | `dashboard_my_slot_offers`, `dashboard_slot_offers_pending` | Views | Table Editor (public) | new |
+| Data-use consent | `patient_consents` (+ `record_consent`) | Table/fn | Table Editor / Database -> Functions | new |
+| Audit trail | `audit_log` (+ `private.log_audit`) | Table/fn | Table Editor (admin-only) / Functions | new |
+| MFA gate helpers | `private.has_aal2`, `private.require_aal2` | Functions | Database -> Functions | new |
+| Auto no-show sweep | `auto_mark_no_shows` + cron `mediflow-auto-no-show` | Function/cron | Database -> Functions; Integrations/SQL: `cron.job` | new |
+| Auto-expire offers | cron `mediflow-expire-offers` | cron job | `select * from cron.job` | new |
 | Civil-ID encrypt/decrypt (admin) | `admin_set_patient_civil_id`, `admin_get_patient_civil_id` | Functions | Database -> Functions | |
 | Agent write functions | `agent.record_symptoms`, `agent.write_visit_summary` | Functions | Database -> Functions | |
 | Status list (incl. pending_approval, rejected) | `appointment_status` | Enum type | Database -> Types / SQL editor | new values |
@@ -51,6 +56,9 @@ Companion to `SECURITY_HARDENING.md`, `N8N_DEVELOPER_HANDOFF.md`, and
 | Booking spam / abuse | Bot floods fake requests | Human review gate before finalize | yes |
 | Repudiation | Dispute over who confirmed | approved_by/at + rejected_by/at/reason audit trail | yes |
 | Queue-jumping / unfair slot grab | Patient tries to grab a freed slot they weren't offered | Offers only to opted-in candidates by priority; response gated to the named candidate; move needs admin approval; writes via functions only | yes |
+| Stolen admin session used to read civil IDs | Attacker hijacks an admin session and tries to decrypt civil IDs | MFA (AAL2) required for civil-id decrypt + approvals; a session without 2FA is rejected | gov |
+| Covert insider access / tampering | Staff quietly views a civil ID or approves fraudulently | `audit_log` records who did what, when (non-repudiation); admin-readable | gov |
+| Missing consent / undisclosed AI use | Data shared with the AI without patient awareness | `patient_consents` records the data-use disclaimer acceptance (versioned) | gov |
 
 ## Table 3 — Advantages, disadvantages & solutions
 
@@ -67,5 +75,9 @@ Companion to `SECURITY_HARDENING.md`, `N8N_DEVELOPER_HANDOFF.md`, and
 | Human-in-the-loop approval | No appointment finalized without a person; no fake/auto bookings; approve/reject audit trail; automatic email | Adds a manual step (slower + staff workload) | Reception can approve (done); add auto-approve rules / SLA reminders; optional pg_cron auto-no-show |
 | No-show handling | Defined for doctor + reception; frees slot; notifies patient | Manual only | Optional pg_cron to auto-mark no-shows after N minutes |
 | Cancellation waitlist | Fills freed slots automatically; opt-in + patient choice + admin approval + email; cascades on decline | Adds staff approval per move; offers expire in 24h | Schedule `expire_stale_slot_offers()` (n8n cron/pg_cron); tune priority rule if needed |
+| Data-use consent | Records the disclaimer acceptance (versioned); governance | Frontend must show the disclaimer + call `record_consent` | Wire the disclaimer UI |
+| Audit log | Non-repudiation for civil-id access, approvals, agent writes | No read-audit yet (only actions), no alerting | Add alerting on sensitive actions later |
+| MFA-gated actions | 2FA required for civil-id + approvals | Blocks staff who haven't enrolled MFA | Enrol MFA for admin/reception (or relax approvals for demo) |
+| Auto no-show / expiry (pg_cron) | Hands-off no-show + offer expiry | Fixed 30-min grace + `Asia/Muscat` tz | Tune grace/timezone in `auto_mark_no_shows` |
 | Auditability | Approvals, rejections, status tracked | No "who viewed a patient" log | Add read-audit trigger on `patients` |
 | Monitoring | Base Supabase logs | No alerting / pen-test | Alerts on failed logins; review before scaling |
