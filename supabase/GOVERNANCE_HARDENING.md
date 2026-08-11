@@ -53,9 +53,12 @@ Change the timezone/grace in `auto_mark_no_shows` if the clinic differs.
 
 ## Prerequisites to make these fully live
 
-- **Assign an `admin` role** to a user (none exists yet): civil-id access and
-  admin dashboards need it.
-  `update public.user_roles set role='admin' where user_id='<uuid>';`
+- **Admin == Reception (done):** MediFlow is run by one operator who is both.
+  `user_roles` now allows multiple roles per user, and the reception operator was
+  granted the `admin` role too (migration sec_20), so that account satisfies both
+  `is_admin()` and `is_reception()`. Civil-id access + admin dashboards work for
+  them (with MFA). To add another admin later:
+  `insert into public.user_roles (user_id, role) values ('<uuid>','admin') on conflict do nothing;`
 - **Enrol MFA** for admin/reception (Authentication -> Multi-Factor is enabled;
   users must add an authenticator app).
 - Frontend: show the data-use disclaimer -> call `record_consent('ai_data_use', ...)`.
