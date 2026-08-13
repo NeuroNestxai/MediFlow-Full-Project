@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
 import { AppearanceToggle } from "@/components/appearance/AppearanceToggle";
+import { TourProvider } from "@/components/tour/TourProvider";
+import { TourLauncher } from "@/components/tour/TourLauncher";
+import type { PageTour } from "@/components/tour/tours";
 import styles from "./AuthShell.module.css";
 
 /**
@@ -9,38 +12,64 @@ import styles from "./AuthShell.module.css";
  * sign up, forgot / reset password, permission denied). The left brand panel
  * and the right form panel are one layout; each page only supplies the form
  * card content as `children`, so spacing, radius, shadow and the appearance +
- * accessibility triggers stay identical across all auth routes.
+ * accessibility + tour triggers stay identical across all auth routes.
  *
  * This is a presentational shell only — it never touches auth state, never
  * offers a role selector, and does not change which route a form submits to.
  */
+
+const AUTH_TOUR: PageTour = {
+  id: "auth",
+  version: 1,
+  title: "Getting in",
+  steps: [
+    {
+      target: "auth-card",
+      title: "Sign in or sign up",
+      body: "Returning users sign in here. New patients can switch to Create account using the tabs at the top of this card.",
+      placement: "left",
+    },
+    {
+      target: "auth-controls",
+      title: "Comfort controls",
+      body: "Switch light or dark, and open accessibility options, from here — on every screen.",
+      placement: "bottom",
+    },
+  ],
+};
+
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className={styles.shell}>
-      <aside className={styles.brand} aria-label="About MediFlow AI">
-        <BrandDecoration />
-        <div className={styles.brandInner}>
-          <Logo variant="icon" size={128} className={styles.brandMark} alt="" priority />
-          <p className={styles.brandName}>MediFlow AI</p>
-          <p className={styles.brandTagline}>Guiding you from symptoms to care.</p>
-          <p className={styles.brandDescription}>
-            A secure MCC Clinic platform that helps patients explore services, find doctors,
-            manage appointments, and stay connected throughout their clinic journey.
-          </p>
-          <p className={styles.brandContext}>MCC Clinic · Patient &amp; staff portal</p>
-        </div>
-      </aside>
+    <TourProvider>
+      <div className={styles.shell}>
+        <aside className={styles.brand} aria-label="About MediFlow AI">
+          <BrandDecoration />
+          <div className={styles.brandInner}>
+            <Logo variant="icon" size={128} className={styles.brandMark} alt="" priority />
+            <p className={styles.brandName}>MediFlow AI</p>
+            <p className={styles.brandTagline}>Guiding you from symptoms to care.</p>
+            <p className={styles.brandDescription}>
+              A secure MCC Clinic platform that helps patients explore services, find doctors,
+              manage appointments, and stay connected throughout their clinic journey.
+            </p>
+            <p className={styles.brandContext}>MCC Clinic · Patient &amp; staff portal</p>
+          </div>
+        </aside>
 
-      <div className={styles.panel}>
-        <div className={styles.panelBar}>
-          <AppearanceToggle variant="pill" />
-          <AccessibilityMenu variant="pill" />
+        <div className={styles.panel}>
+          <div className={styles.panelBar} data-tour="auth-controls">
+            <AppearanceToggle variant="pill" />
+            <AccessibilityMenu variant="pill" />
+            <TourLauncher tour={AUTH_TOUR} />
+          </div>
+          <main className={styles.formArea} id="auth-main">
+            <div className={styles.card} data-tour="auth-card">
+              {children}
+            </div>
+          </main>
         </div>
-        <main className={styles.formArea} id="auth-main">
-          <div className={styles.card}>{children}</div>
-        </main>
       </div>
-    </div>
+    </TourProvider>
   );
 }
 
