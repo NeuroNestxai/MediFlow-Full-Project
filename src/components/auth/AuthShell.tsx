@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
+import { Logo } from "@/components/ui/Logo";
 import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
+import { AppearanceToggle } from "@/components/appearance/AppearanceToggle";
 import styles from "./AuthShell.module.css";
 
 /**
  * Shared split-screen shell for every authentication screen (sign in, patient
  * sign up, forgot / reset password, permission denied). The left brand panel
  * and the right form panel are one layout; each page only supplies the form
- * card content as `children`, so spacing, radius, shadow and the accessibility
- * trigger stay identical across all auth routes.
+ * card content as `children`, so spacing, radius, shadow and the appearance +
+ * accessibility triggers stay identical across all auth routes.
  *
  * This is a presentational shell only — it never touches auth state, never
  * offers a role selector, and does not change which route a form submits to.
@@ -18,15 +20,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <aside className={styles.brand} aria-label="About MediFlow AI">
         <BrandDecoration />
         <div className={styles.brandInner}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- static, pre-sized approved brand symbol; next/image adds no benefit and complicates SSR here */}
-          <img
-            src="/branding/mediflow-symbol.png"
-            alt=""
-            width={136}
-            height={136}
-            className={styles.brandMark}
-            decoding="async"
-          />
+          <Logo variant="icon" size={128} className={styles.brandMark} alt="" priority />
           <p className={styles.brandName}>MediFlow AI</p>
           <p className={styles.brandTagline}>Guiding you from symptoms to care.</p>
           <p className={styles.brandDescription}>
@@ -39,6 +33,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
       <div className={styles.panel}>
         <div className={styles.panelBar}>
+          <AppearanceToggle variant="pill" />
           <AccessibilityMenu variant="pill" />
         </div>
         <main className={styles.formArea} id="auth-main">
