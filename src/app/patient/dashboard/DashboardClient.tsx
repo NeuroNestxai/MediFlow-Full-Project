@@ -73,15 +73,19 @@ export function DashboardClient({
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.greeting}>
-        {greetingName ? `Good day, ${greetingName}.` : "Welcome"}
-      </h1>
-      <p className={styles.subGreeting}>Here&rsquo;s what&rsquo;s happening with your care at MCC Clinic.</p>
-      {mfId ? (
-        <p className={styles.mfLine}>
-          MediFlow ID: <span className={styles.mfValue}>{mfId}</span>
+      <div className={styles.intro}>
+        <h1 className={styles.greeting}>
+          {greetingName ? `Good day, ${greetingName}.` : "Welcome"}
+        </h1>
+        <p className={styles.subGreeting}>
+          Here&rsquo;s what&rsquo;s happening with your care at MCC Clinic.
         </p>
-      ) : null}
+        {mfId ? (
+          <p className={styles.mfLine}>
+            MediFlow ID: <span className={styles.mfValue}>{mfId}</span>
+          </p>
+        ) : null}
+      </div>
 
       <section className={styles.heroRow} aria-label="MediFlow AI assistant">
         <div className={styles.aiHero}>
