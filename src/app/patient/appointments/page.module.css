@@ -110,6 +110,13 @@
   color: var(--color-text-secondary);
 }
 
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .timelineHeading {
   font-size: 13px;
   font-weight: 700;

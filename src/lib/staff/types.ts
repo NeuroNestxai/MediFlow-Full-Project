@@ -17,6 +17,9 @@ export interface StaffAppointment {
   time: string; // HH:MM:SS
   status: DbAppointmentStatus;
   patientId: string;
+  /** Stable MediFlow patient ID (e.g. MF412300). Safe, non-PII — the only
+   * patient identifier the AI is ever given. Sourced from appointments.patient_ref. */
+  patientMfId: string | null;
   patientName: string;
   patientPhone: string | null;
   doctorId: string;
@@ -31,6 +34,8 @@ export interface StaffAppointment {
 export interface AppointmentLookup {
   appointmentId: string;
   reference: string;
+  /** Stable MediFlow patient ID (e.g. MF412300); non-PII. */
+  patientMfId: string | null;
   patientName: string;
   patientPhone: string | null;
   doctorName: string;

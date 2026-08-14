@@ -15,6 +15,11 @@ export interface AuthenticatedPatient {
   profile: PatientProfile | null;
   /** True when RLS (or any error) prevented reading the profile row. */
   profileBlocked: boolean;
+  /**
+   * Stable MediFlow patient ID (e.g. MF412300) from public.patients — the
+   * patient's own non-PII identifier. null when it can't be read yet.
+   */
+  mfId: string | null;
 }
 
 /**
@@ -67,10 +72,19 @@ export async function requirePatient(): Promise<AuthenticatedPatient> {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Read only the current user's stable MediFlow ID from public.patients.
+  // RLS (patients_select_self) scopes this to the caller's own row.
+  const { data: patientRow } = await supabase
+    .from("patients")
+    .select("patient_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   return {
     email: user.email ?? null,
     profile: profileError ? null : (profile as PatientProfile | null),
     profileBlocked: Boolean(profileError),
+    mfId: (patientRow as { patient_id: string } | null)?.patient_id ?? null,
   };
 }
 

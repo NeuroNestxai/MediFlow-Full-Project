@@ -48,6 +48,7 @@ export interface DirectoryDoctor {
  * not yet `checked_out` is what Reception lists as Ready for Checkout.
  */
 export type DbAppointmentStatus =
+  | "pending_approval"
   | "scheduled"
   | "confirmed"
   | "checked_in"
@@ -56,6 +57,7 @@ export type DbAppointmentStatus =
   | "completed"
   | "checked_out"
   | "cancelled"
+  | "rejected"
   | "no_show";
 
 export interface PatientAppointment {
@@ -83,6 +85,7 @@ export interface AvailableSlot {
 // ---------------------------------------------------------------------------
 
 export const DB_STATUS_LABEL: Record<DbAppointmentStatus, string> = {
+  pending_approval: "Pending Approval",
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   checked_in: "Checked In",
@@ -91,10 +94,12 @@ export const DB_STATUS_LABEL: Record<DbAppointmentStatus, string> = {
   completed: "Completed",
   checked_out: "Checked Out",
   cancelled: "Cancelled",
+  rejected: "Rejected",
   no_show: "No Show",
 };
 
 export const DB_STATUS_TONE: Record<DbAppointmentStatus, StatusTone> = {
+  pending_approval: "pending",
   scheduled: "info",
   confirmed: "info",
   checked_in: "success",
@@ -103,6 +108,7 @@ export const DB_STATUS_TONE: Record<DbAppointmentStatus, StatusTone> = {
   completed: "success",
   checked_out: "neutral",
   cancelled: "error",
+  rejected: "error",
   no_show: "error",
 };
 

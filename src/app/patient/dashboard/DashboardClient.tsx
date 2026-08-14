@@ -15,6 +15,7 @@ import styles from "./page.module.css";
 // Includes the in-clinic statuses: while a patient is waiting or with the
 // doctor, that visit is still the one their dashboard should be showing.
 const UPCOMING_STATUSES = [
+  "pending_approval",
   "scheduled",
   "confirmed",
   "checked_in",
@@ -31,7 +32,13 @@ type LoadState =
  * Patient Dashboard. The greeting name is resolved server-side; appointments
  * and doctors are live Supabase data.
  */
-export function DashboardClient({ greetingName }: { greetingName: string | null }) {
+export function DashboardClient({
+  greetingName,
+  mfId,
+}: {
+  greetingName: string | null;
+  mfId: string | null;
+}) {
   const router = useRouter();
   const { reducedMotion } = useAccessibility();
   const [reloadKey, setReloadKey] = useState(0);
@@ -70,6 +77,11 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
         {greetingName ? `Good day, ${greetingName}.` : "Welcome"}
       </h1>
       <p className={styles.subGreeting}>Here&rsquo;s what&rsquo;s happening with your care at MCC Clinic.</p>
+      {mfId ? (
+        <p className={styles.mfLine}>
+          MediFlow ID: <span className={styles.mfValue}>{mfId}</span>
+        </p>
+      ) : null}
 
       <section className={styles.heroRow} aria-label="MediFlow AI assistant">
         <div className={styles.aiHero}>

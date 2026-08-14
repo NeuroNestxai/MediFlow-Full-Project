@@ -283,6 +283,9 @@ export function ConsultationClient({ appointmentId }: ConsultationClientProps) {
                 Patient summary
               </h2>
               <p className={styles.patientName}>{state.data.appointment.patientName}</p>
+              {state.data.appointment.patientMfId ? (
+                <p className={styles.meta}>MediFlow ID {state.data.appointment.patientMfId}</p>
+              ) : null}
               <p className={styles.meta}>
                 {state.data.appointment.serviceName ?? "Service not recorded"} ·{" "}
                 {formatDate(state.data.appointment.date)} ·{" "}

@@ -131,6 +131,9 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
                   >
                     {appt.patientName}
                   </Link>
+                  {appt.patientMfId ? (
+                    <span className={styles.mfTag}>{appt.patientMfId}</span>
+                  ) : null}
                   <StatusBadge
                     tone={DB_STATUS_TONE[appt.status]}
                     label={DB_STATUS_LABEL[appt.status]}
@@ -174,6 +177,9 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
                 {inClinic.map((appt) => (
                   <li key={appt.id} className={styles.liveItem}>
                     <span className={styles.liveName}>{appt.patientName}</span>
+                    {appt.patientMfId ? (
+                      <span className={styles.mfTag}>{appt.patientMfId}</span>
+                    ) : null}
                     <StatusBadge
                       tone={DB_STATUS_TONE[appt.status]}
                       label={DB_STATUS_LABEL[appt.status]}

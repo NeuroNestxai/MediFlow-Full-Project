@@ -71,6 +71,7 @@ interface RecentScan {
 interface SuccessInfo {
   reference: string;
   patientName: string;
+  patientMfId: string | null;
   at: string;
 }
 
@@ -248,7 +249,12 @@ export function QrScanClient() {
 
     if (result.ok) {
       const at = formatLocalClock();
-      setSuccess({ reference: result.reference, patientName: appointment.patientName, at });
+      setSuccess({
+        reference: result.reference,
+        patientName: appointment.patientName,
+        patientMfId: appointment.patientMfId,
+        at,
+      });
       setLookup({ status: "idle" });
       setIdentityConfirmed(false);
       setReference("");
@@ -302,6 +308,11 @@ export function QrScanClient() {
           <StatusBadge tone="success" label="Checked In" />
           <h2 className={styles.successTitle}>{success.patientName} is checked in</h2>
           <p className={styles.successMeta}>
+            {success.patientMfId ? (
+              <>
+                MediFlow ID <strong>{success.patientMfId}</strong> &middot;{" "}
+              </>
+            ) : null}
             Booking reference <strong>{success.reference}</strong> &middot; {success.at}
           </p>
           <div className={styles.actions}>
@@ -455,6 +466,9 @@ export function QrScanClient() {
                 <DoctorPortrait palette={toPalette(appointment.doctorPalette)} size={48} />
                 <div className={styles.verifyIdentity}>
                   <p className={styles.patientName}>{appointment.patientName}</p>
+                  {appointment.patientMfId ? (
+                    <p className={styles.muted}>MediFlow ID {appointment.patientMfId}</p>
+                  ) : null}
                   <p className={styles.muted}>{appointment.patientPhone ?? "No phone on file"}</p>
                 </div>
                 <StatusBadge

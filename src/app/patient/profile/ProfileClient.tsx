@@ -18,9 +18,11 @@ interface ProfileClientProps {
   email: string | null;
   /** True when RLS/an error prevented reading the profile server-side. */
   profileBlocked: boolean;
+  /** Stable MediFlow patient ID (e.g. MF412300), or null if not available. */
+  mfId: string | null;
 }
 
-export function ProfileClient({ profile, email, profileBlocked }: ProfileClientProps) {
+export function ProfileClient({ profile, email, profileBlocked, mfId }: ProfileClientProps) {
   const nameId = useId();
   const preferredId = useId();
   const phoneId = useId();
@@ -86,6 +88,17 @@ export function ProfileClient({ profile, email, profileBlocked }: ProfileClientP
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Profile &amp; Settings</h1>
+
+      {mfId ? (
+        <div className={styles.mfCard}>
+          <span className={styles.mfLabel}>Your MediFlow ID</span>
+          <span className={styles.mfValue}>{mfId}</span>
+          <span className={styles.mfHint}>
+            Share this ID with clinic staff and the MediFlow assistant. It never reveals your name
+            or personal details.
+          </span>
+        </div>
+      ) : null}
 
       {savedMessage ? (
         <div className={styles.toastWrap}>

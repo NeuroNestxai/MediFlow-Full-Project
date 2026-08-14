@@ -8,9 +8,11 @@ import { LoadingState, EmptyState, ErrorState } from "@/components/states/StateP
 import { AppointmentListCard } from "@/components/patient/AppointmentListCard";
 import { RescheduleDialog } from "./RescheduleDialog";
 import { fetchMyAppointments, cancelAppointment } from "@/lib/patient/client-data";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   CANCELLABLE_STATUSES,
   DB_STATUS_LABEL,
+  DB_STATUS_TONE,
   formatDate,
   formatTime,
   type PatientAppointment,
@@ -63,12 +65,17 @@ export function AppointmentsClient() {
       // patient is at the clinic right now, so they belong under Upcoming;
       // `checked_out` is a finished visit, so it belongs under Completed.
       if (tab === "Upcoming") {
-        return ["scheduled", "confirmed", "checked_in", "waiting", "in_consultation"].includes(
-          a.status,
-        );
+        return [
+          "pending_approval",
+          "scheduled",
+          "confirmed",
+          "checked_in",
+          "waiting",
+          "in_consultation",
+        ].includes(a.status);
       }
       if (tab === "Completed") return ["completed", "checked_out"].includes(a.status);
-      return ["cancelled", "no_show"].includes(a.status);
+      return ["cancelled", "rejected", "no_show"].includes(a.status);
     });
   }, [state, tab]);
 
@@ -159,8 +166,12 @@ export function AppointmentsClient() {
             <p>
               <strong>Date &amp; time:</strong> {formatDate(detailsFor.date)} · {formatTime(detailsFor.time)}
             </p>
-            <p>
-              <strong>Status:</strong> {DB_STATUS_LABEL[detailsFor.status]}
+            <p className={styles.statusRow}>
+              <strong>Status:</strong>{" "}
+              <StatusBadge
+                tone={DB_STATUS_TONE[detailsFor.status]}
+                label={DB_STATUS_LABEL[detailsFor.status]}
+              />
             </p>
           </div>
         ) : null}

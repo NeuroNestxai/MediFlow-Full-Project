@@ -135,6 +135,53 @@ export async function lookupAppointment(reference: string): Promise<LookupResult
   return { ok: true, appointment };
 }
 
+// ---------------------------------------------------------------------------
+// Booking approvals (reception/admin). New bookings arrive as
+// `pending_approval`; approve → `scheduled`, reject → `rejected`. Both server
+// RPCs additionally require the staff session to be at AAL2 (two-factor), so a
+// dedicated `mfa_required` reason is surfaced for a clear in-UI message.
+// ---------------------------------------------------------------------------
+
+export type ApprovalResult =
+  | { ok: true; reference: string; status: DbAppointmentStatus }
+  | { ok: false; reason: "mfa_required" | "not_allowed" | "not_pending" | "not_found" | "error" };
+
+function toApproval(data: unknown, error: { code?: string; message?: string } | null): ApprovalResult {
+  if (error) {
+    const msg = String(error.message ?? "");
+    if (msg.includes("mfa_required")) return { ok: false, reason: "mfa_required" };
+    if (msg.includes("not_pending_approval")) return { ok: false, reason: "not_pending" };
+    if (msg.includes("not_found")) return { ok: false, reason: "not_found" };
+    if (error.code === "42501" || msg.includes("not_authorized")) return { ok: false, reason: "not_allowed" };
+    return { ok: false, reason: "error" };
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as { reference: string; status: string } | undefined;
+  if (!row) return { ok: false, reason: "error" };
+  return { ok: true, reference: row.reference, status: row.status as DbAppointmentStatus };
+}
+
+/** Approve a pending booking → `scheduled` (queues the confirmation email). */
+export async function approveAppointment(appointmentId: string): Promise<ApprovalResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("approve_appointment", {
+    p_appointment_id: appointmentId,
+  });
+  return toApproval(data, error);
+}
+
+/** Reject a pending booking → `rejected` (queues the update email, with reason). */
+export async function rejectAppointment(
+  appointmentId: string,
+  reason?: string,
+): Promise<ApprovalResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("reject_appointment", {
+    p_appointment_id: appointmentId,
+    p_reason: reason?.trim() ? reason.trim() : null,
+  });
+  return toApproval(data, error);
+}
+
 export type TransitionResult =
   | { ok: true; reference: string; status: DbAppointmentStatus }
   | { ok: false; reason: "not_allowed" | "not_found" | "error" };

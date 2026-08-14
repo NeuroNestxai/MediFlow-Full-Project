@@ -12,7 +12,7 @@ import type { AppointmentLookup, Consultation, FollowUp, FollowUpType, ReportedH
  * returns to reception, or to a doctor for their own patients.
  */
 export const STAFF_APPOINTMENT_SELECT =
-  "id, reference, appointment_date, appointment_time, status, patient_id, doctor_id, patient_notes, " +
+  "id, reference, appointment_date, appointment_time, status, patient_id, patient_ref, doctor_id, patient_notes, " +
   "patient:profiles(full_name, preferred_name, phone), " +
   "doctor:doctors(full_name, portrait_palette), " +
   "service:services(name)";
@@ -49,6 +49,7 @@ interface StaffAppointmentRow {
   appointment_time: string;
   status: string;
   patient_id: string;
+  patient_ref: string | null;
   doctor_id: string;
   patient_notes: string | null;
   patient: ProfileRow | ProfileRow[] | null;
@@ -76,6 +77,7 @@ export function normalizeStaffAppointment(row: unknown): StaffAppointment {
     time: r.appointment_time,
     status: r.status as DbAppointmentStatus,
     patientId: r.patient_id,
+    patientMfId: r.patient_ref ?? null,
     patientName: patientDisplayName(patient),
     patientPhone: patient?.phone ?? null,
     doctorId: r.doctor_id,
@@ -93,6 +95,7 @@ export function normalizeStaffAppointments(rows: unknown): StaffAppointment[] {
 interface LookupRow {
   appointment_id: string;
   reference: string;
+  patient_ref: string | null;
   patient_name: string;
   patient_phone: string | null;
   doctor_name: string;
@@ -111,6 +114,7 @@ export function normalizeLookup(row: unknown): AppointmentLookup | null {
   return {
     appointmentId: r.appointment_id,
     reference: r.reference,
+    patientMfId: r.patient_ref ?? null,
     patientName: r.patient_name,
     patientPhone: r.patient_phone,
     doctorName: r.doctor_name,

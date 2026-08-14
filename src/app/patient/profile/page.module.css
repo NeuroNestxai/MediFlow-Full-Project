@@ -26,6 +26,37 @@
   z-index: 10;
 }
 
+.mfCard {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mfLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mfValue {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+}
+
+.mfHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 .card {
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);

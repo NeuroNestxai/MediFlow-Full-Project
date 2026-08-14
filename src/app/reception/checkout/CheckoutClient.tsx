@@ -181,7 +181,10 @@ export function CheckoutClient() {
                   {displayDoctorName(appt.doctorName)} &middot; {appt.serviceName || "—"} &middot;{" "}
                   {formatTime(appt.time)}
                 </p>
-                <p className={styles.ref}>{appt.reference}</p>
+                <p className={styles.ref}>
+                  {appt.patientMfId ? `${appt.patientMfId} · ` : ""}
+                  {appt.reference}
+                </p>
               </div>
               <StatusBadge tone={DB_STATUS_TONE[appt.status]} label={DB_STATUS_LABEL[appt.status]} />
               <Button

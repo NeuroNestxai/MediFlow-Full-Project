@@ -131,6 +131,9 @@ function SummaryBody({
             <h2 id="patient-heading" className={styles.patientName}>
               {appointment.patientName}
             </h2>
+            {appointment.patientMfId ? (
+              <p className={styles.meta}>MediFlow ID {appointment.patientMfId}</p>
+            ) : null}
             <p className={styles.meta}>
               {appointment.serviceName ?? "Service not recorded"} ·{" "}
               {formatDate(appointment.date)} · {formatTime(appointment.time)}
@@ -187,6 +190,12 @@ function SummaryBody({
 
       <Section title="Booking history" chip={<SourceLabel source="ai-organized" />}>
         <dl className={styles.details}>
+          {appointment.patientMfId ? (
+            <div className={styles.detailRow}>
+              <dt>MediFlow ID</dt>
+              <dd>{appointment.patientMfId}</dd>
+            </div>
+          ) : null}
           <div className={styles.detailRow}>
             <dt>Reference</dt>
             <dd>{appointment.reference}</dd>

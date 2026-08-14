@@ -5,8 +5,8 @@ import { DashboardClient } from "./DashboardClient";
 export const dynamic = "force-dynamic";
 
 export default async function PatientDashboardPage() {
-  const { profile } = await requirePatient();
+  const { profile, mfId } = await requirePatient();
   const greetingName = resolveGreetingName(profile);
 
-  return <DashboardClient greetingName={greetingName} />;
+  return <DashboardClient greetingName={greetingName} mfId={mfId} />;
 }
