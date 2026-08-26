@@ -24,7 +24,14 @@ const CONFIRMATION_ERROR =
  * reads the role server-side from public.user_roles and redirects to the
  * correct dashboard. The client never determines authorization.
  */
-export function SignInForm({ confirmationError = false }: { confirmationError?: boolean }) {
+export function SignInForm({
+  confirmationError = false,
+  next,
+}: {
+  confirmationError?: boolean;
+  /** Where to return after signing in -- already validated server-side by the page. */
+  next?: string;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,7 +100,7 @@ export function SignInForm({ confirmationError = false }: { confirmationError?: 
 
       // Role-based redirect is resolved entirely server-side.
       setAnnouncement("Signed in. Taking you to your dashboard…");
-      router.replace("/auth/post-login");
+      router.replace(next ? `/auth/post-login?next=${encodeURIComponent(next)}` : "/auth/post-login");
       router.refresh();
     } catch {
       const message = "We couldn't reach the sign-in service. Please try again.";

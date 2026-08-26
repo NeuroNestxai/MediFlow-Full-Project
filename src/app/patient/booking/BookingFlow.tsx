@@ -244,11 +244,22 @@ export function BookingFlow() {
 
   // ---- Confirmation screen ----
   if (confirmed) {
+    // Every new booking starts as `pending_approval` -- it is not actually
+    // confirmed until reception approves it. The QR code is for check-in,
+    // which only makes sense once the visit is real, so it's hidden while
+    // the request is still pending too.
+    const isPending = confirmed.status === "pending_approval";
     return (
       <div className={styles.confirmPage}>
         <FloOrb state="success" size={80} reducedMotion={reducedMotion} />
-        <h1 className={styles.confirmTitle}>Appointment confirmed!</h1>
-        <p className={styles.confirmSubtitle}>Keep your booking reference for check-in.</p>
+        <h1 className={styles.confirmTitle}>
+          {isPending ? "Booking request sent!" : "Appointment confirmed!"}
+        </h1>
+        <p className={styles.confirmSubtitle}>
+          {isPending
+            ? "Reception will review your request \u2014 you'll be notified once it's approved."
+            : "Keep your booking reference for check-in."}
+        </p>
         <div className={styles.confirmCard}>
           <p className={styles.confirmDoctor}>{confirmed.doctorName}</p>
           <p className={styles.confirmMeta}>{confirmed.serviceName}</p>
@@ -259,9 +270,11 @@ export function BookingFlow() {
           <p className={styles.confirmRef}>Booking reference: {confirmed.reference}</p>
         </div>
         <div className={styles.confirmActions}>
-          <Button variant="secondary" href={`/patient/qr?ref=${encodeURIComponent(confirmed.reference)}`}>
-            Show Check-In QR Code
-          </Button>
+          {!isPending ? (
+            <Button variant="secondary" href={`/patient/qr?ref=${encodeURIComponent(confirmed.reference)}`}>
+              Show Check-In QR Code
+            </Button>
+          ) : null}
           <Button variant="primary" href="/patient/dashboard">
             Return to Dashboard
           </Button>

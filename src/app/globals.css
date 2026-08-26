@@ -111,3 +111,56 @@ button {
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
 }
+
+
+[data-role-theme="patient"] {
+  --color-action-primary: #0a767b;
+  --color-action-primary-hover: #12a9ae;
+  --color-action-primary-pressed: #075d61;
+  --role-nav-bg: #eef8f8;
+  --role-badge-bg: #e6f4f4;
+  --role-badge-text: #075d61;
+}
+
+[data-role-theme="doctor"] {
+  --color-action-primary: #1d5fb0;
+  --color-action-primary-hover: #2c72c4;
+  --color-action-primary-pressed: #154a8c;
+  --role-nav-bg: #eaf2fb;
+  --role-badge-bg: #e3eefb;
+  --role-badge-text: #154a8c;
+}
+
+[data-role-theme="reception"] {
+  --color-action-primary: #7458b0;
+  --color-action-primary-hover: #9179c6;
+  --color-action-primary-pressed: #5c4189;
+  --role-nav-bg: #f3effa;
+  --role-badge-bg: #efebf9;
+  --role-badge-text: #5c4189;
+}
+
+html[data-role-theme="patient"] body {
+  background:
+    radial-gradient(900px 520px at 6% -10%, #d3efec 0%, transparent 60%),
+    radial-gradient(700px 460px at 102% 0%, #e6f4f4 0%, transparent 55%),
+    var(--color-bg-page);
+}
+
+html[data-role-theme="doctor"] body {
+  background:
+    radial-gradient(130% 90% at 8% -10%, #cfe1fa 0%, transparent 55%),
+    radial-gradient(120% 100% at 100% 0%, #d6e6fa 0%, transparent 60%),
+    radial-gradient(140% 100% at 50% 100%, #e3eefb 0%, transparent 60%),
+    linear-gradient(180deg, #eaf2fb 0%, #f3f7fc 50%, #eef4fb 100%);
+  background-attachment: fixed;
+}
+
+html[data-role-theme="reception"] body {
+  background:
+    radial-gradient(130% 90% at 8% -10%, #ddd0f2 0%, transparent 55%),
+    radial-gradient(120% 100% at 100% 0%, #e7dbf7 0%, transparent 60%),
+    radial-gradient(140% 100% at 50% 100%, #efe6fa 0%, transparent 60%),
+    linear-gradient(180deg, #f3effa 0%, #f7f4fb 50%, #f1ebf9 100%);
+  background-attachment: fixed;
+}

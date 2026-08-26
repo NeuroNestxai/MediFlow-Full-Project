@@ -180,6 +180,32 @@ export function EyeOffIcon(props: IconProps) {
   );
 }
 
+export function HomeIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M2.5 7.3 L8 3 L13.5 7.3" />
+      <path d="M4 6.5 V13 H12 V6.5" />
+      <path d="M6.3 13 V9.5 H9.7 V13" />
+    </svg>
+  );
+}
+
+export function ChatIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M2.5 4 H13.5 V10.5 H6.5 L4 12.8 V10.5 H2.5 Z" />
+    </svg>
+  );
+}
+
+export function MenuIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M2.5 4.5 H13.5 M2.5 8 H13.5 M2.5 11.5 H13.5" />
+    </svg>
+  );
+}
+
 export function StethoscopeIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

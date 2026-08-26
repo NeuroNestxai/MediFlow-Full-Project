@@ -33,6 +33,18 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
   const titleId = `dialog-title-${reactId}`;
   const descId = `dialog-description-${reactId}`;
 
+  // Keep the latest onClose in a ref rather than the effect's dependency
+  // array. If a caller passes a new inline `onClose` on every render (e.g.
+  // because the dialog contains a form whose typing triggers a parent
+  // re-render), depending on it directly would re-run the effect below on
+  // every keystroke — including the "move focus to the first focusable
+  // element" line, which visibly steals focus away from whatever the user
+  // is typing into. A ref sidesteps that without changing the behaviour.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
     previouslyFocused.current = document.activeElement as HTMLElement;
@@ -40,12 +52,14 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
     // Correct initial focus: move focus to the first focusable element
     // inside the dialog (e.g. its close button or first input) rather than
     // leaving focus on the page behind it. Fall back to the dialog surface
-    // itself only if it happens to contain no focusable children.
+    // itself only if it happens to contain no focusable children. This now
+    // runs exactly once per open (not on every re-render), since `open` is
+    // the only dependency.
     const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     (firstFocusable ?? dialogRef.current)?.focus();
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
       if (e.key === "Tab" && dialogRef.current) {
         const focusable = dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
         if (focusable.length === 0) return;
@@ -67,7 +81,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
       // Focus restoration: return focus to whatever triggered the dialog.
       previouslyFocused.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

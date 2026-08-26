@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { AccessibilityMenu } from "@/components/accessibility/AccessibilityMenu";
+import { AppearanceToggle } from "@/components/appearance/AppearanceToggle";
 import styles from "./AuthShell.module.css";
 
 /**
@@ -16,22 +17,30 @@ import styles from "./AuthShell.module.css";
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
+      {/* Spans the FULL page now, not just the brand panel -- it used to be
+          clipped at the brand panel's edge, which read as an abrupt cutoff
+          once the background became one continuous gradient across both
+          sides. It sits behind the glass card too, so the lines show
+          softly through the blur instead of stopping dead before it. */}
+      <BrandDecoration />
+
       <aside className={styles.brand} aria-label="About MediFlow AI">
-        <BrandDecoration />
+        <div className={styles.brandGlow} aria-hidden="true" />
         <div className={styles.brandInner}>
-          <Logo variant="icon" size={128} className={styles.brandMark} alt="" priority />
-          <p className={styles.brandName}>MediFlow AI</p>
-          <p className={styles.brandTagline}>Guiding you from symptoms to care.</p>
-          <p className={styles.brandDescription}>
-            A secure MCC Clinic platform that helps patients explore services, find doctors,
-            manage appointments, and stay connected throughout their clinic journey.
-          </p>
+          {/* Reverted to the original approved full lockup image per
+              request -- the dark-mode box behind the wordmark is a known,
+              accepted tradeoff for now. */}
+          <Logo variant="full" size={360} className={styles.brandMark} alt="MediFlow AI" priority />
           <p className={styles.brandContext}>MCC Clinic · Patient &amp; staff portal</p>
         </div>
       </aside>
 
       <div className={styles.panel}>
         <div className={styles.panelBar}>
+          {/* Was already planned for every auth screen from the start, but
+              never actually got wired in here -- restoring it now,
+              alongside Accessibility. */}
+          <AppearanceToggle variant="pill" />
           <AccessibilityMenu variant="pill" />
         </div>
         <main className={styles.formArea} id="auth-main">
@@ -43,12 +52,13 @@ export function AuthShell({ children }: { children: ReactNode }) {
 }
 
 /** Calm, static brand decoration: flowing guide paths + connected nodes in the
- * approved teal/blue/violet palette. No motion, no glow, low contrast. */
+ * approved teal/blue/violet palette, now spanning the whole page rather than
+ * one narrow panel. No motion, no glow, low contrast. */
 function BrandDecoration() {
   return (
     <svg
       className={styles.decoration}
-      viewBox="0 0 400 600"
+      viewBox="0 0 1600 900"
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       focusable="false"
@@ -61,27 +71,43 @@ function BrandDecoration() {
         </linearGradient>
       </defs>
       <path
-        d="M-20 90 C120 140 90 250 200 300 C310 350 280 470 420 500"
+        className={styles.flowPath1}
+        d="M-40 140 C260 210 220 380 480 420 C760 460 820 300 1100 340 C1340 375 1420 520 1660 560"
         fill="none"
         stroke="url(#auth-path)"
         strokeWidth="2"
         strokeLinecap="round"
       />
       <path
-        d="M-20 200 C140 250 120 360 240 400 C340 434 340 520 440 540"
+        className={styles.flowPath2}
+        d="M-40 340 C280 400 300 560 560 600 C820 640 880 500 1160 540 C1380 570 1460 700 1660 730"
         fill="none"
         stroke="url(#auth-path)"
         strokeWidth="1.5"
         strokeLinecap="round"
-        opacity="0.6"
+        opacity="0.55"
+      />
+      <path
+        className={styles.flowPath3}
+        d="M100 700 C340 660 420 780 640 760 C900 736 940 830 1180 810"
+        fill="none"
+        stroke="url(#auth-path)"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        opacity="0.35"
       />
       <g fill="url(#auth-path)">
-        <circle cx="80" cy="118" r="6" />
-        <circle cx="200" cy="300" r="8" />
-        <circle cx="286" cy="360" r="5" />
-        <circle cx="330" cy="150" r="5" />
-        <circle cx="120" cy="470" r="6" />
-        <circle cx="360" cy="470" r="7" />
+        <circle cx="160" cy="180" r="6" />
+        <circle cx="480" cy="420" r="8" />
+        <circle cx="700" cy="440" r="5" />
+        <circle cx="900" cy="330" r="5" />
+        <circle cx="1100" cy="340" r="7" />
+        <circle cx="1340" cy="420" r="5" />
+        <circle cx="1500" cy="500" r="6" />
+        <circle cx="300" cy="380" r="4" opacity="0.6" />
+        <circle cx="820" cy="600" r="6" opacity="0.6" />
+        <circle cx="1160" cy="540" r="5" opacity="0.6" />
+        <circle cx="1440" cy="650" r="6" opacity="0.6" />
       </g>
     </svg>
   );

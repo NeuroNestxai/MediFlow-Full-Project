@@ -10,7 +10,7 @@ import { CalendarIcon } from "@/components/ui/Icons";
 import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
 import { PATIENT_TOURS } from "@/components/tour/tours";
 import { RescheduleDialog } from "./RescheduleDialog";
-import { fetchMyAppointments, cancelAppointment } from "@/lib/patient/client-data";
+import { fetchMyAppointments, cancelAppointment, setWantsEarlier } from "@/lib/patient/client-data";
 import {
   CANCELLABLE_STATUSES,
   DB_STATUS_LABEL,
@@ -39,7 +39,7 @@ type LoadState =
   | { status: "error" }
   | { status: "ready"; appointments: PatientAppointment[] };
 
-export function AppointmentsClient() {
+export function AppointmentsClient({ mfId }: { mfId: string | null }) {
   const [tab, setTab] = useState<Tab>("Upcoming");
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -49,6 +49,25 @@ export function AppointmentsClient() {
   const [rescheduleFor, setRescheduleFor] = useState<PatientAppointment | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [toast, setToast] = useState<{ tone: "success" | "error"; message: string } | null>(null);
+
+  async function toggleWantsEarlier(appt: PatientAppointment, next: boolean) {
+    const result = await setWantsEarlier(appt.id, next);
+    if (result.ok) {
+      setState((prev) =>
+        prev.status === "ready"
+          ? {
+              ...prev,
+              appointments: prev.appointments.map((a) =>
+                a.id === appt.id ? { ...a, wantsEarlier: next } : a,
+              ),
+            }
+          : prev,
+      );
+    } else {
+      setToast({ tone: "error", message: "We couldn't save that. Please try again." });
+      window.setTimeout(() => setToast(null), 4000);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -77,12 +96,17 @@ export function AppointmentsClient() {
       // patient is at the clinic right now, so they belong under Upcoming;
       // `checked_out` is a finished visit, so it belongs under Completed.
       if (tab === "Upcoming") {
-        return ["scheduled", "confirmed", "checked_in", "waiting", "in_consultation"].includes(
-          a.status,
-        );
+        return [
+          "pending_approval",
+          "scheduled",
+          "confirmed",
+          "checked_in",
+          "waiting",
+          "in_consultation",
+        ].includes(a.status);
       }
       if (tab === "Completed") return ["completed", "checked_out"].includes(a.status);
-      return ["cancelled", "no_show"].includes(a.status);
+      return ["rejected", "cancelled", "no_show"].includes(a.status);
     });
   }, [state, tab]);
 
@@ -105,6 +129,7 @@ export function AppointmentsClient() {
     <PatientPage width="default">
       <PatientPageHeader
         title="My Appointments"
+        meta={mfId ? `MF ID ${mfId}` : undefined}
         description="Your visits by stage. Checked-out visits appear under Completed."
         tour={PATIENT_TOURS.appointments}
         actions={
@@ -166,6 +191,9 @@ export function AppointmentsClient() {
                     QR_ACTIVE.includes(appt.status)
                       ? `/patient/qr?ref=${encodeURIComponent(appt.reference)}`
                       : undefined
+                  }
+                  onToggleWantsEarlier={
+                    tab === "Upcoming" ? (next) => void toggleWantsEarlier(appt, next) : undefined
                   }
                 />
               </div>

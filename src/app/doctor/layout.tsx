@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { DesktopTopNav } from "@/components/layout/DesktopTopNav";
 import { MobileBrandBar } from "@/components/layout/MobileBrandBar";
@@ -10,6 +10,12 @@ import { useStaffUnreadCount } from "@/hooks/useStaffUnreadCount";
 export default function DoctorLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const unread = useStaffUnreadCount();
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-role-theme", "doctor");
+    return () => document.documentElement.removeAttribute("data-role-theme");
+  }, []);
+
   const links = [
     { href: "/doctor/dashboard", label: "Dashboard" },
     { href: "/doctor/schedule", label: "Schedule" },

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { DbAppointmentStatus } from "@/lib/patient/types";
 import {
   STAFF_APPOINTMENT_SELECT,
+  STAFF_SLOT_OFFER_SELECT,
   CONSULTATION_SELECT,
   FOLLOW_UP_SELECT,
   normalizeStaffAppointments,
@@ -9,6 +10,7 @@ import {
   normalizeConsultation,
   normalizeFollowUps,
   normalizeReportedHealth,
+  normalizeStaffSlotOffers,
 } from "./normalize";
 import type {
   AppointmentLookup,
@@ -21,6 +23,8 @@ import type {
   ReportedHealth,
   StaffAppointment,
   StaffNotification,
+  StaffSlotOffer,
+  VisitSummary,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -213,6 +217,174 @@ export async function checkOutAppointment(appointmentId: string): Promise<Transi
     p_appointment_id: appointmentId,
   });
   return toTransition(data, error);
+}
+
+// ---------------------------------------------------------------------------
+// Reception approvals � a new booking starts as `pending_approval` until
+// reception reviews it. Both RPCs require the reception/admin account to be
+// MFA-enrolled (private.require_aal2()); without it the database itself
+// refuses the call with `mfa_required` � surfaced below as its own reason so
+// the UI can explain exactly what to do, not just show a generic error.
+// ---------------------------------------------------------------------------
+
+export type ApprovalResult =
+  | { ok: true; reference: string; status: DbAppointmentStatus }
+  | { ok: false; reason: "mfa_required" | "not_allowed" | "not_found" | "error" };
+
+function toApproval(
+  data: unknown,
+  error: { code?: string; message?: string } | null,
+): ApprovalResult {
+  if (error) {
+    const msg = String(error.message ?? "");
+    if (msg.includes("mfa_required")) return { ok: false, reason: "mfa_required" };
+    if (msg.includes("not_found")) return { ok: false, reason: "not_found" };
+    if (
+      error.code === "42501" ||
+      msg.includes("not_authorized") ||
+      msg.includes("invalid_transition")
+    ) {
+      return { ok: false, reason: "not_allowed" };
+    }
+    return { ok: false, reason: "error" };
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { reference: string; status: string }
+    | undefined;
+  if (!row) return { ok: false, reason: "error" };
+  return { ok: true, reference: row.reference, status: row.status as DbAppointmentStatus };
+}
+
+/** Approves a pending booking request, moving it to `scheduled`. */
+export async function approveAppointment(appointmentId: string): Promise<ApprovalResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("approve_appointment", {
+    p_appointment_id: appointmentId,
+  });
+  return toApproval(data, error);
+}
+
+/** Rejects a pending booking request. `reason` is optional and shown to the patient. */
+export async function rejectAppointment(
+  appointmentId: string,
+  reason?: string,
+): Promise<ApprovalResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("reject_appointment", {
+    p_appointment_id: appointmentId,
+    p_reason: reason && reason.trim() ? reason.trim() : null,
+  });
+  return toApproval(data, error);
+}
+
+// ---------------------------------------------------------------------------
+// "Move earlier" -- reception's final approval step. The patient side
+// (opt-in + accepting/declining an offer) lives in @/lib/patient/client-data.
+// ---------------------------------------------------------------------------
+
+export type SlotOfferDecisionResult =
+  | { ok: true; status: string }
+  | { ok: false; reason: "mfa_required" | "not_allowed" | "not_found" | "error" };
+
+function toSlotOfferDecision(
+  data: unknown,
+  error: { code?: string; message?: string } | null,
+): SlotOfferDecisionResult {
+  if (error) {
+    const msg = String(error.message ?? "");
+    if (msg.includes("mfa_required")) return { ok: false, reason: "mfa_required" };
+    if (msg.includes("offer_not_found")) return { ok: false, reason: "not_found" };
+    if (
+      error.code === "42501" ||
+      msg.includes("not_authorized") ||
+      msg.includes("offer_not_accepted") ||
+      msg.includes("appointment_not_movable") ||
+      msg.includes("slot_taken")
+    ) {
+      return { ok: false, reason: "not_allowed" };
+    }
+    return { ok: false, reason: "error" };
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as { status: string } | undefined;
+  if (!row) return { ok: false, reason: "error" };
+  return { ok: true, status: row.status };
+}
+
+/** Fetches every "accepted" (awaiting reception) move-earlier request, with
+ * the MF ID joined in separately since the underlying view doesn't carry it. */
+export async function fetchPendingSlotOffers(): Promise<StaffSlotOffer[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("dashboard_slot_offers_pending")
+    .select(STAFF_SLOT_OFFER_SELECT)
+    .order("offer_date", { ascending: true });
+  if (error) return [];
+
+  const rows = (data ?? []) as { reference: string }[];
+  const references = Array.from(new Set(rows.map((r) => r.reference)));
+  let patientRefByReference: Record<string, string | null> = {};
+  if (references.length > 0) {
+    const { data: apptRows } = await supabase
+      .from("appointments")
+      .select("reference, patient_ref")
+      .in("reference", references);
+    patientRefByReference = Object.fromEntries(
+      ((apptRows ?? []) as { reference: string; patient_ref: string | null }[]).map((r) => [
+        r.reference,
+        r.patient_ref,
+      ]),
+    );
+  }
+
+  return normalizeStaffSlotOffers(data, patientRefByReference);
+}
+
+/** Actually moves the appointment to the earlier slot. */
+export async function approveSlotOffer(offerId: string): Promise<SlotOfferDecisionResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("approve_slot_offer", { p_offer_id: offerId });
+  return toSlotOfferDecision(data, error);
+}
+
+/** Leaves the patient's original appointment untouched and automatically
+ * offers the slot to the next eligible patient. */
+export async function rejectSlotOffer(
+  offerId: string,
+  reason?: string,
+): Promise<SlotOfferDecisionResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("reject_slot_offer", {
+    p_offer_id: offerId,
+    p_reason: reason && reason.trim() ? reason.trim() : null,
+  });
+  return toSlotOfferDecision(data, error);
+}
+
+// ---------------------------------------------------------------------------
+// Visit summaries. Written by the AI agent only (agent_write_visit_summary,
+// called from n8n after a consultation) -- there is deliberately no
+// doctor-facing write path here, only read. RLS scopes reads to the treating
+// doctor (or admin); a patient reads their own separately.
+// ---------------------------------------------------------------------------
+
+interface VisitSummaryRow {
+  summary: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Null when the agent hasn't written one yet for this appointment -- not an error. */
+export async function fetchVisitSummary(appointmentId: string): Promise<VisitSummary | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("visit_summaries")
+    .select("summary, status, created_at, updated_at")
+    .eq("appointment_id", appointmentId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const r = data as VisitSummaryRow;
+  return { summary: r.summary, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at };
 }
 
 // ---------------------------------------------------------------------------

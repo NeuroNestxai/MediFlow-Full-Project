@@ -5,16 +5,21 @@ import Link from "next/link";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
 import { Button } from "@/components/ui/Button";
 import { CalendarIcon, InfoIcon, BellIcon } from "@/components/ui/Icons";
-import { PatientPage, PatientPageHeader } from "@/components/patient/PatientPage";
+import { PatientPage, PatientPageHeader, PatientSection } from "@/components/patient/PatientPage";
 import { PATIENT_TOURS } from "@/components/tour/tours";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  fetchMySlotOffers,
+  respondToSlotOffer,
   type PatientNotification,
 } from "@/lib/patient/client-data";
+import { displayDoctorName, formatDate, formatTime, type SlotOffer } from "@/lib/patient/types";
+import { Toast } from "@/components/ui/Toast";
 import styles from "./page.module.css";
+import dashboardStyles from "../dashboard/page.module.css";
 import controls from "@/components/patient/directory.module.css";
 
 type Load =
@@ -67,6 +72,55 @@ export function NotificationsClient() {
   const [state, setState] = useState<Load>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
   const [filter, setFilter] = useState<Filter>("all");
+
+  const [offerState, setOfferState] = useState<
+    { status: "loading" } | { status: "ready"; offers: SlotOffer[] } | { status: "error" }
+  >({ status: "loading" });
+  const [offerToast, setOfferToast] = useState<{ tone: "success" | "error"; message: string } | null>(
+    null,
+  );
+  const [respondingOfferId, setRespondingOfferId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchMySlotOffers()
+      .then((offers) => {
+        if (active) setOfferState({ status: "ready", offers });
+      })
+      .catch(() => {
+        if (active) setOfferState({ status: "error" });
+      });
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
+
+  const activeOffer =
+    offerState.status === "ready" ? offerState.offers.find((o) => o.status === "offered") ?? null : null;
+
+  async function respondOffer(offer: SlotOffer, accept: boolean) {
+    setRespondingOfferId(offer.offerId);
+    const result = await respondToSlotOffer(offer.offerId, accept);
+    setRespondingOfferId(null);
+    if (result.ok) {
+      setOfferToast({
+        tone: "success",
+        message: accept
+          ? "Request sent -- reception will confirm the move."
+          : "No problem -- your current appointment stays as it is.",
+      });
+      setReloadKey((k) => k + 1);
+    } else {
+      setOfferToast({
+        tone: "error",
+        message:
+          result.reason === "expired"
+            ? "This offer has expired."
+            : "That offer is no longer available.",
+      });
+    }
+    window.setTimeout(() => setOfferToast(null), 4000);
+  }
 
   useEffect(() => {
     let active = true;
@@ -159,6 +213,44 @@ export function NotificationsClient() {
           ) : undefined
         }
       />
+
+      {offerToast ? (
+        <Toast tone={offerToast.tone} message={offerToast.message} onDismiss={() => setOfferToast(null)} />
+      ) : null}
+
+      {activeOffer && (
+        <PatientSection title="Earlier slot available" id="earlier-slot">
+          <article className={dashboardStyles.nextCard}>
+            <p className={dashboardStyles.nextService}>
+              An earlier slot opened with{" "}
+              {activeOffer.doctorName ? displayDoctorName(activeOffer.doctorName) : "your doctor"} on{" "}
+              {formatDate(activeOffer.offerDate)} at {formatTime(activeOffer.offerTime)}. Your current
+              appointment ({activeOffer.myReference}) is {formatDate(activeOffer.myCurrentDate)} at{" "}
+              {formatTime(activeOffer.myCurrentTime)}.
+            </p>
+            <p className={dashboardStyles.pendingNote}>
+              This offer expires {new Date(activeOffer.expiresAt).toLocaleString()}. Accepting sends it
+              to reception for a final confirmation -- your current time stays booked until then.
+            </p>
+            <div className={dashboardStyles.nextActions}>
+              <Button
+                variant="primary"
+                onClick={() => void respondOffer(activeOffer, true)}
+                disabled={respondingOfferId === activeOffer.offerId}
+              >
+                {respondingOfferId === activeOffer.offerId ? "Working..." : "Move to Earlier Slot"}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => void respondOffer(activeOffer, false)}
+                disabled={respondingOfferId === activeOffer.offerId}
+              >
+                Keep My Current Time
+              </Button>
+            </div>
+          </article>
+        </PatientSection>
+      )}
 
       {ready && notifications.length > 0 ? (
         <div className={controls.row} role="group" aria-label="Filter notifications" data-tour="notif-filters">

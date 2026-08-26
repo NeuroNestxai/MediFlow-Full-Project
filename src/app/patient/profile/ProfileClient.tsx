@@ -20,9 +20,11 @@ interface ProfileClientProps {
   email: string | null;
   /** True when RLS/an error prevented reading the profile server-side. */
   profileBlocked: boolean;
+  /** The signed-in patient's own MF ID — shown as a small line under the title. */
+  mfId: string | null;
 }
 
-export function ProfileClient({ profile, email, profileBlocked }: ProfileClientProps) {
+export function ProfileClient({ profile, email, profileBlocked, mfId }: ProfileClientProps) {
   const nameId = useId();
   const preferredId = useId();
   const phoneId = useId();
@@ -89,6 +91,7 @@ export function ProfileClient({ profile, email, profileBlocked }: ProfileClientP
     <PatientPage width="narrow">
       <PatientPageHeader
         title="Profile &amp; Settings"
+        meta={mfId ? `MF ID ${mfId}` : undefined}
         description="Manage your details, patient-reported health, documents, accessibility and account."
         tour={PATIENT_TOURS.profile}
       />

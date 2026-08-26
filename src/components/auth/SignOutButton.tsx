@@ -7,8 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 
 /**
  * Signs the current patient out via Supabase Auth, then returns them to the
- * sign-in page. Any failure is swallowed (no private detail surfaced) and the
- * user is still routed away — a stale session cannot keep them "signed in".
+ * landing page (not the sign-in form — that's a jarring place to land right
+ * after leaving). Any failure is swallowed (no private detail surfaced) and
+ * the user is still routed away — a stale session cannot keep them "signed in".
  */
 export function SignOutButton() {
   const router = useRouter();
@@ -20,9 +21,9 @@ export function SignOutButton() {
       const supabase = createClient();
       await supabase.auth.signOut();
     } catch {
-      // Nothing safe to show — proceed to sign-in regardless.
+      // Nothing safe to show — proceed to the landing page regardless.
     } finally {
-      router.replace("/auth/sign-in");
+      router.replace("/");
       router.refresh();
     }
   }

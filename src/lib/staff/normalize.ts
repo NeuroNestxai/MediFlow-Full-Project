@@ -1,5 +1,13 @@
 import type { DbAppointmentStatus } from "@/lib/patient/types";
-import type { AppointmentLookup, Consultation, FollowUp, FollowUpType, ReportedHealth, StaffAppointment } from "./types";
+import type {
+  AppointmentLookup,
+  Consultation,
+  FollowUp,
+  FollowUpType,
+  ReportedHealth,
+  StaffAppointment,
+  StaffSlotOffer,
+} from "./types";
 
 // ---------------------------------------------------------------------------
 // Shared PostgREST select strings + row→domain mapping for staff reads.
@@ -9,13 +17,19 @@ import type { AppointmentLookup, Consultation, FollowUp, FollowUpType, ReportedH
 
 /**
  * Staff appointment shape. Includes the patient profile embed, which RLS only
- * returns to reception, or to a doctor for their own patients.
+ * returns to reception, or to a doctor for their own patients. `patient_ref`
+ * is the MF ID — it lives directly on appointments (set by trigger), so it
+ * needs no extra join and is safe to select on every staff read.
  */
 export const STAFF_APPOINTMENT_SELECT =
-  "id, reference, appointment_date, appointment_time, status, patient_id, doctor_id, patient_notes, " +
+  "id, reference, appointment_date, appointment_time, status, patient_id, patient_ref, doctor_id, patient_notes, pre_visit_summary, " +
   "patient:profiles(full_name, preferred_name, phone), " +
   "doctor:doctors(full_name, portrait_palette), " +
   "service:services(name)";
+
+/** Columns of the public.dashboard_slot_offers_pending view (RLS: reception/admin only). */
+export const STAFF_SLOT_OFFER_SELECT =
+  "offer_id, offer_date, offer_time, status, responded_at, full_name, reference, current_date, current_time, doctor_name";
 
 export const CONSULTATION_SELECT =
   "id, appointment_id, notes, status, started_at, completed_at";
@@ -49,8 +63,10 @@ interface StaffAppointmentRow {
   appointment_time: string;
   status: string;
   patient_id: string;
+  patient_ref: string | null;
   doctor_id: string;
   patient_notes: string | null;
+  pre_visit_summary: string | null;
   patient: ProfileRow | ProfileRow[] | null;
   doctor: DoctorRow | DoctorRow[] | null;
   service: ServiceRow | ServiceRow[] | null;
@@ -76,6 +92,7 @@ export function normalizeStaffAppointment(row: unknown): StaffAppointment {
     time: r.appointment_time,
     status: r.status as DbAppointmentStatus,
     patientId: r.patient_id,
+    patientMfId: r.patient_ref,
     patientName: patientDisplayName(patient),
     patientPhone: patient?.phone ?? null,
     doctorId: r.doctor_id,
@@ -83,6 +100,7 @@ export function normalizeStaffAppointment(row: unknown): StaffAppointment {
     doctorPalette: doctor?.portrait_palette ?? null,
     serviceName: service?.name ?? null,
     patientNotes: r.patient_notes,
+    preVisitSummary: r.pre_visit_summary,
   };
 }
 
@@ -93,6 +111,7 @@ export function normalizeStaffAppointments(rows: unknown): StaffAppointment[] {
 interface LookupRow {
   appointment_id: string;
   reference: string;
+  patient_ref: string | null;
   patient_name: string;
   patient_phone: string | null;
   doctor_name: string;
@@ -111,6 +130,7 @@ export function normalizeLookup(row: unknown): AppointmentLookup | null {
   return {
     appointmentId: r.appointment_id,
     reference: r.reference,
+    patientMfId: r.patient_ref,
     patientName: r.patient_name,
     patientPhone: r.patient_phone,
     doctorName: r.doctor_name,
@@ -187,4 +207,42 @@ export function normalizeReportedHealth(row: unknown): ReportedHealth | null {
   const r = (Array.isArray(row) ? row[0] : row) as HealthRow | undefined;
   if (!r) return null;
   return { allergies: r.allergies, currentMedications: r.current_medications };
+}
+
+interface StaffSlotOfferRow {
+  offer_id: string;
+  offer_date: string;
+  offer_time: string;
+  status: string;
+  responded_at: string | null;
+  full_name: string;
+  reference: string;
+  current_date: string;
+  current_time: string;
+  doctor_name: string | null;
+}
+
+/** `patientRefByReference` fills in the MF ID, which the view itself doesn't
+ * carry -- see fetchPendingSlotOffers in client-data.ts for how it's joined in. */
+export function normalizeStaffSlotOffers(
+  rows: unknown,
+  patientRefByReference: Record<string, string | null>,
+): StaffSlotOffer[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => {
+    const r = row as StaffSlotOfferRow;
+    return {
+      offerId: r.offer_id,
+      offerDate: r.offer_date,
+      offerTime: r.offer_time,
+      status: r.status,
+      respondedAt: r.responded_at,
+      patientName: r.full_name,
+      patientMfId: patientRefByReference[r.reference] ?? null,
+      reference: r.reference,
+      currentDate: r.current_date,
+      currentTime: r.current_time,
+      doctorName: r.doctor_name,
+    };
+  });
 }

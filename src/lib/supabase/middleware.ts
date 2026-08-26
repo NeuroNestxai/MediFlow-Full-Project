@@ -58,9 +58,15 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   }
 
   if (!user) {
+    // Preserve where they were headed (e.g. a QR check-in link) as a same-site
+    // `next` param, so sign-in can safely return them there afterward instead
+    // of dropping them on the generic dashboard. auth-roles.ts's safeNextPath
+    // is what actually validates this value before ever redirecting to it.
+    const intendedPath = request.nextUrl.pathname + request.nextUrl.search;
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = SIGN_IN_PATH;
     redirectUrl.search = "";
+    redirectUrl.searchParams.set("next", intendedPath);
     return NextResponse.redirect(redirectUrl);
   }
 

@@ -85,6 +85,24 @@
   align-items: center;
 }
 
+/* Combine with .link when the element is a real <button> (e.g. "Resend
+   code") rather than a <Link> -- strips the browser's default button
+   chrome (background/border/padding/font) so it reads as plain text,
+   identical to every <Link> already styled with .link alone. */
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.linkButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .linkCenter {
   justify-content: center;
 }
@@ -119,6 +137,12 @@
   text-decoration: none;
   color: var(--color-text-secondary);
   text-align: center;
+  /* Every colour/shadow change on this pill eases in instead of snapping --
+     covers hover, and softens the moment right after switching pages
+     (sign-in <-> create account are real separate routes, so the pill
+     itself remounts on navigation -- this at least keeps whatever DOES
+     repaint on this element gentle rather than abrupt). */
+  transition: background-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
 }
 
 .tab:hover {
@@ -129,6 +153,12 @@
   background: var(--color-bg-surface);
   color: var(--color-action-primary);
   box-shadow: var(--shadow-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
 }
 
 /* --- Password field with visibility toggle --- */

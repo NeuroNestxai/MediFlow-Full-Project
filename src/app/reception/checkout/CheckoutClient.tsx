@@ -29,6 +29,7 @@ type LoadState =
 
 interface CheckoutReceipt {
   patientName: string;
+  patientMfId: string | null;
   reference: string;
   at: string;
 }
@@ -76,6 +77,7 @@ export function CheckoutClient() {
     if (result.ok) {
       setReceipt({
         patientName: appt.patientName,
+        patientMfId: appt.patientMfId,
         reference: result.reference,
         at: formatLocalClock(),
       });
@@ -107,6 +109,10 @@ export function CheckoutClient() {
             <div className={styles.detailRow}>
               <dt>Booking reference</dt>
               <dd>{receipt.reference}</dd>
+            </div>
+            <div className={styles.detailRow}>
+              <dt>MF ID</dt>
+              <dd>{receipt.patientMfId ?? "\u2014"}</dd>
             </div>
             <div className={styles.detailRow}>
               <dt>Checked out at</dt>
@@ -181,7 +187,10 @@ export function CheckoutClient() {
                   {displayDoctorName(appt.doctorName)} &middot; {appt.serviceName || "—"} &middot;{" "}
                   {formatTime(appt.time)}
                 </p>
-                <p className={styles.ref}>{appt.reference}</p>
+                <p className={styles.ref}>
+                  {appt.reference}
+                  {appt.patientMfId ? ` \u00b7 ${appt.patientMfId}` : ""}
+                </p>
               </div>
               <StatusBadge tone={DB_STATUS_TONE[appt.status]} label={DB_STATUS_LABEL[appt.status]} />
               <Button

@@ -1,16 +1,32 @@
-import { PlaceholderScreen } from "@/components/shared/PlaceholderScreen";
+import { redirect } from "next/navigation";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { VerifyForm } from "./VerifyForm";
 
-// NOTE: This is a placeholder for a possible future one-time-code (OTP)
-// verification feature. It is intentionally NOT part of the Patient
-// email-and-password journey: Patient sign-up uses an email confirmation
-// link handled by /auth/confirm, not a six-digit code. Nothing in the
-// Patient flow links here.
-export default function VerifyPage() {
-  return (
-    <PlaceholderScreen
-      title="Verify Your Identity"
-      backHref="/auth/role-selection"
-      backLabel="Back to Role Selection"
-    />
-  );
+// Reads cookies to check the session — render per request, never statically.
+export const dynamic = "force-dynamic";
+
+export default async function VerifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  // Already signed in → straight to the dashboard.
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      redirect("/auth/post-login");
+    }
+  }
+
+  const { email } = await searchParams;
+  // This screen only makes sense arriving from sign-up, which always
+  // includes the email. Without it there's nothing to verify against.
+  if (!email) {
+    redirect("/auth/patient/sign-up");
+  }
+
+  return <VerifyForm email={email} />;
 }

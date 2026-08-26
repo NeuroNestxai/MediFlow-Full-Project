@@ -102,6 +102,13 @@
   max-width: 520px;
 }
 
+.aiActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 /* ---- Quick actions ---- */
 .quickGrid {
   display: grid;
@@ -246,4 +253,13 @@
   .doctorGrid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+
+.pendingNote {
+  font-size: calc(12.5px * var(--font-scale));
+  color: var(--color-text-secondary);
+  background: var(--color-bg-muted, rgba(0, 0, 0, 0.03));
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
 }

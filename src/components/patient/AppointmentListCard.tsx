@@ -2,7 +2,12 @@ import type { PatientAppointment } from "@/lib/patient/types";
 import { DB_STATUS_LABEL, DB_STATUS_TONE, formatDate, formatTime } from "@/lib/patient/types";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import styles from "@/components/cards/AppointmentCard.module.css";
+
+/** Statuses "move earlier" opt-in is offered for -- matches what
+ * patient_set_wants_earlier itself accepts server-side. */
+const WANTS_EARLIER_ELIGIBLE = ["pending_approval", "scheduled", "confirmed"];
 
 export interface AppointmentListCardProps {
   appointment: PatientAppointment;
@@ -13,6 +18,8 @@ export interface AppointmentListCardProps {
   reschedulable?: boolean;
   /** When set, a "Show QR" action links here (only for QR-active visits). */
   qrHref?: string;
+  /** When set, shows the "notify me of an earlier slot" opt-in checkbox. */
+  onToggleWantsEarlier?: (next: boolean) => void;
 }
 
 /** Supabase-backed appointment card showing the real server reference. */
@@ -24,6 +31,7 @@ export function AppointmentListCard({
   cancellable,
   reschedulable,
   qrHref,
+  onToggleWantsEarlier,
 }: AppointmentListCardProps) {
   return (
     <article className={styles.card}>
@@ -42,6 +50,14 @@ export function AppointmentListCard({
         <span>{formatTime(appointment.time)}</span>
       </div>
       <p className={styles.ref}>Booking reference: {appointment.reference}</p>
+      {onToggleWantsEarlier && WANTS_EARLIER_ELIGIBLE.includes(appointment.status) ? (
+        <Checkbox
+          id={`wants-earlier-${appointment.id}`}
+          label="Notify me if an earlier slot with this doctor opens up"
+          checked={appointment.wantsEarlier}
+          onChange={(e) => onToggleWantsEarlier(e.target.checked)}
+        />
+      ) : null}
       <div className={styles.actions}>
         {onViewDetails ? (
           <Button variant="secondary" onClick={onViewDetails}>

@@ -23,7 +23,7 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  max-width: min(88%, 620px);
+  max-width: min(88%, 860px);
 }
 
 .patientRow .stack {
@@ -40,10 +40,10 @@
 }
 
 .bubble {
-  padding: 11px 15px;
+  padding: 13px 17px;
   border-radius: var(--radius-lg);
-  font-size: calc(14.5px * var(--font-scale));
-  line-height: 1.5;
+  font-size: calc(16.5px * var(--font-scale));
+  line-height: 1.6;
   /* Plain-text safety: keep authored line breaks, wrap long words + URLs. */
   white-space: pre-wrap;
   overflow-wrap: anywhere;

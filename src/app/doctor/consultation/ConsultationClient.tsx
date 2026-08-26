@@ -17,6 +17,7 @@ import {
   fetchAppointmentById,
   fetchConsultation,
   fetchReportedHealth,
+  fetchVisitSummary,
   saveConsultationNotes,
   startConsultation,
 } from "@/lib/staff/client-data";
@@ -25,6 +26,7 @@ import {
   type FollowUpType,
   type ReportedHealth,
   type StaffAppointment,
+  type VisitSummary,
 } from "@/lib/staff/types";
 import {
   DB_STATUS_LABEL,
@@ -53,6 +55,8 @@ interface Loaded {
   status: DbAppointmentStatus;
   /** null when the consultation could be started (or was already running). */
   blockedMessage: string | null;
+  /** null when the AI agent hasn't written one for this visit yet -- not an error. */
+  visitSummary: VisitSummary | null;
 }
 
 type LoadState =
@@ -134,9 +138,10 @@ export function ConsultationClient({ appointmentId }: ConsultationClientProps) {
           showToast("error", blockedMessage);
         }
 
-        const [healthResult, consultation] = await Promise.all([
+        const [healthResult, consultation, visitSummary] = await Promise.all([
           fetchReportedHealth(appointment.patientId),
           fetchConsultation(appointmentId),
+          fetchVisitSummary(appointmentId),
         ]);
         if (!activeRef.current) return;
 
@@ -157,6 +162,7 @@ export function ConsultationClient({ appointmentId }: ConsultationClientProps) {
             health,
             status: started.ok ? "in_consultation" : appointment.status,
             blockedMessage,
+            visitSummary,
           },
         });
       } catch {
@@ -289,6 +295,9 @@ export function ConsultationClient({ appointmentId }: ConsultationClientProps) {
                 {formatTime(state.data.appointment.time)}
               </p>
               <p className={styles.meta}>Reference {state.data.appointment.reference}</p>
+              <p className={styles.meta}>
+                MF ID {state.data.appointment.patientMfId ?? "\u2014"}
+              </p>
 
               <div className={styles.blockHead}>
                 <h3 className={styles.blockTitle}>Allergies</h3>
@@ -309,6 +318,21 @@ export function ConsultationClient({ appointmentId }: ConsultationClientProps) {
                 field="currentMedications"
                 emptyLabel="No current medications were reported."
               />
+
+              <div className={styles.blockHead}>
+                <h3 className={styles.blockTitle}>Visit summary</h3>
+                <SourceLabel source="ai-organized" />
+              </div>
+              {state.data.visitSummary ? (
+                <>
+                  <p className={styles.body}>{state.data.visitSummary.summary}</p>
+                  <p className={styles.meta}>
+                    AI-organized summary \u2014 doctor review required before clinical use.
+                  </p>
+                </>
+              ) : (
+                <p className={styles.meta}>No AI-organized summary has been written for this visit yet.</p>
+              )}
 
               <Button
                 variant="secondary"

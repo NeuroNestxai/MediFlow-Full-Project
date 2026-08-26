@@ -17,6 +17,9 @@ export interface StaffAppointment {
   time: string; // HH:MM:SS
   status: DbAppointmentStatus;
   patientId: string;
+  /** The patient's MF ID (patients.patient_id, mirrored on appointments.patient_ref).
+   * Non-PII, shared with the AI layer — safe to show on any staff screen. */
+  patientMfId: string | null;
   patientName: string;
   patientPhone: string | null;
   doctorId: string;
@@ -25,12 +28,19 @@ export interface StaffAppointment {
   serviceName: string | null;
   /** Free-text reason the patient gave at booking. Patient-reported, never clinical. */
   patientNotes: string | null;
+  /** Patient-reported symptoms/history from an AI consultation before booking, if any
+   * (appointments.pre_visit_summary). Deliberately scoped to what the patient actually
+   * said -- never pain-severity ratings or the AI's specialty recommendation, since
+   * those are AI judgments, not patient statements, and would break the
+   * "patient-reported" labeling this field is shown under. */
+  preVisitSummary: string | null;
 }
 
 /** Result of a QR scan or manual booking-reference lookup at reception. */
 export interface AppointmentLookup {
   appointmentId: string;
   reference: string;
+  patientMfId: string | null;
   patientName: string;
   patientPhone: string | null;
   doctorName: string;
@@ -124,6 +134,37 @@ export interface PatientSearchResult {
   phone: string | null;
 }
 
+/**
+ * A visit summary, written by the AI agent only (never by the doctor
+ * directly) after a consultation. RLS scopes reads to the treating doctor
+ * (or admin) here; a patient reads their own separately.
+ */
+export interface VisitSummary {
+  summary: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A "move earlier" request awaiting reception's final approval -- the
+ * patient has already accepted the earlier slot; this is the last check
+ * before the appointment's date/time actually change.
+ */
+export interface StaffSlotOffer {
+  offerId: string;
+  offerDate: string;
+  offerTime: string;
+  status: string;
+  respondedAt: string | null;
+  patientName: string;
+  patientMfId: string | null;
+  reference: string;
+  currentDate: string;
+  currentTime: string;
+  doctorName: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Operational groupings used by the dashboards and the live queue.
 // ---------------------------------------------------------------------------
@@ -153,6 +194,7 @@ export const CONSULTABLE_STATUSES: DbAppointmentStatus[] = [
  * alone (the app-wide accessibility rule).
  */
 export const LIFECYCLE_STEPS: { status: DbAppointmentStatus; label: string }[] = [
+  { status: "pending_approval", label: "Pending Approval" },
   { status: "confirmed", label: "Confirmed" },
   { status: "checked_in", label: "Checked In" },
   { status: "waiting", label: "Waiting" },
@@ -167,7 +209,7 @@ export function lifecycleIndex(status: DbAppointmentStatus): number {
   return LIFECYCLE_STEPS.findIndex((s) => s.status === status);
 }
 
-export const BRANCH_STATUSES: DbAppointmentStatus[] = ["cancelled", "no_show"];
+export const BRANCH_STATUSES: DbAppointmentStatus[] = ["rejected", "cancelled", "no_show"];
 
 /** Tone for a queue row, reusing the shared status tone vocabulary. */
 export const QUEUE_TONE: Record<string, StatusTone> = {

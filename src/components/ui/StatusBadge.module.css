@@ -8,6 +8,9 @@
   font-family: var(--font-body);
   font-size: calc(12px * var(--font-scale));
   font-weight: 600;
+  transition: background-color var(--motion-duration-base) var(--motion-easing),
+    color var(--motion-duration-base) var(--motion-easing),
+    border-color var(--motion-duration-base) var(--motion-easing);
 }
 
 .icon {

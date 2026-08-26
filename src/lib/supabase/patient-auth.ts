@@ -15,6 +15,12 @@ export interface AuthenticatedPatient {
   profile: PatientProfile | null;
   /** True when RLS (or any error) prevented reading the profile row. */
   profileBlocked: boolean;
+  /**
+   * The patient's own MF ID (patients.patient_id) — the same non-PII
+   * identifier the AI layer and every staff screen use. Null if it couldn't
+   * be read (never blocks the page; callers just omit the MF ID display).
+   */
+  patientId: string | null;
 }
 
 /**
@@ -25,7 +31,8 @@ export interface AuthenticatedPatient {
  * - Confirms the user has the `patient` role in `public.user_roles`; anything
  *   else (missing role, non-patient, or a blocked role read) denies access and
  *   redirects to the permission-denied screen — without exposing IDs or errors.
- * - Reads only the current user's `public.profiles` row.
+ * - Reads only the current user's `public.profiles` row, and separately their
+ *   own `public.patients` row for the MF ID (`patients_select_self` RLS).
  *
  * Uses the normal authenticated client and existing RLS — never a service-role
  * key, and never bypassing policies.
@@ -67,10 +74,18 @@ export async function requirePatient(): Promise<AuthenticatedPatient> {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Read only the current user's own MF ID — never any other patient's row.
+  const { data: patientRow, error: patientError } = await supabase
+    .from("patients")
+    .select("patient_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   return {
     email: user.email ?? null,
     profile: profileError ? null : (profile as PatientProfile | null),
     profileBlocked: Boolean(profileError),
+    patientId: patientError ? null : (patientRow?.patient_id ?? null),
   };
 }
 

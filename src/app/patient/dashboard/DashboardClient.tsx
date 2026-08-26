@@ -11,11 +11,13 @@ import { TourInvitation } from "@/components/tour/TourInvitation";
 import { PATIENT_TOURS } from "@/components/tour/tours";
 import { DoctorDirectoryCard } from "@/components/patient/DoctorDirectoryCard";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
-import { CalendarIcon, StethoscopeIcon, InfoIcon, BellIcon } from "@/components/ui/Icons";
+import { CalendarIcon, StethoscopeIcon, InfoIcon, BellIcon, MicIcon } from "@/components/ui/Icons";
 import {
   fetchDoctors,
   fetchMyAppointments,
   fetchNotifications,
+  fetchMySlotOffers,
+  respondToSlotOffer,
   type PatientNotification,
 } from "@/lib/patient/client-data";
 import {
@@ -25,11 +27,19 @@ import {
   formatTime,
   displayDoctorName,
 } from "@/lib/patient/types";
-import type { DirectoryDoctor, PatientAppointment } from "@/lib/patient/types";
+import type { DirectoryDoctor, PatientAppointment, SlotOffer } from "@/lib/patient/types";
+import { Toast } from "@/components/ui/Toast";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import styles from "./page.module.css";
 
-const UPCOMING_STATUSES = ["scheduled", "confirmed", "checked_in", "waiting", "in_consultation"];
+const UPCOMING_STATUSES = [
+  "pending_approval",
+  "scheduled",
+  "confirmed",
+  "checked_in",
+  "waiting",
+  "in_consultation",
+];
 const QR_ACTIVE_STATUSES = [...UPCOMING_STATUSES, "completed"];
 
 type LoadState =
@@ -40,24 +50,38 @@ type LoadState =
       appointments: PatientAppointment[];
       doctors: DirectoryDoctor[];
       notifications: PatientNotification[];
+      slotOffers: SlotOffer[];
     };
 
-export function DashboardClient({ greetingName }: { greetingName: string | null }) {
+export function DashboardClient({
+  greetingName,
+  mfId,
+}: {
+  greetingName: string | null;
+  /** The signed-in patient's own MF ID — shown as a small line under the greeting. */
+  mfId: string | null;
+}) {
   const router = useRouter();
   const { reducedMotion } = useAccessibility();
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
+  const [offerToast, setOfferToast] = useState<{ tone: "success" | "error"; message: string } | null>(
+    null,
+  );
+  const [respondingOfferId, setRespondingOfferId] = useState<string | null>(null);
+
   useEffect(() => {
     let active = true;
-    Promise.all([fetchMyAppointments(), fetchDoctors(), fetchNotifications()])
-      .then(([appointments, doctors, notif]) => {
+    Promise.all([fetchMyAppointments(), fetchDoctors(), fetchNotifications(), fetchMySlotOffers()])
+      .then(([appointments, doctors, notif, slotOffers]) => {
         if (!active) return;
         setState({
           status: "ready",
           appointments,
           doctors,
           notifications: notif.status === "ready" ? notif.notifications : [],
+          slotOffers,
         });
       })
       .catch(() => {
@@ -67,6 +91,30 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
       active = false;
     };
   }, [reloadKey]);
+
+  async function respondOffer(offer: SlotOffer, accept: boolean) {
+    setRespondingOfferId(offer.offerId);
+    const result = await respondToSlotOffer(offer.offerId, accept);
+    setRespondingOfferId(null);
+    if (result.ok) {
+      setOfferToast({
+        tone: "success",
+        message: accept
+          ? "Request sent — reception will confirm the move."
+          : "No problem — your current appointment stays as it is.",
+      });
+      setReloadKey((k) => k + 1);
+    } else {
+      setOfferToast({
+        tone: "error",
+        message:
+          result.reason === "expired"
+            ? "This offer has expired."
+            : "That offer is no longer available.",
+      });
+    }
+    window.setTimeout(() => setOfferToast(null), 4000);
+  }
 
   function retry() {
     setState({ status: "loading" });
@@ -82,16 +130,57 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
   const next = upcoming[0] ?? null;
   const recentNotifications = ready ? state.notifications.slice(0, 3) : [];
   const featuredDoctors = ready ? state.doctors.slice(0, 3) : [];
+  const activeOffer = ready ? state.slotOffers.find((o) => o.status === "offered") ?? null : null;
 
   return (
     <PatientPage width="wide">
       <PatientPageHeader
         title={greetingName ? `Good day, ${greetingName}.` : "Welcome"}
+        meta={mfId ? `MF ID ${mfId}` : undefined}
         description="Here's what's happening with your care at MCC Clinic."
         tour={PATIENT_TOURS.dashboard}
       />
 
       <TourInvitation tour={PATIENT_TOURS.dashboard} />
+
+      {offerToast ? (
+        <Toast tone={offerToast.tone} message={offerToast.message} onDismiss={() => setOfferToast(null)} />
+      ) : null}
+
+      {/* 0 — Earlier slot offer, only shown while one is actually open */}
+      {ready && activeOffer && (
+        <PatientSection title="Earlier slot available" id="earlier-slot">
+          <article className={styles.nextCard}>
+            <p className={styles.nextService}>
+              An earlier slot opened with{" "}
+              {activeOffer.doctorName ? displayDoctorName(activeOffer.doctorName) : "your doctor"} on{" "}
+              {formatDate(activeOffer.offerDate)} at {formatTime(activeOffer.offerTime)}. Your current
+              appointment ({activeOffer.myReference}) is {formatDate(activeOffer.myCurrentDate)} at{" "}
+              {formatTime(activeOffer.myCurrentTime)}.
+            </p>
+            <p className={styles.pendingNote}>
+              This offer expires {new Date(activeOffer.expiresAt).toLocaleString()}. Accepting sends it
+              to reception for a final confirmation — your current time stays booked until then.
+            </p>
+            <div className={styles.nextActions}>
+              <Button
+                variant="primary"
+                onClick={() => void respondOffer(activeOffer, true)}
+                disabled={respondingOfferId === activeOffer.offerId}
+              >
+                {respondingOfferId === activeOffer.offerId ? "Working…" : "Move to Earlier Slot"}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => void respondOffer(activeOffer, false)}
+                disabled={respondingOfferId === activeOffer.offerId}
+              >
+                Keep My Current Time
+              </Button>
+            </div>
+          </article>
+        </PatientSection>
+      )}
 
       {/* 1 — Next appointment */}
       <PatientSection title="Next appointment" id="next-appointment" tourId="patient-next-appointment">
@@ -134,6 +223,11 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
                 <dd>{next.reference}</dd>
               </div>
             </dl>
+            {next.status === "pending_approval" ? (
+              <p className={styles.pendingNote}>
+                Awaiting reception approval — you&rsquo;ll be notified once it&rsquo;s confirmed.
+              </p>
+            ) : null}
             <div className={styles.nextActions}>
               <Button variant="secondary" onClick={() => router.push("/patient/appointments")}>
                 View Details
@@ -163,9 +257,14 @@ export function DashboardClient({ greetingName }: { greetingName: string | null 
               handle emergencies.
             </p>
           </div>
-          <Button href="/patient/ai-assistant" variant="primary">
-            Ask MediFlow
-          </Button>
+          <div className={styles.aiActions}>
+            <Button href="/patient/ai-assistant" variant="primary">
+              Ask MediFlow
+            </Button>
+            <Button href="/patient/voice" variant="secondary" leadingIcon={<MicIcon aria-hidden="true" />}>
+              MediFlow Voice
+            </Button>
+          </div>
         </div>
       </PatientSection>
 

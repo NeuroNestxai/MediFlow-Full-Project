@@ -8,6 +8,7 @@ import { PromptChip } from "@/components/ai/Chips";
 import { TourLauncher } from "@/components/tour/TourLauncher";
 import { PATIENT_TOURS } from "@/components/tour/tours";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
+import { Toast } from "@/components/ui/Toast";
 import styles from "./page.module.css";
 
 interface Message {
@@ -23,9 +24,8 @@ const PROMPTS = [
   "Which doctors handle chronic care?",
 ];
 
-const GREETING = "Hello. How can MediFlow guide you today?";
-const SAFETY_LINE =
-  "MediFlow can help you navigate MCC services and appointments. It does not diagnose, prescribe, assess severity or urgency, perform triage, or provide emergency decisions.";
+const GREETING = "How can MediFlow help today?";
+const SAFETY_LINE = "Guides you to care -- never diagnoses, prescribes, or handles emergencies.";
 const PLACEHOLDER = "Ask about MCC services, doctors, or appointments…";
 const MAX_MESSAGE = 2000;
 
@@ -50,6 +50,7 @@ export function AIAssistantView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSafetyNotice, setShowSafetyNotice] = useState(true);
   const [lastFailed, setLastFailed] = useState<string | null>(null);
   const inputId = useId();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -219,21 +220,26 @@ export function AIAssistantView() {
 
   return (
     <div className={styles.page}>
+      {showSafetyNotice ? (
+        <div className={styles.safetyNotice}>
+          <Toast tone="info" message={SAFETY_LINE} onDismiss={() => setShowSafetyNotice(false)} />
+        </div>
+      ) : null}
       {!started ? (
         <section className={styles.intro}>
-          <FloOrb state={floState} size={96} reducedMotion={reducedMotion} />
-          <h1 className={styles.greeting}>{GREETING}</h1>
-          <p className={styles.safety}>{SAFETY_LINE}</p>
+          <div className={styles.topActions}>{toolbar}</div>
+          <div className={styles.introTop}>
+            <FloOrb state={floState} size={112} reducedMotion={reducedMotion} />
+            <h1 className={styles.greeting}>{GREETING}</h1>
 
-          {composer}
-
-          <div className={styles.chips} role="group" aria-label="Suggested questions">
-            {PROMPTS.map((p) => (
-              <PromptChip key={p} label={p} onClick={() => send(p)} />
-            ))}
+            <div className={styles.chips} role="group" aria-label="Suggested questions">
+              {PROMPTS.map((p) => (
+                <PromptChip key={p} label={p} onClick={() => send(p)} />
+              ))}
+            </div>
           </div>
 
-          {toolbar}
+          {composer}
         </section>
       ) : (
         <section className={styles.workspace}>

@@ -42,12 +42,16 @@ export interface DirectoryDoctor {
  * Mirrors public.appointment_status. Operational only — no clinical, severity,
  * urgency or triage meaning.
  *
- * Lifecycle: scheduled → confirmed → checked_in → waiting → in_consultation
- *            → completed → checked_out, with cancelled / no_show as branches.
+ * Lifecycle: pending_approval → scheduled → confirmed → checked_in → waiting
+ *            → in_consultation → completed → checked_out, with rejected /
+ *            cancelled / no_show as branches.
+ * A new booking starts as `pending_approval` until reception approves it.
  * `completed` means "consultation complete"; a completed appointment that is
  * not yet `checked_out` is what Reception lists as Ready for Checkout.
  */
 export type DbAppointmentStatus =
+  | "pending_approval"
+  | "rejected"
   | "scheduled"
   | "confirmed"
   | "checked_in"
@@ -68,6 +72,26 @@ export interface PatientAppointment {
   serviceId: string;
   doctorName: string | null;
   serviceName: string | null;
+  /** Opted in to being offered an earlier slot with the same doctor, if one frees up. */
+  wantsEarlier: boolean;
+}
+
+/**
+ * An earlier slot offered to this patient because they opted in and a slot
+ * with the same doctor freed up sooner than their current booking.
+ * `status`: "offered" (awaiting the patient) | "accepted" (awaiting
+ * reception) | "declined" | "approved" | "rejected" | "expired".
+ */
+export interface SlotOffer {
+  offerId: string;
+  offerDate: string;
+  offerTime: string;
+  status: string;
+  expiresAt: string;
+  myReference: string;
+  myCurrentDate: string;
+  myCurrentTime: string;
+  doctorName: string | null;
 }
 
 export interface AvailableSlot {
@@ -83,6 +107,8 @@ export interface AvailableSlot {
 // ---------------------------------------------------------------------------
 
 export const DB_STATUS_LABEL: Record<DbAppointmentStatus, string> = {
+  pending_approval: "Pending Approval",
+  rejected: "Rejected",
   scheduled: "Scheduled",
   confirmed: "Confirmed",
   checked_in: "Checked In",
@@ -95,6 +121,8 @@ export const DB_STATUS_LABEL: Record<DbAppointmentStatus, string> = {
 };
 
 export const DB_STATUS_TONE: Record<DbAppointmentStatus, StatusTone> = {
+  pending_approval: "pending",
+  rejected: "error",
   scheduled: "info",
   confirmed: "info",
   checked_in: "success",

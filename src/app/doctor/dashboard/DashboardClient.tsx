@@ -53,8 +53,6 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
 
   useEffect(() => {
     activeRef.current = true;
-    // `load(false)` starts a fetch and only sets state from its async
-    // callbacks — the initial render is already in the "loading" state.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load(false);
     const unsubscribe = subscribeToAppointments(() => load(false));
@@ -84,34 +82,53 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
     [appointments],
   );
 
-  const specialty = specialtyNames.length > 0 ? specialtyNames.join(" · ") : "Clinician";
+  const specialty = specialtyNames.length > 0 ? specialtyNames.join(" - ") : "Clinician";
 
   return (
     <div className={styles.page}>
       <div className={styles.headRow}>
-        <DoctorPortrait palette={toPalette(portraitPalette)} size={56} />
-        <div>
-          <h1 className={styles.greeting}>Good day, {displayDoctorName(fullName)}.</h1>
-          <p className={styles.subGreeting}>
-            {specialty} · {formatLongDate(today)}
-          </p>
+        <div className={styles.headLeft}>
+          <DoctorPortrait palette={toPalette(portraitPalette)} size={56} />
+          <div>
+            <h1 className={styles.greeting}>Good day, {displayDoctorName(fullName)}.</h1>
+            <p className={styles.subGreeting}>
+              {specialty} - {formatLongDate(today)}
+            </p>
+          </div>
+        </div>
+        <div className={styles.headActions}>
+          <Button variant="secondary" href="/doctor/appointments">
+            View All Appointments
+          </Button>
+          <Button variant="secondary" href="/doctor/patients">
+            Open Patient List
+          </Button>
+          <Button variant="secondary" href="/doctor/availability">
+            Manage Availability
+          </Button>
+          <Button variant="secondary" href="/doctor/consultation-notes">
+            Consultation Notes
+          </Button>
+          <Button variant="secondary" href="/doctor/notifications">
+            Notifications
+          </Button>
         </div>
       </div>
 
       <div className={styles.statsRow}>
-        <StatCard label="Checked In" value={counts.checkedIn} hint="Currently at clinic" />
-        <StatCard label="Waiting" value={counts.waiting} hint="In the queue" />
-        <StatCard label="In Consultation" value={counts.inConsultation} />
-        <StatCard label="Completed" value={counts.completed} />
+        <StatCard label="Checked In" value={counts.checkedIn} hint="Currently at clinic" href="/doctor/appointments?status=checked_in" />
+        <StatCard label="Waiting" value={counts.waiting} hint="In the queue" href="/doctor/appointments?status=waiting" />
+        <StatCard label="In Consultation" value={counts.inConsultation} hint="Right now" href="/doctor/appointments?status=in_consultation" />
+        <StatCard label="Completed" value={counts.completed} hint="Today" href="/doctor/appointments?status=completed" />
       </div>
 
       <div className={styles.mainRow}>
         <section className={styles.scheduleCol} aria-labelledby="schedule-heading">
           <h2 id="schedule-heading" className={styles.sectionTitle}>
-            Today&rsquo;s schedule
+            Today's schedule
           </h2>
 
-          {state.status === "loading" && <LoadingState label="Loading today's schedule…" />}
+          {state.status === "loading" && <LoadingState label="Loading today's schedule..." />}
           {state.status === "error" && <ErrorState onRetry={() => load(true)} />}
           {state.status === "ready" && appointments.length === 0 && (
             <EmptyState
@@ -131,6 +148,7 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
                   >
                     {appt.patientName}
                   </Link>
+                  <span className={styles.mfId}>{appt.patientMfId ?? "-"}</span>
                   <StatusBadge
                     tone={DB_STATUS_TONE[appt.status]}
                     label={DB_STATUS_LABEL[appt.status]}
@@ -148,24 +166,6 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
               ))}
             </ul>
           )}
-
-          <div className={styles.quickActions}>
-            <Button variant="secondary" href="/doctor/appointments">
-              View All Appointments
-            </Button>
-            <Button variant="secondary" href="/doctor/patients">
-              Open Patient List
-            </Button>
-            <Button variant="secondary" href="/doctor/availability">
-              Manage Availability
-            </Button>
-            <Button variant="secondary" href="/doctor/consultation-notes">
-              Consultation Notes
-            </Button>
-            <Button variant="secondary" href="/doctor/notifications">
-              Notifications
-            </Button>
-          </div>
         </section>
 
         <section className={styles.liveCol} aria-labelledby="live-heading">
@@ -183,6 +183,7 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
                 {inClinic.map((appt) => (
                   <li key={appt.id} className={styles.liveItem}>
                     <span className={styles.liveName}>{appt.patientName}</span>
+                    <span className={styles.mfId}>{appt.patientMfId ?? "-"}</span>
                     <StatusBadge
                       tone={DB_STATUS_TONE[appt.status]}
                       label={DB_STATUS_LABEL[appt.status]}
@@ -199,12 +200,30 @@ export function DashboardClient({ fullName, portraitPalette, specialtyNames }: D
   );
 }
 
-function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
-  return (
-    <div className={styles.statCard}>
+function StatCard({
+  label,
+  value,
+  hint,
+  href,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+  href?: string;
+}) {
+  const content = (
+    <>
       <span className={styles.statValue}>{value}</span>
       <span className={styles.statLabel}>{label}</span>
       {hint ? <span className={styles.statHint}>{hint}</span> : null}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link href={href} className={styles.statCard}>
+        {content}
+      </Link>
+    );
+  }
+  return <div className={styles.statCard}>{content}</div>;
 }

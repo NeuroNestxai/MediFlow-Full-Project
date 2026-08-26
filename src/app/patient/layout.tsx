@@ -28,6 +28,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   const links = [
     { href: "/patient/dashboard", label: "Home" },
     { href: "/patient/ai-assistant", label: "Ask MediFlow" },
+    { href: "/patient/voice", label: "Voice" },
     { href: "/patient/services", label: "Services" },
     { href: "/patient/doctors", label: "Doctors" },
     { href: "/patient/appointments", label: "Appointments" },

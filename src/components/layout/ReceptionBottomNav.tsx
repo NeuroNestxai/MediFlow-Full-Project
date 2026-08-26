@@ -2,14 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import { BottomNav } from "./BottomNav";
-import { InfoIcon, CalendarIcon, UsersIcon } from "@/components/ui/Icons";
+import { CheckIcon, ClockIcon, UsersIcon, HomeIcon, MenuIcon } from "@/components/ui/Icons";
 
 const items = [
-  { href: "/reception/dashboard", label: "Dashboard", icon: <InfoIcon /> },
-  { href: "/reception/check-in", label: "Check-In", icon: <InfoIcon /> },
-  { href: "/reception/queue", label: "Queue", icon: <CalendarIcon /> },
+  { href: "/reception/dashboard", label: "Dashboard", icon: <HomeIcon /> },
+  { href: "/reception/check-in", label: "Check-In", icon: <CheckIcon /> },
+  { href: "/reception/queue", label: "Queue", icon: <ClockIcon /> },
   { href: "/reception/patients", label: "Patients", icon: <UsersIcon /> },
-  { href: "/reception/profile", label: "More", icon: <InfoIcon /> },
+  { href: "/reception/profile", label: "More", icon: <MenuIcon /> },
 ];
 
 export function ReceptionBottomNav() {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
@@ -9,7 +10,12 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Toast } from "@/components/ui/Toast";
 import { DoctorPortrait } from "@/components/ui/DoctorPortrait";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
-import { lookupAppointment, checkInAppointment } from "@/lib/staff/client-data";
+import {
+  lookupAppointment,
+  checkInAppointment,
+  updateQueueStatus,
+  checkOutAppointment,
+} from "@/lib/staff/client-data";
 import type { AppointmentLookup } from "@/lib/staff/types";
 import {
   DB_STATUS_LABEL,
@@ -61,10 +67,12 @@ type CameraState = "off" | "starting" | "running" | "denied" | "failed" | "unsup
 /** No-op subscribe: support never changes during a session. */
 const NEVER_CHANGES = () => () => {};
 
+type ScanAction = "checked_in" | "waiting" | "no_show" | "checked_out";
+
 interface RecentScan {
   reference: string;
   patientName: string;
-  outcome: "checked_in" | "found" | "not_found";
+  outcome: ScanAction | "found" | "not_found";
   at: string;
 }
 
@@ -72,7 +80,34 @@ interface SuccessInfo {
   reference: string;
   patientName: string;
   at: string;
+  action: ScanAction;
 }
+
+const ACTION_COPY: Record<
+  ScanAction,
+  { badgeLabel: string; heading: (name: string) => string; toast: (ref: string) => string }
+> = {
+  checked_in: {
+    badgeLabel: "Checked In",
+    heading: (name) => `${name} is checked in`,
+    toast: (ref) => `${ref} checked in.`,
+  },
+  waiting: {
+    badgeLabel: "Waiting",
+    heading: (name) => `${name} moved to the waiting queue`,
+    toast: (ref) => `${ref} moved to waiting.`,
+  },
+  no_show: {
+    badgeLabel: "No Show",
+    heading: (name) => `${name} marked as a no show`,
+    toast: (ref) => `${ref} marked as a no show.`,
+  },
+  checked_out: {
+    badgeLabel: "Checked Out",
+    heading: (name) => `${name} is checked out`,
+    toast: (ref) => `${ref} checked out.`,
+  },
+};
 
 const REFERENCE_HINT = "Example: REF-2026-000001. Case is ignored.";
 
@@ -121,6 +156,12 @@ export function QrScanClient() {
   // Always release the camera when the screen unmounts.
   useEffect(() => stopCamera, [stopCamera]);
 
+  // Arriving via a real QR link (?ref=...) -- e.g. scanned with the phone's
+  // own camera app rather than our in-page scanner -- looks the appointment
+  // up automatically instead of leaving reception staring at an empty form.
+  // Runs once; the ref guard stops it firing again on re-renders.
+  const searchParams = useSearchParams();
+  const autoRanRef = useRef(false);
   const runLookup = useCallback(
     async (raw: string, fromCamera: boolean) => {
       const value = raw.trim().toUpperCase();
@@ -172,6 +213,15 @@ export function QrScanClient() {
     },
     [showToast],
   );
+
+  useEffect(() => {
+    if (autoRanRef.current) return;
+    const fromLink = searchParams.get("ref");
+    if (!fromLink) return;
+    autoRanRef.current = true;
+    setReference(fromLink.toUpperCase());
+    void runLookup(fromLink, false);
+  }, [searchParams, runLookup]);
 
   const startCamera = useCallback(async () => {
     const Ctor = getBarcodeDetectorCtor();
@@ -239,42 +289,52 @@ export function QrScanClient() {
     }, 350);
   }, [runLookup, stopCamera]);
 
-  async function confirmCheckIn() {
+  /**
+   * Shared by every scan action (check-in, move to waiting, no-show,
+   * check-out) -- the scanner now stays useful through the *whole* visit,
+   * not just the first arrival. Same identity-confirmation gate, same
+   * success/recent-scans/toast plumbing, only the underlying call and the
+   * resulting message differ.
+   */
+  async function runAction(
+    action: ScanAction,
+    call: (appointmentId: string) => ReturnType<typeof checkInAppointment>,
+  ) {
     if (lookup.status !== "ready" || !identityConfirmed) return;
     const appointment = lookup.appointment;
     setCheckingIn(true);
-    const result = await checkInAppointment(appointment.appointmentId);
+    const result = await call(appointment.appointmentId);
     setCheckingIn(false);
 
     if (result.ok) {
       const at = formatLocalClock();
-      setSuccess({ reference: result.reference, patientName: appointment.patientName, at });
+      setSuccess({ reference: result.reference, patientName: appointment.patientName, at, action });
       setLookup({ status: "idle" });
       setIdentityConfirmed(false);
       setReference("");
       setRecent((list) =>
         [
-          {
-            reference: result.reference,
-            patientName: appointment.patientName,
-            outcome: "checked_in" as const,
-            at,
-          },
+          { reference: result.reference, patientName: appointment.patientName, outcome: action, at },
           ...list,
         ].slice(0, 8),
       );
-      showToast("success", `${result.reference} checked in.`);
+      showToast("success", ACTION_COPY[action].toast(result.reference));
       return;
     }
 
     const message =
       result.reason === "not_allowed"
-        ? "This patient cannot be checked in right now — they may already be checked in, or the visit was cancelled."
+        ? "This patient cannot move to that status right now — the visit may have already moved on, or was cancelled."
         : result.reason === "not_found"
           ? "That appointment is no longer available. Look the reference up again."
           : "Something went wrong. Nothing was changed — please try again.";
     showToast("error", message);
   }
+
+  const confirmCheckIn = () => runAction("checked_in", checkInAppointment);
+  const confirmMoveToWaiting = () => runAction("waiting", (id) => updateQueueStatus(id, "waiting"));
+  const confirmNoShow = () => runAction("no_show", (id) => updateQueueStatus(id, "no_show"));
+  const confirmCheckOut = () => runAction("checked_out", checkOutAppointment);
 
   const appointment = lookup.status === "ready" ? lookup.appointment : null;
 
@@ -299,8 +359,11 @@ export function QrScanClient() {
 
       {success ? (
         <section className={styles.successPanel} aria-live="polite">
-          <StatusBadge tone="success" label="Checked In" />
-          <h2 className={styles.successTitle}>{success.patientName} is checked in</h2>
+          <StatusBadge
+            tone={success.action === "no_show" ? "error" : "success"}
+            label={ACTION_COPY[success.action].badgeLabel}
+          />
+          <h2 className={styles.successTitle}>{ACTION_COPY[success.action].heading(success.patientName)}</h2>
           <p className={styles.successMeta}>
             Booking reference <strong>{success.reference}</strong> &middot; {success.at}
           </p>
@@ -309,7 +372,7 @@ export function QrScanClient() {
               Go to Live Queue
             </Button>
             <Button variant="secondary" onClick={() => setSuccess(null)}>
-              Check In Someone Else
+              Scan Another
             </Button>
           </div>
         </section>
@@ -493,34 +556,95 @@ export function QrScanClient() {
                   onChange={(e) => setIdentityConfirmed(e.target.checked)}
                 />
                 <p className={styles.muted}>
-                  Check-in stays disabled until identity is confirmed.
+                  Every action below stays disabled until identity is confirmed.
                 </p>
               </div>
 
-              <div className={styles.actions}>
-                <Button
-                  variant="primary"
-                  onClick={() => void confirmCheckIn()}
-                  disabled={!identityConfirmed || checkingIn || !appointment.canCheckIn}
-                >
-                  {checkingIn ? "Checking in…" : "Check In"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setLookup({ status: "idle" });
-                    setIdentityConfirmed(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-              {!appointment.canCheckIn ? (
+              {/* The same scanner is used at every point in the visit -- which
+                  action makes sense depends entirely on where this appointment
+                  currently is. */}
+              {appointment.canCheckIn ? (
+                <div className={styles.actions}>
+                  <Button
+                    variant="primary"
+                    onClick={() => void confirmCheckIn()}
+                    disabled={!identityConfirmed || checkingIn}
+                  >
+                    {checkingIn ? "Checking in…" : "Check In"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setLookup({ status: "idle" });
+                      setIdentityConfirmed(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : appointment.status === "checked_in" ? (
+                <div className={styles.actions}>
+                  <Button
+                    variant="primary"
+                    onClick={() => void confirmMoveToWaiting()}
+                    disabled={!identityConfirmed || checkingIn}
+                  >
+                    {checkingIn ? "Working…" : "Move to Waiting"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => void confirmNoShow()}
+                    disabled={!identityConfirmed || checkingIn}
+                  >
+                    Mark No Show
+                  </Button>
+                </div>
+              ) : appointment.status === "waiting" ? (
+                <>
+                  <p className={styles.muted}>
+                    This patient is in the waiting queue. The doctor starts the consultation from
+                    their own dashboard.
+                  </p>
+                  <div className={styles.actions}>
+                    <Button
+                      variant="destructive"
+                      onClick={() => void confirmNoShow()}
+                      disabled={!identityConfirmed || checkingIn}
+                    >
+                      Mark No Show
+                    </Button>
+                  </div>
+                </>
+              ) : appointment.status === "in_consultation" ? (
                 <p className={styles.muted}>
-                  This appointment is {DB_STATUS_LABEL[appointment.status].toLowerCase()}, so it cannot
-                  be checked in from here.
+                  This patient is currently with the doctor. Scan again once the consultation is
+                  complete to check them out.
                 </p>
-              ) : null}
+              ) : appointment.canCheckOut ? (
+                <div className={styles.actions}>
+                  <Button
+                    variant="primary"
+                    onClick={() => void confirmCheckOut()}
+                    disabled={!identityConfirmed || checkingIn}
+                  >
+                    {checkingIn ? "Working…" : "Check Out"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setLookup({ status: "idle" });
+                      setIdentityConfirmed(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <p className={styles.muted}>
+                  This appointment is {DB_STATUS_LABEL[appointment.status].toLowerCase()}, so there is
+                  no next step to take from here.
+                </p>
+              )}
             </section>
           ) : null}
         </div>
@@ -546,18 +670,20 @@ export function QrScanClient() {
                   </div>
                   <StatusBadge
                     tone={
-                      scan.outcome === "checked_in"
+                      scan.outcome === "checked_in" || scan.outcome === "checked_out"
                         ? "success"
-                        : scan.outcome === "found"
-                          ? "info"
-                          : "error"
+                        : scan.outcome === "waiting"
+                          ? "pending"
+                          : scan.outcome === "found"
+                            ? "info"
+                            : "error"
                     }
                     label={
-                      scan.outcome === "checked_in"
-                        ? "Checked In"
-                        : scan.outcome === "found"
-                          ? "Found"
-                          : "Not Found"
+                      scan.outcome === "found"
+                        ? "Found"
+                        : scan.outcome === "not_found"
+                          ? "Not Found"
+                          : ACTION_COPY[scan.outcome].badgeLabel
                     }
                   />
                 </li>

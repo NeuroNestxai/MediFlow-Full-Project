@@ -6,8 +6,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SourceLabel } from "@/components/ui/SourceLabel";
 import { Toast } from "@/components/ui/Toast";
 import { LoadingState, EmptyState, ErrorState } from "@/components/states/StatePanel";
-import { fetchAppointmentById, fetchReportedHealth } from "@/lib/staff/client-data";
-import type { ReportedHealth, StaffAppointment } from "@/lib/staff/types";
+import { fetchAppointmentById, fetchReportedHealth, fetchVisitSummary } from "@/lib/staff/client-data";
+import type { ReportedHealth, StaffAppointment, VisitSummary } from "@/lib/staff/types";
 import { DB_STATUS_LABEL, DB_STATUS_TONE, formatDate, formatTime } from "@/lib/patient/types";
 import styles from "./page.module.css";
 
@@ -20,7 +20,12 @@ type LoadState =
   | { status: "loading" }
   | { status: "error" }
   | { status: "missing" }
-  | { status: "ready"; appointment: StaffAppointment; health: HealthState };
+  | {
+      status: "ready";
+      appointment: StaffAppointment;
+      health: HealthState;
+      visitSummary: VisitSummary | null;
+    };
 
 export interface PatientSummaryClientProps {
   appointmentId: string | null;
@@ -51,7 +56,10 @@ export function PatientSummaryClient({ appointmentId }: PatientSummaryClientProp
           setState({ status: "missing" });
           return;
         }
-        const result = await fetchReportedHealth(appointment.patientId);
+        const [result, visitSummary] = await Promise.all([
+          fetchReportedHealth(appointment.patientId),
+          fetchVisitSummary(appointment.id),
+        ]);
         if (!activeRef.current) return;
         const health: HealthState =
           result.status === "ready"
@@ -63,7 +71,7 @@ export function PatientSummaryClient({ appointmentId }: PatientSummaryClientProp
             message: "Patient-reported health could not be loaded. Nothing was changed.",
           });
         }
-        setState({ status: "ready", appointment, health });
+        setState({ status: "ready", appointment, health, visitSummary });
       })
       .catch(() => {
         if (activeRef.current) setState({ status: "error" });
@@ -108,7 +116,11 @@ export function PatientSummaryClient({ appointmentId }: PatientSummaryClientProp
       )}
 
       {state.status === "ready" && (
-        <SummaryBody appointment={state.appointment} health={state.health} />
+        <SummaryBody
+          appointment={state.appointment}
+          health={state.health}
+          visitSummary={state.visitSummary}
+        />
       )}
     </div>
   );
@@ -117,11 +129,14 @@ export function PatientSummaryClient({ appointmentId }: PatientSummaryClientProp
 function SummaryBody({
   appointment,
   health,
+  visitSummary,
 }: {
   appointment: StaffAppointment;
   health: HealthState;
+  visitSummary: VisitSummary | null;
 }) {
   const notes = appointment.patientNotes?.trim() ?? "";
+  const preVisitSummary = appointment.preVisitSummary?.trim() ?? "";
 
   return (
     <>
@@ -134,6 +149,9 @@ function SummaryBody({
             <p className={styles.meta}>
               {appointment.serviceName ?? "Service not recorded"} ·{" "}
               {formatDate(appointment.date)} · {formatTime(appointment.time)}
+            </p>
+            <p className={styles.meta}>
+              MF ID {appointment.patientMfId ?? "\u2014"}
             </p>
           </div>
           <StatusBadge
@@ -151,6 +169,17 @@ function SummaryBody({
         )}
       </Section>
 
+      <Section title="Symptoms & history" chip={<SourceLabel source="patient-reported" />}>
+        {preVisitSummary ? (
+          <p className={styles.body}>{preVisitSummary}</p>
+        ) : (
+          <p className={styles.muted}>
+            The patient booked directly without an AI consultation, so no pre-visit symptoms or
+            history were recorded.
+          </p>
+        )}
+      </Section>
+
       <div className={styles.twoCol}>
         <Section title="Allergies" chip={<SourceLabel source="patient-reported" />}>
           <HealthValue health={health} field="allergies" emptyLabel="No allergies were reported." />
@@ -164,9 +193,25 @@ function SummaryBody({
         </Section>
       </div>
 
+      <Section title="Visit summary" chip={<SourceLabel source="ai-organized" />}>
+        {visitSummary ? (
+          <>
+            <p className={styles.body}>{visitSummary.summary}</p>
+            <p className={styles.muted}>
+              AI-organized summary \u2014 doctor review required before clinical use.
+            </p>
+          </>
+        ) : (
+          <p className={styles.muted}>No AI-organized summary has been written for this visit yet.</p>
+        )}
+      </Section>
+
       <Section title="Missing information" chip={<SourceLabel source="ai-organized" />}>
         <ul className={styles.list}>
           {notes ? null : <li>No additional notes were provided at booking.</li>}
+          {preVisitSummary ? null : (
+            <li>No pre-visit symptoms or history were recorded (no AI consultation before booking).</li>
+          )}
           {health.status === "ready" && !health.health?.allergies?.trim() ? (
             <li>Allergies were not filled in by the patient.</li>
           ) : null}
@@ -190,6 +235,10 @@ function SummaryBody({
           <div className={styles.detailRow}>
             <dt>Reference</dt>
             <dd>{appointment.reference}</dd>
+          </div>
+          <div className={styles.detailRow}>
+            <dt>MF ID</dt>
+            <dd>{appointment.patientMfId ?? "\u2014"}</dd>
           </div>
           <div className={styles.detailRow}>
             <dt>Date</dt>

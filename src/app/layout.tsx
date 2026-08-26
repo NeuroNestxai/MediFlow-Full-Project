@@ -52,9 +52,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             the beforeInteractive strategy so Next injects it into the initial
             HTML — React never treats it as a component-rendered <script>, so
             there is no runtime warning. */}
-        <Script id="mediflow-no-flash" strategy="beforeInteractive">
-          {NO_FLASH_SCRIPT}
-        </Script>
+        <Script
+          id="mediflow-no-flash"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }}
+        />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

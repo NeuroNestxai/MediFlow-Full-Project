@@ -3,50 +3,118 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-page);
   overflow-x: hidden;
+  position: relative;
+  isolation: isolate;
+  /* One continuous wash across the WHOLE page -- brand side and form side
+     read as one design now, not two panels stitched together. */
+  background:
+    radial-gradient(130% 90% at 12% 8%, var(--color-accent-teal-subtle) 0%, transparent 50%),
+    radial-gradient(120% 100% at 88% 12%, rgba(74, 111, 176, 0.16) 0%, transparent 55%),
+    radial-gradient(140% 100% at 78% 95%, var(--color-accent-violet-subtle) 0%, transparent 55%),
+    linear-gradient(150deg, #e9f4f5 0%, #eef1f9 45%, #f1ecf8 75%, #f6eef6 100%);
+}
+
+:root[data-theme="dark"] .shell {
+  background:
+    radial-gradient(130% 90% at 12% 8%, rgba(18, 169, 174, 0.16) 0%, transparent 50%),
+    radial-gradient(120% 100% at 88% 12%, rgba(74, 111, 176, 0.18) 0%, transparent 55%),
+    radial-gradient(140% 100% at 78% 95%, rgba(145, 121, 198, 0.2) 0%, transparent 55%),
+    linear-gradient(150deg, var(--color-bg-page) 0%, #141a2e 55%, #1a1533 100%);
 }
 
 /* ------------------------------------------------------------------ */
-/* Brand panel                                                         */
+/* Brand panel -- background lives on .shell now; this is transparent   */
+/* so the one continuous gradient shows through with no seam.           */
 /* ------------------------------------------------------------------ */
 .brand {
   position: relative;
+  z-index: 1;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px 28px calc(28px + env(safe-area-inset-top));
-  background:
-    radial-gradient(120% 90% at 15% 10%, var(--color-accent-teal-subtle) 0%, transparent 55%),
-    radial-gradient(120% 90% at 90% 100%, var(--color-accent-violet-subtle) 0%, transparent 55%),
-    linear-gradient(160deg, #eef4f8 0%, #eef0f8 55%, #efeaf7 100%);
-  border-bottom: 1px solid var(--color-border-default);
 }
 
+/* Spans the whole shell now (see AuthShell.tsx), sitting behind both
+   panels and the glass card -- z-index 0 keeps it beneath everything
+   else, which all sit at their own natural stacking order above it. */
 .decoration {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.14;
+  opacity: 0.16;
   pointer-events: none;
+  z-index: 0;
 }
 
-/* Dark mode: replace the pale light fog with a deep navy/indigo composition so
-   the brand side reads as one intentional dark design with the form side —
-   restrained teal + violet glows over a token navy base (no invert/filter). The
-   brand side stays a touch more expressive via the visible decoration paths. */
-:root[data-theme="dark"] .brand {
-  background:
-    radial-gradient(120% 90% at 15% 10%, rgba(18, 169, 174, 0.16) 0%, transparent 55%),
-    radial-gradient(120% 90% at 88% 92%, rgba(145, 121, 198, 0.2) 0%, transparent 55%),
-    linear-gradient(160deg, var(--color-bg-page) 0%, #141a2e 55%, #1a1533 100%);
-  border-bottom-color: var(--color-border-default);
+/* Slow, smooth flowing motion along each line -- a travelling dash
+   pattern rather than moving the paths themselves, so the underlying
+   shapes stay exactly as drawn. Each line runs at a different speed so
+   the motion reads as organic rather than mechanically synchronized. */
+.flowPath1,
+.flowPath2,
+.flowPath3 {
+  stroke-dasharray: 10 16;
+  animation: auth-flow linear infinite;
+}
+
+.flowPath1 {
+  animation-duration: 22s;
+}
+
+.flowPath2 {
+  animation-duration: 28s;
+  animation-direction: reverse;
+}
+
+.flowPath3 {
+  animation-duration: 34s;
+}
+
+@keyframes auth-flow {
+  to {
+    stroke-dashoffset: -520;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flowPath1,
+  .flowPath2,
+  .flowPath3 {
+    animation: none;
+  }
+}
+
+:global([data-reduced-motion="true"]) .flowPath1,
+:global([data-reduced-motion="true"]) .flowPath2,
+:global([data-reduced-motion="true"]) .flowPath3 {
+  animation: none;
 }
 
 :root[data-theme="dark"] .decoration {
   opacity: 0.3;
+}
+
+/* Soft spotlight directly behind the logo -- lifts its pale gradient
+   tones off the equally pale page background instead of the two
+   blending together. Purely a light glow, no shape/edge of its own. */
+.brandGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 480px;
+  height: 480px;
+  transform: translate(-50%, -58%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+:root[data-theme="dark"] .brandGlow {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 68%);
 }
 
 .brandInner {
@@ -102,16 +170,20 @@
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--color-text-secondary);
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-default);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--radius-full);
   padding: 6px 14px;
 }
 
 /* ------------------------------------------------------------------ */
-/* Form panel                                                          */
+/* Form panel -- also transparent, same reasoning as .brand above.      */
 /* ------------------------------------------------------------------ */
 .panel {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -122,6 +194,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 8px;
   padding: 14px 16px;
   padding-top: max(14px, env(safe-area-inset-top));
 }
@@ -134,14 +207,26 @@
   padding: 8px 20px calc(40px + env(safe-area-inset-bottom));
 }
 
+/* Glassmorphism: frosted, translucent surface so the page's gradient
+   shows softly through the card instead of stopping at a flat white
+   block. */
 .card {
   width: 100%;
   max-width: 460px;
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-default);
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), 0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   padding: 32px;
+}
+
+:root[data-theme="dark"] .card {
+  background: rgba(20, 26, 46, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-card), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 /* ------------------------------------------------------------------ */
@@ -179,6 +264,8 @@
 
 /* ------------------------------------------------------------------ */
 /* Desktop / large tablet: true full-height split screen               */
+/* No dividing border between the two sides -- one continuous gradient  */
+/* is the whole point, so nothing should draw a seam over it.           */
 /* ------------------------------------------------------------------ */
 @media (min-width: 860px) {
   .shell {
@@ -186,8 +273,6 @@
     grid-template-columns: 44fr 56fr;
   }
   .brand {
-    border-bottom: none;
-    border-right: 1px solid var(--color-border-default);
     padding: 48px 40px;
   }
   .brandName {

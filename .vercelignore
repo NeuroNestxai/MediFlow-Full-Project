@@ -1,0 +1,5 @@
+# Leading slashes matter: a bare `supabase` would also match src/lib/supabase/.
+/.git
+/docs
+/supabase
+/README.md

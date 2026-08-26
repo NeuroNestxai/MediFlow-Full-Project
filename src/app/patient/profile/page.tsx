@@ -5,7 +5,14 @@ import { ProfileClient } from "./ProfileClient";
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const { profile, email, profileBlocked } = await requirePatient();
+  const { profile, email, profileBlocked, patientId } = await requirePatient();
 
-  return <ProfileClient profile={profile} email={email} profileBlocked={profileBlocked} />;
+  return (
+    <ProfileClient
+      profile={profile}
+      email={email}
+      profileBlocked={profileBlocked}
+      mfId={patientId}
+    />
+  );
 }

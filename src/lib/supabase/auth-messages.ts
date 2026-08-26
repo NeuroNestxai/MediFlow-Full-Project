@@ -25,6 +25,10 @@ export function safeAuthMessage(error: AuthError | null, fallback: string): stri
       return "Too many attempts. Please wait a moment and try again.";
     case "validation_failed":
       return "Please check the details you entered and try again.";
+    case "otp_expired":
+      return "That code has expired. Request a new one below.";
+    case "otp_disabled":
+      return "That code isn't valid. Request a new one below.";
     default:
       return fallback;
   }

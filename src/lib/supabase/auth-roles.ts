@@ -30,6 +30,22 @@ export function isAppRole(value: string): value is AppRole {
 }
 
 /**
+ * Only a same-site relative path is ever honored as a post-login
+ * destination -- e.g. `/reception/qr-scan?ref=REF-2026-000001` is fine,
+ * but `//evil.com` or `https://evil.com` is rejected outright. This is
+ * what stops a crafted `next` value from turning a login link into an
+ * open redirect. Note this only decides where a signed-in user is SENT --
+ * the actual role check for that destination still happens in
+ * middleware.ts on the request that follows, so an invalid-but-clever
+ * `next` here can never grant access to an area the user doesn't hold.
+ */
+export function safeNextPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("://")) return null;
+  return value;
+}
+
+/**
  * Reads the signed-in user's role from public.user_roles.
  * - `userId` is null when there is no session.
  * - `role` is null when the user has no known/valid role, or the read is
@@ -92,10 +108,16 @@ export async function requireRole(expected: AppRole): Promise<void> {
  * have no valid role → permission-denied. If signed out → sign-in. Used by the
  * shared sign-in page and the post-login handoff.
  */
-export async function redirectAuthenticatedUserByRole(): Promise<void> {
+export async function redirectAuthenticatedUserByRole(next?: string | null): Promise<void> {
   const { userId, role, roles } = await getAuthenticatedRole();
   if (!userId) redirect(SIGN_IN_PATH);
   if (!role) redirect(PERMISSION_DENIED_PATH);
+  // A specific destination (e.g. from a QR check-in link) always wins over
+  // the generic dashboard/choose-role hand-off -- someone who scanned a
+  // link had somewhere specific to be, not a generic "which hat am I
+  // wearing today" decision to make.
+  const safeNext = safeNextPath(next);
+  if (safeNext) redirect(safeNext);
   // Someone who wears two hats is asked which one they are here for, rather
   // than being dropped into whichever the code happened to list first.
   if (roles.length > 1) redirect(CHOOSE_ROLE_PATH);

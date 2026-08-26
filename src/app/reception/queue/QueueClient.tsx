@@ -188,7 +188,10 @@ export function QueueClient() {
                   {displayDoctorName(appt.doctorName)} &middot; {appt.serviceName || "—"} &middot;{" "}
                   {formatTime(appt.time)}
                 </p>
-                <p className={styles.ref}>{appt.reference}</p>
+                <p className={styles.ref}>
+                  {appt.reference}
+                  {appt.patientMfId ? ` \u00b7 ${appt.patientMfId}` : ""}
+                </p>
               </div>
               <StatusBadge tone={DB_STATUS_TONE[appt.status]} label={DB_STATUS_LABEL[appt.status]} />
               <div className={styles.rowActions}>

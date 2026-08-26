@@ -4,7 +4,7 @@
   padding: 24px 16px 88px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 @media (min-width: 768px) {
@@ -72,7 +72,7 @@
 
 @media (min-width: 1024px) {
   .statsRow {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(8, 1fr);
   }
 }
 
@@ -80,7 +80,7 @@
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  padding: 14px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -104,13 +104,13 @@
   font-weight: 700;
   font-family: var(--font-display);
   color: var(--color-text-primary);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .queueList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .list {
@@ -136,6 +136,12 @@
 .rowMain {
   flex: 1 1 200px;
   min-width: 0;
+}
+
+.rowActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .patientName {

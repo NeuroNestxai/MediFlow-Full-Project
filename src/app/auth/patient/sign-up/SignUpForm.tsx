@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthTabs } from "@/components/auth/AuthTabs";
 import { PasswordField } from "@/components/auth/PasswordField";
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
@@ -31,7 +32,6 @@ export function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -61,7 +61,6 @@ export function SignUpForm() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
-    setSuccessMessage(null);
     if (!validate()) {
       setAnnouncement("There are errors in the form. Please review the highlighted fields.");
       return;
@@ -71,13 +70,11 @@ export function SignUpForm() {
     setAnnouncement("Creating your account…");
     try {
       const supabase = createClient();
+      const trimmedEmail = email.trim();
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
         options: {
-          // Route the confirmation link through our SSR callback endpoint so
-          // clicking it establishes a real session, then lands on the dashboard.
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
           data: { full_name: fullName.trim() },
         },
       });
@@ -92,8 +89,6 @@ export function SignUpForm() {
         return;
       }
 
-      // When email confirmation is required, no session is returned yet — the
-      // patient must click the link in their email to finish.
       if (data.session) {
         setAnnouncement("Account created. Taking you to your dashboard…");
         router.replace("/auth/post-login");
@@ -101,10 +96,24 @@ export function SignUpForm() {
         return;
       }
 
-      const message =
-        "Account created. Check your email and open the confirmation link to finish setting up your account.";
-      setSuccessMessage(message);
-      setAnnouncement(message);
+      // Supabase does not return an error for a duplicate sign-up (to avoid
+      // leaking which emails are already registered). Instead it returns a
+      // user object with an empty "identities" array. That is the only
+      // signal we get, so we check for it here and show an inline error
+      // immediately instead of pretending a confirmation code was sent.
+      const alreadyRegistered =
+        Array.isArray(data.user?.identities) && data.user.identities.length === 0;
+      if (alreadyRegistered) {
+        setErrors({ email: "An account with this email already exists. Sign in instead." });
+        setAnnouncement("An account with this email already exists.");
+        return;
+      }
+      // Email confirmation is required. Rather than an emailed link -- which
+      // only works back on the exact device/browser the form was filled out
+      // on -- the patient gets a 6-digit code by email and types it in here,
+      // which works from any device. Take them straight to that screen.
+      setAnnouncement("Account created. Check your email for a confirmation code.");
+      router.push(`/auth/verify?email=${encodeURIComponent(trimmedEmail)}`);
     } catch {
       const message = "We couldn't reach the sign-up service. Please try again.";
       setFormError(message);
@@ -130,11 +139,6 @@ export function SignUpForm() {
       {formError ? (
         <div className={`${styles.banner} ${styles.bannerError}`} role="alert">
           {formError}
-        </div>
-      ) : null}
-      {successMessage ? (
-        <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status">
-          {successMessage}
         </div>
       ) : null}
 
@@ -181,6 +185,7 @@ export function SignUpForm() {
           placeholder="At least 8 characters"
           disabled={submitting}
         />
+        <PasswordStrengthMeter password={password} />
 
         <PasswordField
           id="confirmPassword"

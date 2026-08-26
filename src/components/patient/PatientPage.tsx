@@ -25,17 +25,22 @@ export function PatientPage({
 }
 
 /**
- * Consistent page header: title + optional description, an optional actions
- * slot, and (when a tour is supplied) the standard "Tour this page" launcher —
- * giving every Patient page the same Help/replay affordance.
+ * Consistent page header: title + optional small muted `meta` line (e.g. the
+ * patient's MF ID) + optional description, an optional actions slot, and
+ * (when a tour is supplied) the standard "Tour this page" launcher — giving
+ * every Patient page the same Help/replay affordance.
  */
 export function PatientPageHeader({
   title,
+  meta,
   description,
   actions,
   tour,
 }: {
   title: string;
+  /** A single small muted line directly under the title — kept deliberately
+   * quiet, not a card. Used for the patient's MF ID on the dashboard. */
+  meta?: string;
   description?: string;
   actions?: ReactNode;
   tour?: PageTour;
@@ -44,6 +49,7 @@ export function PatientPageHeader({
     <header className={styles.header}>
       <div className={styles.headingWrap}>
         <h1 className={styles.title}>{title}</h1>
+        {meta ? <p className={styles.meta}>{meta}</p> : null}
         {description ? <p className={styles.description}>{description}</p> : null}
       </div>
       {actions || tour ? (

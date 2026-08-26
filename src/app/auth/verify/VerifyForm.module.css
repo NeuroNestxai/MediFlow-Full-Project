@@ -1,0 +1,154 @@
+/* ==================================================================== */
+/* Hero -- a badge unique to this screen, not reused elsewhere, echoing   */
+/* the same glow-behind-glass language already used for the logo on      */
+/* this same shell (see AuthShell.module.css .brandGlow).                */
+/* ==================================================================== */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96px;
+  margin-bottom: 18px;
+}
+
+.heroGlow {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(18, 169, 174, 0.28) 0%,
+    rgba(74, 111, 176, 0.18) 45%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  filter: blur(2px);
+  animation: verify-glow-pulse 3.6s ease-in-out infinite;
+}
+
+:root[data-theme="dark"] .heroGlow {
+  background: radial-gradient(
+    circle,
+    rgba(18, 169, 174, 0.22) 0%,
+    rgba(145, 121, 198, 0.16) 45%,
+    rgba(255, 255, 255, 0) 72%
+  );
+}
+
+@keyframes verify-glow-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.heroBadge {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 24px rgba(31, 37, 64, 0.12), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+:root[data-theme="dark"] .heroBadge {
+  background: rgba(20, 26, 46, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroGlow {
+    animation: none;
+  }
+}
+
+.centerText {
+  text-align: center;
+}
+
+/* ==================================================================== */
+/* OTP boxes -- their own glass layer, distinct from (slightly more      */
+/* opaque than) the outer card so they read clearly as input targets     */
+/* rather than blending into the card's own translucency.                */
+/* ==================================================================== */
+.otpRow {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0 6px;
+}
+
+.otpBox {
+  width: 46px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  text-align: center;
+  font-size: calc(22px * var(--font-scale));
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing),
+    box-shadow var(--motion-duration-fast) var(--motion-easing);
+}
+
+:root[data-theme="dark"] .otpBox {
+  background: rgba(20, 26, 46, 0.5);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--color-text-primary);
+}
+
+.otpBox:focus {
+  outline: none;
+  border-color: var(--color-action-primary);
+  box-shadow: 0 0 0 3px var(--color-action-primary-subtle);
+}
+
+.otpBox:disabled {
+  opacity: 0.6;
+}
+
+.otpBoxInvalid {
+  border-color: var(--color-accent-coral);
+}
+
+@media (max-width: 380px) {
+  .otpBox {
+    width: 40px;
+    height: 50px;
+  }
+  .otpRow {
+    gap: 7px;
+  }
+}
+
+.fieldError {
+  text-align: center;
+  font-size: calc(12.5px * var(--font-scale));
+  color: var(--color-status-error-text);
+  margin: -2px 0 4px;
+}
+
+.resendPrompt {
+  font-size: calc(13px * var(--font-scale));
+  color: var(--color-text-secondary);
+}

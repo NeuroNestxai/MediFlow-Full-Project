@@ -53,6 +53,16 @@ export function PasswordField({
             aria-describedby={describedBy}
             autoComplete={autoComplete}
             disabled={disabled}
+            // Ask third-party password-manager extensions (LastPass,
+            // 1Password, Bitwarden) not to overlay their own suggestion
+            // icon here, since the app already shows its own strength
+            // meter on the sign-up password field. This has no effect on
+            // a browser's own BUILT-IN password suggestion (e.g. Edge) --
+            // that's a browser setting, not something a website can
+            // reliably turn off from its own code.
+            data-lpignore="true"
+            data-1p-ignore=""
+            data-bwignore="true"
           />
           <button
             type="button"

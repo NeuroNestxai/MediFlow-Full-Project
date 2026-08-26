@@ -6,17 +6,20 @@ import type {
   AvailableSlot,
   Specialty,
   DbAppointmentStatus,
+  SlotOffer,
 } from "./types";
 import {
   SPECIALTY_SELECT,
   SERVICE_SELECT,
   DOCTOR_SELECT,
   APPOINTMENT_SELECT,
+  SLOT_OFFER_SELECT,
   normalizeSpecialties,
   normalizeServices,
   normalizeDoctors,
   normalizeAppointments,
   normalizeSlots,
+  normalizeSlotOffers,
 } from "./normalize";
 
 // Every function below uses the normal authenticated browser client. RLS
@@ -52,6 +55,64 @@ export async function fetchMyAppointments(): Promise<PatientAppointment[]> {
     .order("appointment_time", { ascending: true });
   if (error) throw new Error("appointments_load_failed");
   return normalizeAppointments(data);
+}
+
+// ---------------------------------------------------------------------------
+// "Move earlier" opt-in + slot offers.
+// ---------------------------------------------------------------------------
+
+/** Opts an upcoming appointment in or out of being offered an earlier slot. */
+export async function setWantsEarlier(
+  appointmentId: string,
+  wants: boolean,
+): Promise<{ ok: boolean }> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("patient_set_wants_earlier", {
+    p_appointment_id: appointmentId,
+    p_wants: wants,
+  });
+  return { ok: !error };
+}
+
+/** Every slot offer this patient has ever received, newest first. The UI
+ * decides what to show -- typically only `status === "offered"` rows need
+ * a response; the rest are just history. */
+export async function fetchMySlotOffers(): Promise<SlotOffer[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("dashboard_my_slot_offers")
+    .select(SLOT_OFFER_SELECT)
+    .order("offer_date", { ascending: true });
+  if (error) return [];
+  return normalizeSlotOffers(data);
+}
+
+export type SlotOfferResponseResult =
+  | { ok: true; status: string }
+  | { ok: false; reason: "expired" | "not_open" | "not_found" | "error" };
+
+/** Accept moves the request to "accepted" (awaiting reception's final
+ * approval); decline leaves the patient's own appointment untouched and
+ * automatically offers the slot to the next eligible patient. */
+export async function respondToSlotOffer(
+  offerId: string,
+  accept: boolean,
+): Promise<SlotOfferResponseResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("respond_slot_offer", {
+    p_offer_id: offerId,
+    p_accept: accept,
+  });
+  if (error) {
+    const msg = String(error.message ?? "");
+    if (msg.includes("offer_expired")) return { ok: false, reason: "expired" };
+    if (msg.includes("offer_not_open")) return { ok: false, reason: "not_open" };
+    if (msg.includes("offer_not_found")) return { ok: false, reason: "not_found" };
+    return { ok: false, reason: "error" };
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as { status: string } | undefined;
+  if (!row) return { ok: false, reason: "error" };
+  return { ok: true, status: row.status };
 }
 
 /** Available slots (v2 RPC) — includes is_demo + source_label. Never reads the

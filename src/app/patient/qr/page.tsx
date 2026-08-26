@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { headers } from "next/headers";
 import { requirePatient } from "@/lib/supabase/patient-auth";
 import { getAppointmentByReference } from "@/lib/patient/server-data";
 import type { PatientAppointment } from "@/lib/patient/types";
@@ -38,12 +39,22 @@ export default async function QRPage({
     }
   }
 
-  // Generate a real, standards-compliant QR entirely in-app, encoding ONLY the
-  // opaque booking reference — no name/contact/doctor/service/date/health/UUID.
+  // Generate a real, standards-compliant QR entirely in-app. It encodes a
+  // full link to the reception scan screen with ONLY the opaque booking
+  // reference as a query param -- no name/contact/doctor/service/date/
+  // health/UUID. Encoding a real link (rather than the bare reference) means
+  // scanning it with the phone's own camera app opens it directly, which is
+  // the only reliable path on iPhone: Safari's engine (which every iOS
+  // browser is required to use) has never implemented in-page camera QR
+  // detection, so the in-app scanner falls back to manual entry there.
   let qrSvg: string | null = null;
   if (appointment && ACTIVE_QR_STATUSES.includes(appointment.status)) {
+    const hdrs = await headers();
+    const host = hdrs.get("host") ?? "localhost:3000";
+    const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+    const scanUrl = `${protocol}://${host}/reception/qr-scan?ref=${encodeURIComponent(appointment.reference)}`;
     try {
-      qrSvg = await QRCode.toString(appointment.reference, {
+      qrSvg = await QRCode.toString(scanUrl, {
         type: "svg",
         errorCorrectionLevel: "M",
         margin: 1,

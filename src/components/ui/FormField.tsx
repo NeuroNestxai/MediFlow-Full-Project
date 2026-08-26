@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { nextId } from "@/lib/a11y";
+import { useId, type ReactNode } from "react";
 import styles from "./FormField.module.css";
 
 export interface FormFieldProps {
@@ -18,8 +17,12 @@ export interface FormFieldProps {
  * relying on color to signal something went wrong.
  */
 export function FormField({ label, htmlFor, error, hint, required, children }: FormFieldProps) {
-  const hintId = hint ? nextId("hint") : undefined;
-  const errorId = error ? nextId("error") : undefined;
+  // useId() is required here (not a manual counter) -- it is the only ID
+  // strategy React guarantees to match between server render and client
+  // hydration, regardless of render order or Strict Mode double-invokes.
+  const baseId = useId();
+  const hintId = hint ? baseId + "-hint" : undefined;
+  const errorId = error ? baseId + "-error" : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
