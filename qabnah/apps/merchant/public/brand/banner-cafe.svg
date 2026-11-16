@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="Omani coffee illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2B1A17"/><stop offset="0.6" stop-color="#4B2E2A"/><stop offset="1" stop-color="#7C4A32"/></linearGradient>
+    <radialGradient id="glow" cx="0.75" cy="0.5" r="0.55"><stop offset="0" stop-color="#F4A300" stop-opacity="0.45"/><stop offset="1" stop-color="#F4A300" stop-opacity="0"/></radialGradient>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B7791F"/><stop offset="0.5" stop-color="#F6C453"/><stop offset="1" stop-color="#B7791F"/></linearGradient>
+    <pattern id="geo" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M30 0L60 30 30 60 0 30z" fill="none" stroke="#F4A300" stroke-opacity="0.12" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="1200" height="400" fill="url(#bg)"/>
+  <rect width="1200" height="400" fill="url(#geo)"/>
+  <rect width="1200" height="400" fill="url(#glow)"/>
+  <!-- tray -->
+  <ellipse cx="900" cy="330" rx="280" ry="40" fill="#1C100E" opacity="0.5"/>
+  <ellipse cx="900" cy="318" rx="270" ry="40" fill="url(#brass)"/>
+  <!-- dallah -->
+  <g transform="translate(760 70)">
+    <path d="M60 60c-6-30 14-46 40-46s46 16 40 46z" fill="url(#brass)"/>
+    <circle cx="100" cy="8" r="10" fill="#F6C453"/>
+    <path d="M52 60h96l10 30c18 50 14 110-20 150H62C28 200 24 140 42 90z" fill="url(#brass)"/>
+    <path d="M150 110c50-20 80-60 104-110l14 8c-20 60-56 110-112 136z" fill="#D69E2E"/>
+    <path d="M44 130c-44 0-60 40-40 80" fill="none" stroke="#B7791F" stroke-width="14" stroke-linecap="round"/>
+    <path d="M58 120h86M54 170h92" stroke="#8D5A12" stroke-width="4" opacity="0.6"/>
+  </g>
+  <!-- cups -->
+  <g>
+    <path d="M1010 268h70l-8 44h-54z" fill="#FFF7ED"/><path d="M1010 268h70" stroke="#F4A300" stroke-width="5"/>
+    <path d="M1090 280h60l-7 36h-46z" fill="#FFF7ED"/><path d="M1090 280h60" stroke="#F4A300" stroke-width="5"/>
+  </g>
+  <!-- dates bowl -->
+  <path d="M640 290h150c0 34-34 50-75 50s-75-16-75-50z" fill="#FFF7ED"/>
+  <g fill="#7C2D12"><ellipse cx="672" cy="284" rx="18" ry="11"/><ellipse cx="704" cy="278" rx="18" ry="11"/><ellipse cx="738" cy="282" rx="18" ry="11"/><ellipse cx="764" cy="288" rx="16" ry="10"/><ellipse cx="690" cy="268" rx="16" ry="10"/><ellipse cx="724" cy="264" rx="16" ry="10"/></g>
+  <!-- steam -->
+  <g fill="none" stroke="#FDE68A" stroke-width="5" stroke-linecap="round" opacity="0.55"><path d="M1045 250c-14-18 14-28 0-48s10-28 0-42"/><path d="M1120 262c-14-18 14-28 0-48"/></g>
+  <!-- cardamom pods -->
+  <g fill="#65A30D" opacity="0.9"><ellipse cx="600" cy="340" rx="12" ry="7" transform="rotate(-20 600 340)"/><ellipse cx="575" cy="352" rx="12" ry="7" transform="rotate(25 575 352)"/></g>
+</svg>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic -->
+    <string name="common_retry">Retry</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_ok">OK</string>
+    <string name="common_save">Save</string>
+    <string name="common_close">Close</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_back">Back</string>
+    <string name="common_continue">Continue</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_send">Send</string>
+    <string name="common_optional">Optional</string>
+    <string name="common_call">Call</string>
+    <string name="common_whatsapp">WhatsApp</string>
+    <string name="common_empty_title">Nothing here yet</string>
+    <string name="common_version">Version %1$s</string>
+    <string name="common_dev_banner">Development build · API %1$s</string>
+
+    <!-- Errors -->
+    <string name="error_network">No connection. Check your internet and try again.</string>
+    <string name="error_server">Something went wrong on our side. Please try again.</string>
+    <string name="error_session">Your session has ended. Please sign in again.</string>
+    <string name="error_rate_limited">Too many attempts. Please wait a moment.</string>
+    <string name="error_not_found">Not found.</string>
+    <string name="error_forbidden">You are not allowed to do this.</string>
+    <string name="error_generic">Something went wrong.</string>
+    <string name="error_location_unavailable">Could not get your location. Make sure location is turned on.</string>
+    <string name="error_out_of_service_area">This location is outside our service area.</string>
+    <string name="error_merchant_closed">This store is closed right now.</string>
+
+    <!-- Language -->
+    <string name="language">Language</string>
+    <string name="language_ar">العربية</string>
+    <string name="language_en">English</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_out_confirm">Sign out of this device?</string>
+
+    <!-- Auth -->
+    <string name="auth_welcome">Welcome to %1$s</string>
+    <string name="auth_phone_title">Enter your mobile number</string>
+    <string name="auth_phone_hint">We\'ll send you a 6-digit code by SMS.</string>
+    <string name="auth_phone_label">Mobile number</string>
+    <string name="auth_phone_invalid">Enter a valid Omani mobile number (8 digits starting with 7 or 9).</string>
+    <string name="auth_send_code">Send code</string>
+    <string name="auth_code_title">Enter the code</string>
+    <string name="auth_code_sent_to">Sent to %1$s</string>
+    <string name="auth_code_label">6-digit code</string>
+    <string name="auth_full_name_label">Full name (new accounts)</string>
+    <string name="auth_verify">Verify</string>
+    <string name="auth_change_number">Change number</string>
+    <string name="auth_resend">Resend code</string>
+    <string name="auth_resend_in">Resend in %1$d s</string>
+    <string name="auth_wrong_code">The code is incorrect or has expired.</string>
+    <string name="auth_dev_code">Dev code: %1$s</string>
+    <string name="auth_name_title">What\'s your name?</string>
+    <string name="auth_name_hint">Captains and stores will see your first name.</string>
+    <string name="auth_name_required">Please enter your name.</string>
+    <string name="auth_terms">By continuing you agree to the Qabnah terms and privacy policy.</string>
+
+    <!-- Order status -->
+    <string name="order_status_pending_payment">Awaiting payment</string>
+    <string name="order_status_placed">Placed</string>
+    <string name="order_status_accepted">Accepted</string>
+    <string name="order_status_preparing">Preparing</string>
+    <string name="order_status_ready_for_pickup">Ready for pickup</string>
+    <string name="order_status_out_for_delivery">On the way</string>
+    <string name="order_status_delivered">Delivered</string>
+    <string name="order_status_completed">Completed</string>
+    <string name="order_status_rejected">Rejected</string>
+    <string name="order_status_cancelled">Cancelled</string>
+    <string name="status_unknown">Updating…</string>
+
+    <!-- Delivery status -->
+    <string name="delivery_status_created">Created</string>
+    <string name="delivery_status_searching">Finding a captain</string>
+    <string name="delivery_status_unassigned">Waiting for a captain</string>
+    <string name="delivery_status_assigned">Captain assigned</string>
+    <string name="delivery_status_at_pickup">Captain at pickup</string>
+    <string name="delivery_status_picked_up">Picked up</string>
+    <string name="delivery_status_at_dropoff">Captain has arrived</string>
+    <string name="delivery_status_delivered">Delivered</string>
+    <string name="delivery_status_failed">Delivery failed</string>
+    <string name="delivery_status_returning">Returning</string>
+    <string name="delivery_status_returned">Returned</string>
+    <string name="delivery_status_cancelled">Cancelled</string>
+
+    <!-- Vehicles -->
+    <string name="vehicle_bike">Motorbike</string>
+    <string name="vehicle_car">Car</string>
+    <string name="vehicle_van">Van</string>
+
+    <!-- Payments -->
+    <string name="payment_online">Pay online (card)</string>
+    <string name="payment_cod">Cash on delivery</string>
+    <string name="payment_prepaid">Prepaid</string>
+
+    <!-- Support -->
+    <string name="support_title">Support</string>
+    <string name="support_empty">No support tickets yet.</string>
+    <string name="support_new">New ticket</string>
+    <string name="support_subject">Subject</string>
+    <string name="support_category">Category</string>
+    <string name="support_message">How can we help?</string>
+    <string name="support_submit">Submit</string>
+    <string name="support_reply_hint">Write a reply…</string>
+    <string name="support_ticket_number">Ticket %1$s</string>
+    <string name="support_about_order">About this order</string>
+    <string name="support_staff">Qabnah support</string>
+    <string name="support_required">Subject and message are required.</string>
+    <string name="ticket_category_order_issue">Order issue</string>
+    <string name="ticket_category_payment">Payment</string>
+    <string name="ticket_category_delivery">Delivery</string>
+    <string name="ticket_category_captain">Captain</string>
+    <string name="ticket_category_merchant">Store</string>
+    <string name="ticket_category_account">Account</string>
+    <string name="ticket_category_other">Other</string>
+
+    <!-- Notifications -->
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_empty">You\'re all caught up.</string>
+
+    <!-- Map -->
+    <string name="map_use_this_location">Use this location</string>
+    <string name="map_my_location">My location</string>
+    <string name="map_move_to_adjust">Move the map to place the pin</string>
+    <string name="map_attribution">© OpenStreetMap contributors</string>
+    <string name="map_pickup">Pickup</string>
+    <string name="map_dropoff">Drop-off</string>
+    <string name="map_captain">Captain</string>
+</resources>

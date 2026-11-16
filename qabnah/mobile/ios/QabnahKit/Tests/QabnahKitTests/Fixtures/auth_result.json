@@ -1,0 +1,7 @@
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9.e30.sig",
+  "refreshToken": "rt_abc",
+  "expiresIn": 900,
+  "user": { "id": "u1", "phone": "+96891234567", "email": null, "fullName": "", "locale": "ar", "status": "active" },
+  "isNewUser": true
+}

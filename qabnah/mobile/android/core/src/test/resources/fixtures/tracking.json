@@ -1,0 +1,12 @@
+{
+  "orderId": "6f1c2a52-6a7e-4d61-9a63-3b1f7a2d9c01",
+  "orderStatus": "out_for_delivery",
+  "deliveryStatus": "at_dropoff",
+  "pickup": { "lat": 23.588, "lng": 58.3829 },
+  "dropoff": { "lat": 23.6, "lng": 58.41 },
+  "captain": { "id": "c-1", "firstName": "Ahmed", "vehicleType": "bike", "vehiclePlate": "1234 AB", "vehicleColor": null,
+               "vehicleModel": null, "ratingAvg": 4.8, "phone": null, "location": null },
+  "etaPickupAt": null,
+  "etaDropoffAt": "2026-11-16T10:35:00Z",
+  "path": [ { "lat": 23.59, "lng": 58.39 }, { "lat": 23.595, "lng": 58.40 } ]
+}

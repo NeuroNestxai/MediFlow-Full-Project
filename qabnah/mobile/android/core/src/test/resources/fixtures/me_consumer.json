@@ -1,0 +1,7 @@
+{
+  "user": { "id": "u-1", "phone": "+96891234567", "email": null, "fullName": "Salim", "locale": "ar", "status": "active" },
+  "roles": [ { "key": "consumer", "merchantId": null } ],
+  "permissions": [],
+  "merchants": [],
+  "captain": null
+}

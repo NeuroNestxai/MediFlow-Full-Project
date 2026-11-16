@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="Grilled food illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C2D12"/><stop offset="0.55" stop-color="#B45309"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.55" r="0.5"><stop offset="0" stop-color="#FDE68A" stop-opacity="0.55"/><stop offset="1" stop-color="#FDE68A" stop-opacity="0"/></radialGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.6" fill="#FFF7ED" opacity="0.18"/></pattern>
+  </defs>
+  <rect width="1200" height="400" fill="url(#bg)"/>
+  <rect width="1200" height="400" fill="url(#dots)"/>
+  <rect width="1200" height="400" fill="url(#glow)"/>
+  <!-- plate -->
+  <ellipse cx="900" cy="300" rx="250" ry="58" fill="#451A03" opacity="0.35"/>
+  <ellipse cx="900" cy="282" rx="240" ry="62" fill="#FFF7ED"/>
+  <ellipse cx="900" cy="282" rx="196" ry="44" fill="#FDE9C8"/>
+  <!-- rice / bread -->
+  <path d="M760 280c20-30 70-40 110-36s70 20 70 36-60 26-110 26-90-8-70-26z" fill="#FEF3C7"/>
+  <!-- skewers -->
+  <g stroke="#78350F" stroke-width="7" stroke-linecap="round"><path d="M700 210L1100 170"/><path d="M710 250L1110 222"/></g>
+  <g>
+    <rect x="760" y="180" width="54" height="40" rx="14" fill="#92400E" transform="rotate(-6 787 200)"/>
+    <rect x="830" y="174" width="54" height="40" rx="14" fill="#B45309" transform="rotate(-6 857 194)"/>
+    <rect x="900" y="167" width="54" height="40" rx="14" fill="#92400E" transform="rotate(-6 927 187)"/>
+    <rect x="970" y="160" width="54" height="40" rx="14" fill="#C2410C" transform="rotate(-6 997 180)"/>
+    <circle cx="1048" cy="172" r="17" fill="#15803D"/>
+    <rect x="770" y="226" width="54" height="38" rx="14" fill="#C2410C" transform="rotate(-4 797 245)"/>
+    <rect x="840" y="221" width="54" height="38" rx="14" fill="#92400E" transform="rotate(-4 867 240)"/>
+    <circle cx="924" cy="236" r="18" fill="#EF4444"/>
+    <rect x="955" y="212" width="54" height="38" rx="14" fill="#B45309" transform="rotate(-4 982 231)"/>
+    <circle cx="1040" cy="224" r="17" fill="#FACC15"/>
+  </g>
+  <!-- grill marks -->
+  <g stroke="#451A03" stroke-width="4" stroke-linecap="round" opacity="0.5"><path d="M772 190l12 22M842 184l12 22M912 177l12 22M982 170l12 22M782 236l12 20M852 231l12 20M967 222l12 20"/></g>
+  <!-- steam -->
+  <g fill="none" stroke="#FFF7ED" stroke-width="6" stroke-linecap="round" opacity="0.65">
+    <path d="M830 140c-18-22 18-34 0-58s14-36 0-52"/><path d="M915 130c-18-22 18-34 0-58s14-36 0-52"/><path d="M1000 136c-18-22 18-34 0-58"/>
+  </g>
+  <!-- lemon & herbs -->
+  <circle cx="700" cy="300" r="34" fill="#FDE047"/><circle cx="700" cy="300" r="24" fill="#FEF9C3"/>
+  <path d="M700 276v48M676 300h48M683 283l34 34M717 283l-34 34" stroke="#FDE047" stroke-width="3"/>
+  <path d="M1110 300c30-40 70-40 70-40s-10 40-70 40z" fill="#16A34A"/><path d="M1100 320c40-20 72-6 72-6s-30 30-72 6z" fill="#22C55E"/>
+  <!-- flames bottom-left -->
+  <g opacity="0.25" fill="#FDE68A"><path d="M90 400c-20-60 40-80 30-140 50 40 60 90 40 140z"/><path d="M190 400c-14-40 26-60 20-100 36 30 44 64 28 100z"/><path d="M290 400c-18-50 34-70 26-120 44 36 52 80 34 120z"/></g>
+</svg>

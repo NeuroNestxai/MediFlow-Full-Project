@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- brand/mark.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp" android:height="96dp" android:viewportWidth="512" android:viewportHeight="512">
+    <path android:fillColor="#0E7C66"
+        android:pathData="M116,0h280a116,116 0,0 1,116 116v280a116,116 0,0 1,-116 116h-280a116,116 0,0 1,-116 -116v-280a116,116 0,0 1,116 -116z"/>
+        <path android:fillColor="#FBF7EF"
+            android:pathData="M256,438c-14,0 -26,-8 -34,-20l-62,-96c-14,-22 -22,-46 -22,-72 0,-66 53,-118 118,-118s118,52 118,118c0,26 -8,50 -22,72l-62,96c-8,12 -20,20 -34,20z"/>
+        <path android:fillColor="#0E7C66" android:pathData="M206,250a50,50 0,1 0,100 0a50,50 0,1 0,-100 0z"/>
+        <path android:fillColor="#F4A300" android:pathData="M182,86a30,30 0,1 0,60 0a30,30 0,1 0,-60 0z"/>
+        <path android:fillColor="#F4A300" android:pathData="M270,86a30,30 0,1 0,60 0a30,30 0,1 0,-60 0z"/>
+        <path android:strokeColor="#F4A300" android:strokeWidth="18" android:strokeLineCap="round"
+            android:pathData="M74,250h44M58,300h52M82,350h40"/>
+</vector>

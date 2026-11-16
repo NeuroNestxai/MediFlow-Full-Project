@@ -1,0 +1,16 @@
+{
+  "name": "qabnah-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Qabnah web apps: merchant portal + public storefront, admin panel, shared library and e2e tests",
+  "workspaces": ["shared", "merchant", "admin", "e2e"],
+  "scripts": {
+    "dev:merchant": "npm run dev -w @qabnah/merchant",
+    "dev:admin": "npm run dev -w @qabnah/admin",
+    "build": "npm run build -w @qabnah/merchant && npm run build -w @qabnah/admin",
+    "test": "npm run test -w @qabnah/shared && npm run test -w @qabnah/merchant",
+    "test:e2e": "npm run test -w @qabnah/e2e",
+    "typecheck": "npm run typecheck -w @qabnah/shared && npm run typecheck -w @qabnah/merchant && npm run typecheck -w @qabnah/admin && npm run typecheck -w @qabnah/e2e"
+  },
+  "engines": { "node": ">=20" }
+}

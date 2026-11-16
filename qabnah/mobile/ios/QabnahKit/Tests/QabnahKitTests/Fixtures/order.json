@@ -1,0 +1,113 @@
+{
+  "id": "6f1c2b4e-6a0d-4d3b-9a61-2f8f6b1f1001",
+  "number": "QB100001",
+  "type": "marketplace",
+  "source": "app",
+  "status": "out_for_delivery",
+  "paymentMethod": "cod",
+  "paymentStatus": "pending",
+  "codPayer": null,
+  "merchant": {
+    "id": "0b6a3f8e-3f1d-4c55-8f5e-6c1e2d3a4b01",
+    "slug": "karak-house",
+    "nameEn": "Karak House",
+    "nameAr": "بيت الكرك",
+    "logoUrl": "/v1/files/7d5e0f0a-1111-4c1e-9e3f-000000000001",
+    "contactPhone": "+96824123456"
+  },
+  "customerName": "Aisha Al Balushi",
+  "customerPhone": "+96891234567",
+  "items": [
+    {
+      "id": "a1b2c3d4-0000-4000-8000-000000000001",
+      "productId": "c0ffee00-0000-4000-8000-000000000001",
+      "nameEn": "Karak Tea",
+      "nameAr": "شاي كرك",
+      "unitPriceBaisa": 600,
+      "quantity": 2,
+      "options": [
+        { "groupNameEn": "Size", "nameEn": "Large", "nameAr": "كبير", "priceDeltaBaisa": 200 }
+      ],
+      "lineTotalBaisa": 1200,
+      "notes": null
+    },
+    {
+      "id": "a1b2c3d4-0000-4000-8000-000000000002",
+      "productId": "c0ffee00-0000-4000-8000-000000000002",
+      "nameEn": "Chips Oman Paratha",
+      "nameAr": "براتا شيبس عمان",
+      "unitPriceBaisa": 500,
+      "quantity": 1,
+      "options": [],
+      "lineTotalBaisa": 500,
+      "notes": "extra cheese"
+    }
+  ],
+  "subtotalBaisa": 1700,
+  "deliveryFeeBaisa": 800,
+  "serviceFeeBaisa": 100,
+  "discountBaisa": 0,
+  "vatBaisa": 124,
+  "totalBaisa": 2600,
+  "codAmountBaisa": 2600,
+  "currency": "OMR",
+  "notes": null,
+  "prepTimeMinutes": 15,
+  "cancelReason": null,
+  "createdAt": "2026-11-16T09:30:00.000Z",
+  "placedAt": "2026-11-16T09:30:00.000Z",
+  "acceptedAt": "2026-11-16T09:31:12.345Z",
+  "readyAt": "2026-11-16T09:45:00Z",
+  "deliveredAt": null,
+  "cancelledAt": null,
+  "delivery": {
+    "id": "d0000000-0000-4000-8000-000000000001",
+    "status": "picked_up",
+    "vehicleType": "bike",
+    "pickup": {
+      "location": { "lat": 23.5880, "lng": 58.3829 },
+      "address": "Al Khuwair, Way 3021",
+      "contactName": "Karak House",
+      "contactPhone": "+96824123456",
+      "notes": null
+    },
+    "dropoff": {
+      "location": { "lat": 23.6100, "lng": 58.4500 },
+      "address": "Madinat Sultan Qaboos, Building 12",
+      "contactName": "Aisha",
+      "contactPhone": "+96891234567",
+      "notes": "Ring the bell"
+    },
+    "packageSize": null,
+    "packageDescription": null,
+    "distanceM": 7400,
+    "estimatedDurationS": 1260,
+    "feeBaisa": 800,
+    "codAmountBaisa": 2600,
+    "deliveryPin": "4821",
+    "pinRequired": true,
+    "captain": {
+      "id": "ca000000-0000-4000-8000-000000000001",
+      "firstName": "Salim",
+      "vehicleType": "bike",
+      "vehiclePlate": "12345 A",
+      "vehicleColor": "Red",
+      "vehicleModel": "Honda CB150",
+      "ratingAvg": 4.8,
+      "phone": "+96899887766",
+      "location": { "lat": 23.6, "lng": 58.42, "heading": 90, "updatedAt": "2026-11-16T09:50:00Z" }
+    },
+    "etaPickupAt": null,
+    "etaDropoffAt": "2026-11-16T10:05:00Z",
+    "assignedAt": "2026-11-16T09:40:00Z",
+    "pickedUpAt": "2026-11-16T09:47:00Z",
+    "deliveredAt": null,
+    "failureReason": null
+  },
+  "timeline": [
+    { "status": "placed", "at": "2026-11-16T09:30:00Z", "note": null },
+    { "status": "accepted", "at": "2026-11-16T09:31:12Z", "note": null },
+    { "status": "out_for_delivery", "at": "2026-11-16T09:47:00Z", "note": "Picked up by Salim" }
+  ],
+  "rated": false
+}

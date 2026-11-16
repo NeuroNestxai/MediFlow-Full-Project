@@ -1,0 +1,4 @@
+/* QabnahConsumer Info.plist ar — generated; keep en and ar in sync. */
+
+"CFBundleDisplayName" = "قبناه";
+"NSLocationWhenInUseUsageDescription" = "يستخدم قبناه موقعك لعرض المتاجر القريبة وتحديد نقاط التوصيل والاستلام.";

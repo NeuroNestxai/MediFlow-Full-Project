@@ -1,0 +1,21 @@
+{
+  "orderId": "6f1c2b4e-6a0d-4d3b-9a61-2f8f6b1f1001",
+  "orderStatus": "out_for_delivery",
+  "deliveryStatus": "picked_up",
+  "pickup": { "lat": 23.588, "lng": 58.3829 },
+  "dropoff": { "lat": 23.61, "lng": 58.45 },
+  "captain": {
+    "id": "ca000000-0000-4000-8000-000000000001",
+    "firstName": "Salim",
+    "vehicleType": "bike",
+    "vehiclePlate": "12345 A",
+    "vehicleColor": null,
+    "vehicleModel": null,
+    "ratingAvg": 4.8,
+    "phone": null,
+    "location": { "lat": 23.6, "lng": 58.42, "heading": null, "updatedAt": "2026-11-16T09:50:00.123Z" }
+  },
+  "etaPickupAt": null,
+  "etaDropoffAt": "2026-11-16T10:05:00Z",
+  "path": [ { "lat": 23.589, "lng": 58.39 }, { "lat": 23.595, "lng": 58.41 } ]
+}

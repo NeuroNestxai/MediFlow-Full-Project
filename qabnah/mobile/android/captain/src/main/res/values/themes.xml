@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppCompat parent is required for per-app language switching (AppCompatDelegate) on API < 33. -->
+    <style name="Theme.Qabnah" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/qabnah_primary</item>
+        <item name="colorPrimaryDark">@color/qabnah_primary_dark</item>
+        <item name="colorAccent">@color/qabnah_accent</item>
+        <item name="android:windowBackground">@color/qabnah_sand</item>
+    </style>
+</resources>

@@ -1,0 +1,38 @@
+{
+  "merchant": {
+    "id": "m-1", "slug": "karak-house", "nameEn": "Karak House", "nameAr": "بيت الكرك", "category": "cafe",
+    "logoUrl": "https://cdn.example/logo.png", "coverUrl": null, "brandColor": "#7A1F2B", "accentColor": "#F4A300",
+    "taglineEn": "Best karak in Muscat", "taglineAr": null, "ratingAvg": 4.6, "ratingCount": 120, "isOpen": true,
+    "prepTimeMinutes": 10, "minOrderBaisa": 1500, "acceptsCod": true, "acceptsOnline": false, "distanceM": 1200,
+    "location": { "lat": 23.588, "lng": 58.3829 },
+    "addressText": "Way 3021, Al Khuwair", "whatsappPhone": "+96891111111",
+    "openingHours": [ { "weekday": 0, "open": "07:00", "close": "23:30" } ]
+  },
+  "banners": [ { "id": "b-1", "imageUrl": "https://cdn.example/b1.jpg", "titleEn": "2 for 1", "titleAr": "١+١", "linkUrl": null, "sortOrder": 0, "isActive": true } ],
+  "categories": [
+    {
+      "id": "cat-1", "nameEn": "Hot drinks", "nameAr": "مشروبات ساخنة", "sortOrder": 0, "isActive": true,
+      "products": [
+        {
+          "id": "p-1", "categoryId": "cat-1", "nameEn": "Karak Tea", "nameAr": "شاي كرك", "descriptionEn": null, "descriptionAr": null,
+          "imageUrl": null, "sku": null, "basePriceBaisa": 300, "compareAtPriceBaisa": null, "isAvailable": true,
+          "trackStock": false, "stockQty": 0, "sortOrder": 0,
+          "optionGroups": [
+            { "id": "g-size", "kind": "variant", "nameEn": "Size", "nameAr": "الحجم", "minSelect": 1, "maxSelect": 1,
+              "options": [
+                { "id": "o-s", "nameEn": "Small", "nameAr": "صغير", "priceDeltaBaisa": 0, "isAvailable": true },
+                { "id": "o-l", "nameEn": "Large", "nameAr": "كبير", "priceDeltaBaisa": 150, "isAvailable": true }
+              ] },
+            { "id": "g-extra", "kind": "addon", "nameEn": "Extras", "nameAr": "إضافات", "minSelect": 0, "maxSelect": 2,
+              "options": [
+                { "id": "o-saffron", "nameEn": "Saffron", "nameAr": "زعفران", "priceDeltaBaisa": 200, "isAvailable": true },
+                { "id": "o-cardamom", "nameEn": "Cardamom", "nameAr": "هيل", "priceDeltaBaisa": 50, "isAvailable": true },
+                { "id": "o-honey", "nameEn": "Honey", "nameAr": "عسل", "priceDeltaBaisa": 100, "isAvailable": false }
+              ] }
+          ]
+        }
+      ]
+    }
+  ],
+  "uncategorized": []
+}

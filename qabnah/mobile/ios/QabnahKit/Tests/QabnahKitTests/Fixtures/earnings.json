@@ -1,0 +1,12 @@
+{
+  "from": "2026-11-16",
+  "to": "2026-11-16",
+  "deliveriesCount": 7,
+  "earningsBaisa": 5250,
+  "codCollectedBaisa": 18200,
+  "balanceBaisa": -12950,
+  "entries": [
+    { "id": 101, "entryType": "captain_earning", "amountBaisa": 650, "orderId": "o1", "orderNumber": "QB100001", "description": "Delivery QB100001", "settlementId": null, "createdAt": "2026-11-16T10:06:00Z" },
+    { "id": 102, "entryType": "cod_collected", "amountBaisa": -2600, "orderId": "o1", "orderNumber": "QB100001", "description": "Cash collected", "settlementId": null, "createdAt": "2026-11-16T10:06:00Z" }
+  ]
+}

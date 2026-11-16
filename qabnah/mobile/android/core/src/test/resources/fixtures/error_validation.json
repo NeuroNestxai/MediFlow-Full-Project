@@ -1,0 +1,1 @@
+{ "error": { "code": "validation_error", "message": "Invalid delivery PIN", "details": { "fields": { "pin": "Invalid delivery PIN" } } } }

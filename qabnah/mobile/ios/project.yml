@@ -1,0 +1,89 @@
+# XcodeGen spec for the Qabnah iOS apps.
+#   brew install xcodegen && xcodegen generate   (from mobile/ios)
+# Produces Qabnah.xcodeproj with two app targets sharing the local Swift package QabnahKit
+# and the SwiftUI sources in SharedUI/.
+name: Qabnah
+
+options:
+  bundleIdPrefix: om.qabnah
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: ar
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    # Change per configuration / scheme. A physical device cannot reach "localhost":
+    # use your Mac's LAN IP, e.g. http://192.168.1.20:4000/v1
+    QABNAH_API_BASE_URL: "http://localhost:4000/v1"
+    # Set your team to run on a device (DEVELOPMENT_TEAM: ABCDE12345).
+    # There is no production API URL yet: set QABNAH_API_BASE_URL for Release before archiving.
+    CODE_SIGN_STYLE: Automatic
+
+packages:
+  QabnahKit:
+    path: QabnahKit
+
+targets:
+  QabnahConsumer:
+    type: application
+    platform: iOS
+    sources:
+      - path: QabnahConsumer
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+      - path: SharedUI
+    dependencies:
+      - package: QabnahKit
+    settings:
+      base:
+        PRODUCT_NAME: Qabnah
+        PRODUCT_BUNDLE_IDENTIFIER: om.qabnah.consumer
+        INFOPLIST_FILE: QabnahConsumer/Info.plist
+        CODE_SIGN_ENTITLEMENTS: QabnahConsumer/QabnahConsumer.entitlements
+
+  QabnahCaptain:
+    type: application
+    platform: iOS
+    sources:
+      - path: QabnahCaptain
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+      - path: SharedUI
+    dependencies:
+      - package: QabnahKit
+    settings:
+      base:
+        PRODUCT_NAME: QabnahCaptain
+        PRODUCT_BUNDLE_IDENTIFIER: om.qabnah.captain
+        INFOPLIST_FILE: QabnahCaptain/Info.plist
+        CODE_SIGN_ENTITLEMENTS: QabnahCaptain/QabnahCaptain.entitlements
+
+schemes:
+  QabnahConsumer:
+    build:
+      targets:
+        QabnahConsumer: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
+  QabnahCaptain:
+    build:
+      targets:
+        QabnahCaptain: all
+    run:
+      config: Debug
+    archive:
+      config: Release

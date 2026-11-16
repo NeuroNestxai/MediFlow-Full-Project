@@ -1,0 +1,40 @@
+{
+  "items": [
+    {
+      "id": "0ff00000-0000-4000-8000-000000000001",
+      "deliveryId": "d0000000-0000-4000-8000-000000000001",
+      "status": "pending",
+      "orderType": "marketplace",
+      "expiresAt": "2026-11-16T09:41:00Z",
+      "earningBaisa": 650,
+      "codAmountBaisa": 2600,
+      "distanceToPickupM": 1200,
+      "tripDistanceM": 7400,
+      "pickupArea": "Al Khuwair",
+      "dropoffArea": "Madinat Sultan Qaboos",
+      "pickupLocation": { "lat": 23.588, "lng": 58.3829 },
+      "dropoffLocation": { "lat": 23.61, "lng": 58.45 },
+      "merchantName": "Karak House",
+      "packageSize": null,
+      "vehicleType": "bike"
+    },
+    {
+      "id": "0ff00000-0000-4000-8000-000000000002",
+      "deliveryId": "d0000000-0000-4000-8000-000000000002",
+      "status": "pending",
+      "orderType": "c2c",
+      "expiresAt": "2026-11-16T09:42:30.500Z",
+      "earningBaisa": 1200,
+      "codAmountBaisa": 0,
+      "distanceToPickupM": 900,
+      "tripDistanceM": 15000,
+      "pickupArea": "Ruwi",
+      "dropoffArea": "Seeb",
+      "pickupLocation": { "lat": 23.59, "lng": 58.54 },
+      "dropoffLocation": { "lat": 23.67, "lng": 58.19 },
+      "merchantName": null,
+      "packageSize": "medium",
+      "vehicleType": null
+    }
+  ]
+}

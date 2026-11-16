@@ -1,0 +1,7 @@
+{
+  "user": { "id": "u0000000-0000-4000-8000-000000000009", "phone": "+96899887766", "email": null, "fullName": "Salim Al Harthy", "locale": "ar", "status": "active" },
+  "roles": [ { "key": "captain", "merchantId": null } ],
+  "permissions": [],
+  "merchants": [],
+  "captain": null
+}

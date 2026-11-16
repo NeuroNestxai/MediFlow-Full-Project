@@ -1,0 +1,71 @@
+{
+  "id": "6f1c2a52-6a7e-4d61-9a63-3b1f7a2d9c01",
+  "number": "QB100001",
+  "type": "marketplace",
+  "source": "app",
+  "status": "out_for_delivery",
+  "paymentMethod": "cod",
+  "paymentStatus": "pending",
+  "codPayer": null,
+  "merchant": { "id": "m-1", "slug": "karak-house", "nameEn": "Karak House", "nameAr": "بيت الكرك", "logoUrl": null, "contactPhone": "+96824000000" },
+  "customerName": "Salim",
+  "customerPhone": "+96891234567",
+  "items": [
+    {
+      "id": "oi-1", "productId": "p-1", "nameEn": "Karak Tea", "nameAr": "شاي كرك",
+      "unitPriceBaisa": 450, "quantity": 2,
+      "options": [ { "groupNameEn": "Size", "nameEn": "Large", "nameAr": "كبير", "priceDeltaBaisa": 150 } ],
+      "lineTotalBaisa": 900, "notes": null
+    }
+  ],
+  "subtotalBaisa": 900,
+  "deliveryFeeBaisa": 1000,
+  "serviceFeeBaisa": 100,
+  "discountBaisa": 0,
+  "vatBaisa": 95,
+  "totalBaisa": 2000,
+  "codAmountBaisa": 2000,
+  "currency": "OMR",
+  "notes": null,
+  "prepTimeMinutes": 15,
+  "cancelReason": null,
+  "createdAt": "2026-11-16T10:00:00Z",
+  "placedAt": "2026-11-16T10:00:01Z",
+  "acceptedAt": "2026-11-16T10:02:00Z",
+  "readyAt": null,
+  "deliveredAt": null,
+  "cancelledAt": null,
+  "delivery": {
+    "id": "d-1",
+    "status": "picked_up",
+    "vehicleType": "bike",
+    "pickup": { "location": { "lat": 23.588, "lng": 58.3829 }, "address": "Al Khuwair", "contactName": "Karak House", "contactPhone": null, "notes": null },
+    "dropoff": { "location": { "lat": 23.6, "lng": 58.41 }, "address": "Qurum", "contactName": "Salim", "contactPhone": "+968912****7", "notes": "Gate 2" },
+    "packageSize": null,
+    "packageDescription": null,
+    "distanceM": 4200,
+    "estimatedDurationS": 780,
+    "feeBaisa": 1000,
+    "codAmountBaisa": 2000,
+    "deliveryPin": "4821",
+    "pinRequired": true,
+    "captain": {
+      "id": "c-1", "firstName": "Ahmed", "vehicleType": "bike", "vehiclePlate": "1234 AB", "vehicleColor": "Red",
+      "vehicleModel": "Honda", "ratingAvg": 4.8, "phone": "+96899887766",
+      "location": { "lat": 23.59, "lng": 58.39, "heading": 90, "updatedAt": "2026-11-16T10:20:00Z" }
+    },
+    "etaPickupAt": null,
+    "etaDropoffAt": "2026-11-16T10:35:00Z",
+    "assignedAt": "2026-11-16T10:05:00Z",
+    "pickedUpAt": "2026-11-16T10:18:00Z",
+    "deliveredAt": null,
+    "failureReason": null
+  },
+  "timeline": [
+    { "status": "placed", "at": "2026-11-16T10:00:01Z", "note": null },
+    { "status": "accepted", "at": "2026-11-16T10:02:00Z", "note": null },
+    { "status": "out_for_delivery", "at": "2026-11-16T10:18:00Z", "note": "Captain picked up" }
+  ],
+  "rated": false,
+  "someFutureField": { "nested": true }
+}

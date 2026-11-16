@@ -1,0 +1,7 @@
+{
+  "id": "off-1", "deliveryId": "d-1", "status": "pending", "orderType": "marketplace",
+  "expiresAt": "2026-11-16T10:05:30Z", "earningBaisa": 850, "codAmountBaisa": 2000,
+  "distanceToPickupM": 900, "tripDistanceM": 4200, "pickupArea": "Al Khuwair", "dropoffArea": "Qurum",
+  "pickupLocation": { "lat": 23.588, "lng": 58.3829 }, "dropoffLocation": { "lat": 23.6, "lng": 58.41 },
+  "merchantName": "Karak House", "packageSize": null, "vehicleType": "bike"
+}

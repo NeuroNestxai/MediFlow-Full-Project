@@ -1,0 +1,106 @@
+{
+  "merchant": {
+    "id": "0b6a3f8e-3f1d-4c55-8f5e-6c1e2d3a4b01",
+    "slug": "karak-house",
+    "nameEn": "Karak House",
+    "nameAr": "بيت الكرك",
+    "category": "cafe",
+    "logoUrl": "https://cdn.example.test/karak/logo.png",
+    "coverUrl": null,
+    "brandColor": "#7A3E12",
+    "accentColor": "#F4A300",
+    "taglineEn": "Muscat's favourite karak",
+    "taglineAr": "كرك مسقط المفضل",
+    "ratingAvg": 4.6,
+    "ratingCount": 182,
+    "isOpen": true,
+    "prepTimeMinutes": 10,
+    "minOrderBaisa": 1000,
+    "acceptsCod": true,
+    "acceptsOnline": true,
+    "distanceM": 1800,
+    "location": { "lat": 23.588, "lng": 58.3829 },
+    "addressText": "Al Khuwair, Way 3021",
+    "whatsappPhone": "+96891112222",
+    "openingHours": [ { "weekday": 0, "open": "07:00", "close": "23:30" } ]
+  },
+  "banners": [
+    { "id": "b1", "imageUrl": "https://cdn.example.test/karak/b1.jpg", "titleEn": "2 for 1", "titleAr": "اثنين بسعر واحد", "linkUrl": null, "sortOrder": 2, "isActive": true },
+    { "id": "b0", "imageUrl": "https://cdn.example.test/karak/b0.jpg", "titleEn": null, "titleAr": null, "linkUrl": null, "sortOrder": 1, "isActive": true }
+  ],
+  "categories": [
+    {
+      "id": "cat-1",
+      "nameEn": "Hot drinks",
+      "nameAr": "مشروبات ساخنة",
+      "sortOrder": 1,
+      "isActive": true,
+      "products": [
+        {
+          "id": "c0ffee00-0000-4000-8000-000000000001",
+          "categoryId": "cat-1",
+          "nameEn": "Karak Tea",
+          "nameAr": "شاي كرك",
+          "descriptionEn": "Cardamom & saffron",
+          "descriptionAr": "هيل وزعفران",
+          "imageUrl": null,
+          "sku": "KT-1",
+          "basePriceBaisa": 400,
+          "compareAtPriceBaisa": null,
+          "isAvailable": true,
+          "trackStock": false,
+          "stockQty": 0,
+          "sortOrder": 1,
+          "optionGroups": [
+            {
+              "id": "g-size",
+              "kind": "variant",
+              "nameEn": "Size",
+              "nameAr": "الحجم",
+              "minSelect": 1,
+              "maxSelect": 1,
+              "options": [
+                { "id": "o-s", "nameEn": "Small", "nameAr": "صغير", "priceDeltaBaisa": 0, "isAvailable": true },
+                { "id": "o-l", "nameEn": "Large", "nameAr": "كبير", "priceDeltaBaisa": 200, "isAvailable": true }
+              ]
+            },
+            {
+              "id": "g-extra",
+              "kind": "addon",
+              "nameEn": "Extras",
+              "nameAr": "إضافات",
+              "minSelect": 0,
+              "maxSelect": 2,
+              "options": [
+                { "id": "o-saffron", "nameEn": "Extra saffron", "nameAr": "زعفران إضافي", "priceDeltaBaisa": 150, "isAvailable": true },
+                { "id": "o-milk", "nameEn": "Evaporated milk", "nameAr": "حليب مبخر", "priceDeltaBaisa": 100, "isAvailable": true },
+                { "id": "o-honey", "nameEn": "Honey", "nameAr": "عسل", "priceDeltaBaisa": 250, "isAvailable": true },
+                { "id": "o-ginger", "nameEn": "Ginger", "nameAr": "زنجبيل", "priceDeltaBaisa": 50, "isAvailable": false }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    { "id": "cat-empty", "nameEn": "Seasonal", "nameAr": "موسمي", "sortOrder": 0, "isActive": true, "products": [] }
+  ],
+  "uncategorized": [
+    {
+      "id": "c0ffee00-0000-4000-8000-000000000002",
+      "categoryId": null,
+      "nameEn": "Chips Oman Paratha",
+      "nameAr": "براتا شيبس عمان",
+      "descriptionEn": null,
+      "descriptionAr": null,
+      "imageUrl": null,
+      "sku": null,
+      "basePriceBaisa": 500,
+      "compareAtPriceBaisa": 600,
+      "isAvailable": true,
+      "trackStock": true,
+      "stockQty": 3,
+      "sortOrder": 0,
+      "optionGroups": []
+    }
+  ]
+}

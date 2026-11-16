@@ -1,0 +1,7 @@
+/* QabnahCaptain Info.plist ar — generated; keep en and ar in sync. */
+
+"CFBundleDisplayName" = "كابتن قبناه";
+"NSCameraUsageDescription" = "تُستخدم الكاميرا لتصوير مستنداتك وإثبات التسليم.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "أثناء اتصالك، تتم مشاركة موقعك في الخلفية ليتابع العملاء توصيلاتهم ونرسل لك العروض.";
+"NSLocationWhenInUseUsageDescription" = "يُستخدم موقعك لإرسال عروض توصيل قريبة وإرشادك إلى نقاط الاستلام والتسليم.";
+"NSPhotoLibraryUsageDescription" = "اختر صور مستنداتك أو إثبات التسليم.";

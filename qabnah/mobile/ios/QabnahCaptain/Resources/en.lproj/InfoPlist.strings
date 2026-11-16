@@ -1,0 +1,7 @@
+/* QabnahCaptain Info.plist en — generated; keep en and ar in sync. */
+
+"CFBundleDisplayName" = "Qabnah Captain";
+"NSCameraUsageDescription" = "The camera is used to photograph your documents and proof of delivery.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "While you're online, your location is shared in the background so customers can track their delivery and we can send you offers.";
+"NSLocationWhenInUseUsageDescription" = "Your location is used to send you nearby delivery offers and guide you to pickups and drop-offs.";
+"NSPhotoLibraryUsageDescription" = "Choose photos of your documents or proof of delivery.";

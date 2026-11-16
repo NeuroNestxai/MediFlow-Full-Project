@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_retry">إعادة المحاولة</string>
+    <string name="common_loading">جارٍ التحميل…</string>
+    <string name="common_cancel">إلغاء</string>
+    <string name="common_ok">حسناً</string>
+    <string name="common_save">حفظ</string>
+    <string name="common_close">إغلاق</string>
+    <string name="common_confirm">تأكيد</string>
+    <string name="common_back">رجوع</string>
+    <string name="common_continue">متابعة</string>
+    <string name="common_delete">حذف</string>
+    <string name="common_edit">تعديل</string>
+    <string name="common_send">إرسال</string>
+    <string name="common_optional">اختياري</string>
+    <string name="common_call">اتصال</string>
+    <string name="common_whatsapp">واتساب</string>
+    <string name="common_empty_title">لا يوجد شيء هنا بعد</string>
+    <string name="common_version">الإصدار %1$s</string>
+    <string name="common_dev_banner">نسخة تطوير · الخادم %1$s</string>
+
+    <string name="error_network">لا يوجد اتصال. تحقق من الإنترنت وحاول مرة أخرى.</string>
+    <string name="error_server">حدث خطأ من جهتنا. حاول مرة أخرى.</string>
+    <string name="error_session">انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.</string>
+    <string name="error_rate_limited">محاولات كثيرة. انتظر قليلاً.</string>
+    <string name="error_not_found">غير موجود.</string>
+    <string name="error_forbidden">غير مسموح لك بهذا الإجراء.</string>
+    <string name="error_generic">حدث خطأ ما.</string>
+    <string name="error_location_unavailable">تعذّر تحديد موقعك. تأكد من تشغيل خدمة الموقع.</string>
+    <string name="error_out_of_service_area">هذا الموقع خارج منطقة الخدمة.</string>
+    <string name="error_merchant_closed">المتجر مغلق حالياً.</string>
+
+    <string name="language">اللغة</string>
+    <string name="language_ar">العربية</string>
+    <string name="language_en">English</string>
+    <string name="sign_out">تسجيل الخروج</string>
+    <string name="sign_out_confirm">تسجيل الخروج من هذا الجهاز؟</string>
+
+    <string name="auth_welcome">مرحباً بك في %1$s</string>
+    <string name="auth_phone_title">أدخل رقم هاتفك</string>
+    <string name="auth_phone_hint">سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية.</string>
+    <string name="auth_phone_label">رقم الهاتف</string>
+    <string name="auth_phone_invalid">أدخل رقم هاتف عُماني صحيح (٨ أرقام يبدأ بـ ٧ أو ٩).</string>
+    <string name="auth_send_code">إرسال الرمز</string>
+    <string name="auth_code_title">أدخل الرمز</string>
+    <string name="auth_code_sent_to">أُرسل إلى %1$s</string>
+    <string name="auth_code_label">الرمز المكوّن من ٦ أرقام</string>
+    <string name="auth_full_name_label">الاسم الكامل (للحسابات الجديدة)</string>
+    <string name="auth_verify">تحقق</string>
+    <string name="auth_change_number">تغيير الرقم</string>
+    <string name="auth_resend">إعادة إرسال الرمز</string>
+    <string name="auth_resend_in">إعادة الإرسال خلال %1$d ث</string>
+    <string name="auth_wrong_code">الرمز غير صحيح أو منتهي الصلاحية.</string>
+    <string name="auth_dev_code">رمز التطوير: %1$s</string>
+    <string name="auth_name_title">ما اسمك؟</string>
+    <string name="auth_name_hint">سيظهر اسمك الأول للكباتن والمتاجر.</string>
+    <string name="auth_name_required">يرجى إدخال اسمك.</string>
+    <string name="auth_terms">بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية.</string>
+
+    <string name="order_status_pending_payment">بانتظار الدفع</string>
+    <string name="order_status_placed">تم الطلب</string>
+    <string name="order_status_accepted">تم القبول</string>
+    <string name="order_status_preparing">قيد التحضير</string>
+    <string name="order_status_ready_for_pickup">جاهز للاستلام</string>
+    <string name="order_status_out_for_delivery">في الطريق</string>
+    <string name="order_status_delivered">تم التوصيل</string>
+    <string name="order_status_completed">مكتمل</string>
+    <string name="order_status_rejected">مرفوض</string>
+    <string name="order_status_cancelled">ملغى</string>
+    <string name="status_unknown">جارٍ التحديث…</string>
+
+    <string name="delivery_status_created">تم الإنشاء</string>
+    <string name="delivery_status_searching">جارٍ البحث عن كابتن</string>
+    <string name="delivery_status_unassigned">بانتظار كابتن</string>
+    <string name="delivery_status_assigned">تم تعيين كابتن</string>
+    <string name="delivery_status_at_pickup">الكابتن عند نقطة الاستلام</string>
+    <string name="delivery_status_picked_up">تم الاستلام</string>
+    <string name="delivery_status_at_dropoff">وصل الكابتن</string>
+    <string name="delivery_status_delivered">تم التوصيل</string>
+    <string name="delivery_status_failed">تعذّر التوصيل</string>
+    <string name="delivery_status_returning">قيد الإرجاع</string>
+    <string name="delivery_status_returned">تم الإرجاع</string>
+    <string name="delivery_status_cancelled">ملغى</string>
+
+    <string name="vehicle_bike">دراجة نارية</string>
+    <string name="vehicle_car">سيارة</string>
+    <string name="vehicle_van">شاحنة صغيرة</string>
+
+    <string name="payment_online">الدفع الإلكتروني (بطاقة)</string>
+    <string name="payment_cod">الدفع عند الاستلام</string>
+    <string name="payment_prepaid">مدفوع مسبقاً</string>
+
+    <string name="support_title">الدعم</string>
+    <string name="support_empty">لا توجد تذاكر دعم بعد.</string>
+    <string name="support_new">تذكرة جديدة</string>
+    <string name="support_subject">الموضوع</string>
+    <string name="support_category">التصنيف</string>
+    <string name="support_message">كيف يمكننا مساعدتك؟</string>
+    <string name="support_submit">إرسال</string>
+    <string name="support_reply_hint">اكتب رداً…</string>
+    <string name="support_ticket_number">التذكرة %1$s</string>
+    <string name="support_about_order">بخصوص هذا الطلب</string>
+    <string name="support_staff">دعم قبناه</string>
+    <string name="support_required">الموضوع والرسالة مطلوبان.</string>
+    <string name="ticket_category_order_issue">مشكلة في الطلب</string>
+    <string name="ticket_category_payment">الدفع</string>
+    <string name="ticket_category_delivery">التوصيل</string>
+    <string name="ticket_category_captain">الكابتن</string>
+    <string name="ticket_category_merchant">المتجر</string>
+    <string name="ticket_category_account">الحساب</string>
+    <string name="ticket_category_other">أخرى</string>
+
+    <string name="notifications_title">الإشعارات</string>
+    <string name="notifications_empty">لا توجد إشعارات جديدة.</string>
+
+    <string name="map_use_this_location">استخدم هذا الموقع</string>
+    <string name="map_my_location">موقعي</string>
+    <string name="map_move_to_adjust">حرّك الخريطة لتحديد الموقع</string>
+    <string name="map_attribution">© مساهمو OpenStreetMap</string>
+    <string name="map_pickup">الاستلام</string>
+    <string name="map_dropoff">التسليم</string>
+    <string name="map_captain">الكابتن</string>
+</resources>

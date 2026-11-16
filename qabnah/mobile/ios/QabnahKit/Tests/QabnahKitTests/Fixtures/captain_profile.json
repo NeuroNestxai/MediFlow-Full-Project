@@ -1,0 +1,62 @@
+{
+  "id": "ca000000-0000-4000-8000-000000000001",
+  "userId": "u0000000-0000-4000-8000-000000000009",
+  "fullName": "Salim Al Harthy",
+  "phone": "+96899887766",
+  "status": "pending_documents",
+  "rejectionReason": null,
+  "vehicleType": "bike",
+  "vehicleMake": "Honda",
+  "vehicleModel": "CB150",
+  "vehiclePlate": "12345 A",
+  "vehicleColor": "Red",
+  "nationalIdNumber": "12345678",
+  "nationality": "OM",
+  "dateOfBirth": "1995-04-12",
+  "bankName": "Bank Muscat",
+  "iban": "OM810180000001299123456",
+  "isOnline": false,
+  "maxConcurrent": 1,
+  "ratingAvg": 0,
+  "ratingCount": 0,
+  "acceptanceRate": 1,
+  "zoneIds": ["z-muscat-1"],
+  "availability": [ { "weekday": 0, "start": "08:00", "end": "14:00" } ],
+  "documents": [
+    {
+      "id": "doc-1",
+      "docType": "national_id",
+      "fileId": "f0000000-0000-4000-8000-000000000001",
+      "fileUrl": "https://api.example.test/v1/files/f1?sig=abc&exp=1",
+      "number": "12345678",
+      "expiresAt": "2030-01-01",
+      "status": "rejected",
+      "rejectionReason": "Photo is blurry",
+      "createdAt": "2026-11-15T10:00:00Z"
+    },
+    {
+      "id": "doc-2",
+      "docType": "national_id",
+      "fileId": "f0000000-0000-4000-8000-000000000002",
+      "fileUrl": "https://api.example.test/v1/files/f2?sig=abc&exp=1",
+      "number": "12345678",
+      "expiresAt": "2030-01-01",
+      "status": "pending",
+      "rejectionReason": null,
+      "createdAt": "2026-11-16T10:00:00Z"
+    },
+    {
+      "id": "doc-3",
+      "docType": "drone_permit",
+      "fileId": "f3",
+      "fileUrl": "x",
+      "number": null,
+      "expiresAt": null,
+      "status": "pending",
+      "rejectionReason": null,
+      "createdAt": "2026-11-16T10:00:00Z"
+    }
+  ],
+  "requiredDocuments": ["national_id", "driving_license", "vehicle_registration", "profile_photo"],
+  "missingDocuments": ["driving_license", "vehicle_registration", "profile_photo"]
+}
