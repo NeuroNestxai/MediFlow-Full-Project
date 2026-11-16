@@ -69,7 +69,7 @@ struct PhotoInput: View {
                     .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
                     .overlay(alignment: .topTrailing) {
                         Button { self.image = nil } label: {
-                            Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.white, .black.opacity(0.5))
+                            Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(Color.white, Color.black.opacity(0.5))
                         }
                         .padding(6)
                         .accessibilityLabel(lang.t("photo.remove"))

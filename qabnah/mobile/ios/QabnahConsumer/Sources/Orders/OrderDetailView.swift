@@ -91,7 +91,7 @@ struct OrderDetailView: View {
         LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { order in
             List {
                 statusSection(order)
-                if let pin = order.delivery?.deliveryPin, order.delivery?.pinRequired == true, !order.status.isFinal {
+                if let pin = order.delivery?.deliveryPin, !pin.isEmpty, !order.status.isFinal {
                     pinSection(pin)
                 }
                 if order.awaitingOnlinePayment {

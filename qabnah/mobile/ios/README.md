@@ -1,0 +1,150 @@
+# Qabnah iOS (قبناه)
+
+Two native SwiftUI apps plus a shared Swift package:
+
+| Target | What it is | Bundle id |
+|---|---|---|
+| `QabnahConsumer` | Customer app: stores, cart & checkout, orders, live tracking, send a parcel (C2C), account | `om.qabnah.consumer` |
+| `QabnahCaptain` | Courier app: onboarding & documents, online toggle, offers, active delivery, earnings | `om.qabnah.captain` |
+| `QabnahKit` (Swift package) | Models (mirror `API_CONTRACT.yaml`), `APIClient`, `TokenStore`, `RealtimeClient`, money/locale helpers, cart & option rules. Foundation-only, builds on Linux. | — |
+| `SharedUI/` | SwiftUI code compiled into **both** app targets (theme, auth flow, maps, support tickets, session store). | — |
+
+iOS 16+, SwiftUI, async/await. Arabic-first (RTL) with an in-app ar/en toggle.
+
+```
+mobile/ios/
+  project.yml                 XcodeGen spec (both apps depend on the local package QabnahKit)
+  QabnahKit/                  Package.swift, Sources/QabnahKit/{Models,Networking,Realtime,Support}, Tests/
+  SharedUI/                   shared SwiftUI sources (added to both targets)
+  QabnahConsumer/             Sources/, Resources/{Assets.xcassets, en.lproj, ar.lproj}, Info.plist, entitlements
+  QabnahCaptain/              same layout
+  scripts/gen_strings.py      generates Localizable.strings / InfoPlist.strings (en + ar) and checks key coverage
+```
+
+## Generate and open the Xcode project
+
+```bash
+brew install xcodegen
+cd qabnah/mobile/ios
+xcodegen generate          # writes Qabnah.xcodeproj (git-ignored)
+open Qabnah.xcodeproj
+```
+
+Pick the `QabnahConsumer` or `QabnahCaptain` scheme. To run on a device set your team in Xcode
+(Signing & Capabilities) or add `DEVELOPMENT_TEAM` to `project.yml`.
+
+Both targets ship an `aps-environment` entitlement for APNs. If your team cannot sign push
+(e.g. a free personal team), delete the `CODE_SIGN_ENTITLEMENTS` line for that target in
+`project.yml` and regenerate; push registration is optional and failures are ignored.
+
+## Point the apps at a backend
+
+The base URL comes from the Info.plist key `QABNAH_API_BASE_URL`, filled from the build setting of
+the same name in `project.yml` (default `http://localhost:4000/v1`, the docker-compose backend).
+The WebSocket URL is derived from it (`ws://…/v1/realtime`, `wss://` for https).
+
+* **Simulator:** `localhost` reaches the Mac, so the default works once `docker compose up` is running.
+* **Physical device:** `localhost` is the phone. Set `QABNAH_API_BASE_URL` to your Mac's LAN IP, e.g.
+  `http://192.168.1.20:4000/v1` (in `project.yml` then `xcodegen generate`, or in the target's
+  Build Settings), and make sure the phone is on the same Wi-Fi. ATS allows local networking
+  (`NSAllowsLocalNetworking`); if your setup still blocks plain `http` to a LAN IP, add an ATS
+  exception for that host in a local, uncommitted change.
+* **Release:** there is no production API URL yet. Set `QABNAH_API_BASE_URL` for the Release
+  configuration before archiving.
+
+### Signing in during development (OTP)
+
+Both apps sign in with phone + SMS OTP (`POST /auth/otp/request` → `POST /auth/otp/verify`).
+When the backend runs with `OTP_DEV_ECHO=true` (development only — the server refuses it in
+production) the response contains `devCode`; the apps then show the code in a small yellow
+"Dev server code" banner on the OTP screen so you don't need a real SMS.
+Omani mobiles only: 8 digits starting with 9 or 7 (the `+968` prefix is added for you).
+
+## QabnahKit
+
+* `APIClient` — `async`/`await` over `URLSession`; `Authorization: Bearer`; refreshes on 401 or when
+  the token is about to expire via `POST /auth/refresh`, **single-flight** (concurrent 401s share one
+  refresh; a rejected refresh clears the session and calls `onSessionExpired`). Non-2xx responses
+  decode the contract error envelope into `APIError.server(status, code, message, details)`.
+  `Accept-Language` follows the in-app language. Multipart `uploadFile` for `POST /files`.
+  Mutating order calls carry an `Idempotency-Key` (stable per request body, so a retry after a
+  timeout can't create a second order).
+* `TokenStore` — Keychain (`#if canImport(Security)`, after-first-unlock so the captain app can
+  refresh in the background) with an in-memory fallback.
+* `RealtimeClient` (actor) — `URLSessionWebSocketTask`; ref-counted `subscribe`/`unsubscribe`,
+  re-subscribes after reconnect, exponential backoff with jitter (1–30 s), `{"type":"ping"}` every
+  25 s and a recycle if nothing arrives for 60 s; `sendLocation` for captains. Fan-out via
+  `events()` `AsyncStream`s.
+* `Money` — integer baisa only. `OMR 2.500` (en) / `٢٫٥٠٠ ر.ع.` (ar), with grouping, and parsing of
+  typed amounts (including Arabic-Indic digits).
+* `ProductSelection` / `Cart` — variant groups are radio buttons, add-ons are checkboxes capped at
+  `maxSelect`, `minSelect` validation, unit price = base + deltas, single-merchant cart.
+* `AppConfig`, `Localizer` (runtime ar/en switch), phone normalisation, Muscat date ranges
+  (week starts Sunday), navigation/WhatsApp/tel links.
+
+### Tests
+
+```bash
+cd QabnahKit
+swift test
+```
+
+Fixtures in `Tests/QabnahKitTests/Fixtures/` are shaped after the contract schemas (Order, Storefront,
+Offer, CaptainProfile, Tracking, CaptainDelivery, Me, AuthResult, Earnings, notifications, ticket,
+error envelope). Tests cover decoding (including unknown enum values and missing optional fields),
+round-trips, money formatting/parsing, request building, single-flight refresh, session expiry,
+multipart bodies, realtime message coding, channel ref-counting, cart/option rules, phone and link
+helpers, date presets and backoff.
+
+`RealtimeIntegrationTests` is opt-in and talks to a real WebSocket server:
+
+```bash
+python3 Tests/ws_test_server.py 8765 &      # stdlib-only test server speaking the realtime protocol
+QABNAH_WS_TEST_URL=ws://127.0.0.1:8765/v1/realtime swift test --filter RealtimeIntegrationTests
+```
+
+## App notes
+
+* **Language:** Arabic by default; toggle on the sign-in screen and in Account/Profile. Strings are
+  looked up from the selected `.lproj` at runtime and the layout direction flips immediately.
+  After changing copy, edit `scripts/gen_strings.py` and run
+  `python3 scripts/gen_strings.py .` (fails if a key used in code is missing).
+  Fonts are the system fonts (SF Arabic / SF Pro); the brand fonts (Noto Kufi Arabic, Inter) are not bundled.
+* **Consumer payments:** `POST /orders` (or `/shipments`) → for online payment `POST /orders/{id}/checkout`
+  with `returnUrl = qabnah://payment-return?orderId=…` → `SFSafariViewController` → on close the app
+  polls `GET /orders/{id}` (2 s, up to 60 s) until `paymentStatus` changes. The result is never
+  taken from the redirect itself.
+* **Tracking:** subscribes to `order:<id>` and also polls `GET /orders/{id}/tracking` every 10 s. ETAs
+  are labelled approximate.
+* **Captain location:** while online, standard + significant-change updates (background mode
+  `location`), sent over the socket at most every 5 s with `POST /captain/location` as fallback.
+  Offers arrive via `captain:me` and a 5 s poll of `GET /captain/offers`.
+
+## What was and wasn't compiled
+
+This was written in a Linux container without macOS/Xcode.
+
+* **QabnahKit: built and tested on Linux** with Swift 6.0.3 (Ubuntu's `swiftlang_6.0.3` .deb unpacked
+  locally, Swift 5 language mode via `swift-tools-version:5.9`): `swift build` has no warnings,
+  and `swift test` passes 52 tests (the opt-in realtime integration test is skipped by default).
+  The build also has no warnings with `-strict-concurrency=complete`.
+  The realtime integration test could **not** be run on that machine: Ubuntu 24.04's libcurl 8.5 is
+  built without WebSocket support, which `URLSessionWebSocketTask` on Linux needs. Run it on a Mac.
+* **SwiftUI app targets (`SharedUI/`, `QabnahConsumer/`, `QabnahCaptain/`): NOT compiled.** SwiftUI,
+  UIKit, MapKit, CoreLocation, PhotosUI and SafariServices are unavailable on Linux. The sources were
+  only syntax-checked (`swift-frontend -parse`), which does not catch type errors. Expect to fix
+  some compile errors on the first Xcode build.
+* `project.yml` was not run through XcodeGen. Its YAML parses, but the generated project was never opened.
+* `.strings` files were parsed with Foundation's property-list parser; en/ar have the same keys and
+  matching format specifiers.
+
+## Known gaps / TODO
+
+* First Xcode build and a run on the simulator against the real backend; UI tests.
+* Push: device token registration only. No notification handling or deep links from push yet.
+* No call masking: captain phone / WhatsApp buttons use the number the API returns, which the
+  server masks or hides by delivery state.
+* Captain offer card: the dropoff pin is rounded by the server until acceptance, as the contract says.
+* Map routes / polylines are not drawn (iOS 16 SwiftUI `Map` has no overlays). Tracking shows pins only.
+* Store browsing requires sign-in, although `/stores` is public.
+* The cart is persisted in `UserDefaults` and is not tied to the signed-in user (cleared on sign-out).

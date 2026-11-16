@@ -27,6 +27,24 @@ info:
     - Events: `order.created`, `order.status_changed`, `delivery.status_changed`, `delivery.assigned`,
       `delivery.location` ({lat,lng,heading,etaDropoffAt}), `offer.created`, `offer.expired`, `offer.cancelled`,
       `notification.created`, `captain.location` (admin:ops only).
+    - Event `data` payloads:
+      `order.created` {orderId, number, totalBaisa?};
+      `order.status_changed` {orderId, number, from, to, at};
+      `delivery.status_changed` {deliveryId, orderId, from, to, captainId};
+      `delivery.assigned` {deliveryId, orderId, captainId, etaPickupAt};
+      `delivery.unassigned` {deliveryId} (captain:me, after an ops reassignment);
+      `delivery.location` {deliveryId, orderId, lat, lng, heading, etaPickupAt, etaDropoffAt};
+      `offer.created` = the `Offer` schema; `offer.expired` / `offer.cancelled` {offerId, deliveryId};
+      `notification.created` {id, type, title, body, data, createdAt};
+      `captain.location` {captainId, lat, lng, activeDeliveries}.
+
+    Specific error codes clients should handle
+    - `wrong_pin`, `proof_required`, `cod_mismatch` (422, delivery completion); `offer_taken` vs `offer_expired` (409, offer accept);
+      `invalid_code`, `too_many_attempts` (401, OTP); `merchant_closed`, `below_minimum`, `invalid_options`, `out_of_stock`,
+      `item_unavailable`, `out_of_service_area`, `cod_limit`, `payment_method_unavailable` (422, ordering); `not_cancellable` (409);
+      `documents_incomplete`, `fleet_required` (409, captain approval); `slug_taken`, `email_taken`, `phone_taken` (409, sign-up).
+    - `Order.paymentStatus`: unpaid | pending | paid | failed | refunded | partially_refunded.
+    - `returnUrl` for checkout may be a custom scheme (e.g. `qabnah://payment-return`); the server appends `paymentId` and `outcome`.
 servers:
   - url: http://localhost:4000/v1
     description: Local development (docker compose)

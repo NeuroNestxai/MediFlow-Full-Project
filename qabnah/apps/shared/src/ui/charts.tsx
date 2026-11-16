@@ -1,0 +1,82 @@
+import { useId, useMemo, useState } from 'react';
+import { useI18n } from '../i18n/i18n';
+
+export interface DayPoint { day: string; orders: number; gmvBaisa: number }
+
+/**
+ * By-day chart: GMV bars with an orders line, simple SVG (no chart library). Includes a data table for screen
+ * readers. Fills missing days in [from, to] with zeros so gaps are visible.
+ */
+export function DailyChart({ data, from, to, height = 240 }: { data: DayPoint[]; from: string; to: string; height?: number }) {
+  const { t, money, num, lang } = useI18n();
+  const titleId = useId();
+  const [hover, setHover] = useState<number | null>(null);
+  const days = useMemo(() => {
+    const map = new Map(data.map((d) => [d.day, d]));
+    const out: DayPoint[] = [];
+    const start = new Date(`${from}T00:00:00Z`).getTime();
+    const end = new Date(`${to}T00:00:00Z`).getTime();
+    for (let x = start; x <= end && out.length < 400; x += 86400_000) {
+      const day = new Date(x).toISOString().slice(0, 10);
+      out.push(map.get(day) ?? { day, orders: 0, gmvBaisa: 0 });
+    }
+    return out;
+  }, [data, from, to]);
+  const W = 760, H = height, padL = 8, padR = 8, padT = 16, padB = 28;
+  const maxG = Math.max(1, ...days.map((d) => d.gmvBaisa));
+  const maxO = Math.max(1, ...days.map((d) => d.orders));
+  const n = Math.max(1, days.length);
+  const bw = (W - padL - padR) / n;
+  const y = (v: number, max: number) => padT + (H - padT - padB) * (1 - v / max);
+  const rtl = lang === 'ar';
+  const xAt = (i: number) => (rtl ? W - padR - (i + 1) * bw : padL + i * bw);
+  const line = days.map((d, i) => `${i ? 'L' : 'M'}${(xAt(i) + bw / 2).toFixed(1)},${y(d.orders, maxO).toFixed(1)}`).join(' ');
+  const labelEvery = Math.ceil(n / 8);
+  const fmtDay = (d: string) => new Intl.DateTimeFormat(lang === 'ar' ? 'ar-OM-u-nu-arab' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`));
+  const h = hover != null ? days[hover] : null;
+  return (
+    <figure className="chart" aria-labelledby={titleId}>
+      <figcaption id={titleId} className="chart__legend">
+        <span><i className="chart__swatch chart__swatch--bar" /> {t('chart.gmv')}</span>
+        <span><i className="chart__swatch chart__swatch--line" /> {t('chart.orders')}</span>
+        {h ? <span className="chart__hover">{fmtDay(h.day)} · {money(h.gmvBaisa)} · {t('chart.ordersN', { n: num(h.orders, 0) })}</span> : null}
+      </figcaption>
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart__svg" role="img" aria-label={t('chart.aria')} onMouseLeave={() => setHover(null)}>
+        {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} x1={padL} x2={W - padR} y1={y(maxG * f, maxG)} y2={y(maxG * f, maxG)} className="chart__grid" />)}
+        {days.map((d, i) => {
+          const top = y(d.gmvBaisa, maxG);
+          return (
+            <g key={d.day} onMouseEnter={() => setHover(i)}>
+              <rect x={xAt(i)} y={padT} width={bw} height={H - padT - padB} fill="transparent" />
+              <rect x={xAt(i) + bw * 0.15} y={top} width={bw * 0.7} height={Math.max(0, H - padB - top)} rx={Math.min(4, bw * 0.2)} className={`chart__bar ${hover === i ? 'chart__bar--on' : ''}`} />
+              {i % labelEvery === 0 ? <text x={xAt(i) + bw / 2} y={H - 8} textAnchor="middle" className="chart__label">{fmtDay(d.day)}</text> : null}
+            </g>
+          );
+        })}
+        <path d={line} className="chart__line" />
+        {days.map((d, i) => <circle key={d.day} cx={xAt(i) + bw / 2} cy={y(d.orders, maxO)} r={hover === i ? 4 : 2.5} className="chart__dot" />)}
+      </svg>
+      <table className="sr-only">
+        <caption>{t('chart.aria')}</caption>
+        <thead><tr><th>{t('common.date')}</th><th>{t('chart.orders')}</th><th>{t('chart.gmv')}</th></tr></thead>
+        <tbody>{days.filter((d) => d.orders || d.gmvBaisa).map((d) => <tr key={d.day}><td>{d.day}</td><td>{d.orders}</td><td>{money(d.gmvBaisa)}</td></tr>)}</tbody>
+      </table>
+    </figure>
+  );
+}
+
+/** Horizontal bars for a ranked list (top products / merchants / by type). */
+export function RankBars({ rows }: { rows: { label: string; value: number; display: string; sub?: string }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <ul className="rank">
+      {rows.map((r, i) => (
+        <li key={`${r.label}-${i}`} className="rank__row">
+          <div className="row between row-nowrap"><span className="truncate">{r.label}</span><span className="strong num nowrap">{r.display}</span></div>
+          <div className="rank__track" aria-hidden="true"><div className="rank__fill" style={{ inlineSize: `${(r.value / max) * 100}%` }} /></div>
+          {r.sub ? <span className="text-xs muted">{r.sub}</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}

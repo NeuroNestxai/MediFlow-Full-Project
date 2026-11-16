@@ -189,17 +189,23 @@ public extension KeyedDecodingContainer {
 // MARK: - Coders
 
 public enum ISO8601 {
-    // ISO8601DateFormatter is documented as thread-safe.
-    static let fractional: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
-    static let plain: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime]
-        return f
-    }()
+    /// `ISO8601DateFormatter` is documented as thread-safe; the box only tells the compiler so.
+    private final class Formatters: @unchecked Sendable {
+        let fractional: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return f
+        }()
+        let plain: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime]
+            return f
+        }()
+    }
+
+    private static let formatters = Formatters()
+    static var fractional: ISO8601DateFormatter { formatters.fractional }
+    static var plain: ISO8601DateFormatter { formatters.plain }
 
     public static func parse(_ s: String) -> Date? {
         fractional.date(from: s) ?? plain.date(from: s)
