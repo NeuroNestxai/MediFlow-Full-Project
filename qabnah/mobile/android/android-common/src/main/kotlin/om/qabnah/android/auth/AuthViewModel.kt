@@ -70,7 +70,9 @@ class AuthViewModel(private val api: QabnahApi) : ViewModel() {
             try {
                 // On success the ApiClient stores tokens and `signedIn` flips, which switches the app's root screen.
                 api.verifyOtp(s.phoneE164, s.code, s.fullName.trim().takeIf { it.isNotEmpty() })
-                _state.update { it.copy(loading = false) }
+                // This ViewModel outlives the sign-in screen (activity scope): start clean after a later sign-out.
+                countdown?.cancel()
+                _state.value = AuthUiState()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

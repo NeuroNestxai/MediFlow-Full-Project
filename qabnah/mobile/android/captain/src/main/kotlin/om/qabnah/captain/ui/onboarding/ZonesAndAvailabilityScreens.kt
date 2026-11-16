@@ -102,7 +102,7 @@ fun AvailabilityScreen(container: CaptainContainer, onBack: () -> Unit) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var addingFor by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(Unit) { vm.saved.collect { onBack() } }
-    val locale = if (isArabic()) Locale("ar") else Locale.ENGLISH
+    val locale = if (isArabic()) Locale.forLanguageTag("ar") else Locale.ENGLISH
 
     ScreenScaffold(
         title = stringResource(R.string.availability_title),

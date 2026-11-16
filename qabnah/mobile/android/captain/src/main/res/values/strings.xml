@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Qabnah Captain</string>
+
+    <string name="tab_home">Home</string>
+    <string name="tab_deliveries">Deliveries</string>
+    <string name="tab_earnings">Earnings</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Registration -->
+    <string name="register_title">Become a Qabnah captain</string>
+    <string name="register_intro">Tell us about your vehicle and identity. Next you\'ll upload your documents for review.</string>
+    <string name="register_vehicle">Vehicle</string>
+    <string name="register_make">Make</string>
+    <string name="register_model">Model</string>
+    <string name="register_plate">Plate number</string>
+    <string name="register_color">Colour</string>
+    <string name="register_identity">Identity</string>
+    <string name="register_national_id">National ID / Resident card number</string>
+    <string name="register_nationality">Nationality</string>
+    <string name="register_dob">Date of birth</string>
+    <string name="register_pick_date">Choose date</string>
+    <string name="register_payout">Payouts</string>
+    <string name="register_bank">Bank name</string>
+    <string name="register_iban">IBAN</string>
+    <string name="register_iban_hint">Omani IBANs start with OM and have 23 characters.</string>
+    <string name="register_iban_invalid">This IBAN doesn\'t look right.</string>
+    <string name="register_required_missing">Please fill in all required (*) fields.</string>
+    <string name="register_submit">Continue</string>
+    <string name="register_edit_review_warning">Changing vehicle details sends your profile back for review; you can\'t go online until it is approved again.</string>
+
+    <!-- Captain status -->
+    <string name="status_pending_documents">Documents needed</string>
+    <string name="status_pending_review">Under review</string>
+    <string name="status_active">Active</string>
+    <string name="status_suspended">Suspended</string>
+    <string name="status_rejected">Rejected</string>
+    <string name="banner_pending_documents">Upload the required documents to submit your application.</string>
+    <string name="banner_pending_review">Your documents are being reviewed. We\'ll notify you once you\'re approved.</string>
+    <string name="banner_rejected">Your application was rejected: %1$s</string>
+    <string name="banner_suspended">Your account is suspended. Contact support for details.</string>
+
+    <!-- Checklist -->
+    <string name="checklist_title">Get ready to drive</string>
+    <string name="checklist_documents">Documents</string>
+    <string name="checklist_documents_missing">%1$s missing</string>
+    <string name="checklist_documents_rejected">%1$s rejected – please re-upload</string>
+    <string name="checklist_documents_done">All uploaded</string>
+    <string name="checklist_zones">Service zones</string>
+    <string name="checklist_zones_count">%1$s selected</string>
+    <string name="checklist_availability">Weekly availability</string>
+    <string name="checklist_availability_count">%1$s time slots</string>
+    <string name="checklist_done">Done</string>
+    <string name="checklist_todo">To do</string>
+
+    <!-- Documents -->
+    <string name="documents_title">Documents</string>
+    <string name="documents_intro">Clear photos of the original documents. Make sure all text and the expiry date are readable.</string>
+    <string name="documents_upload">Upload</string>
+    <string name="documents_replace">Replace</string>
+    <string name="documents_take_photo">Take a photo</string>
+    <string name="documents_choose_file">Choose from gallery or files</string>
+    <string name="documents_number">Document number (optional)</string>
+    <string name="documents_expiry">Expiry date (optional)</string>
+    <string name="doc_national_id">National ID / Resident card</string>
+    <string name="doc_driving_license">Driving licence</string>
+    <string name="doc_vehicle_registration">Vehicle registration (Mulkiya)</string>
+    <string name="doc_vehicle_insurance">Vehicle insurance</string>
+    <string name="doc_profile_photo">Profile photo</string>
+    <string name="doc_police_clearance">Police clearance</string>
+    <string name="doc_other">Other document</string>
+    <string name="doc_status_missing">Missing</string>
+    <string name="doc_status_pending">Pending review</string>
+    <string name="doc_status_approved">Approved</string>
+    <string name="doc_status_rejected">Rejected</string>
+    <string name="doc_rejection_reason">Reason: %1$s</string>
+    <string name="doc_expires">Expires %1$s</string>
+
+    <!-- Zones / availability -->
+    <string name="zones_title">Service zones</string>
+    <string name="zones_intro">You\'ll only get offers inside the zones you choose.</string>
+    <string name="zones_empty">No active zones yet.</string>
+    <string name="availability_title">Weekly availability</string>
+    <string name="availability_intro">When do you usually drive? Times are Muscat time. You still choose when to go online.</string>
+    <string name="availability_off">Not available</string>
+    <string name="availability_add">Add time slot</string>
+    <string name="availability_copy_all">Copy to every day</string>
+    <string name="availability_start">Start time</string>
+    <string name="availability_end">End time</string>
+    <string name="availability_invalid">Some time slots overlap or end before they start.</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Hello %1$s</string>
+    <string name="home_online">You\'re online</string>
+    <string name="home_offline">You\'re offline</string>
+    <string name="home_online_hint">Offers near you will appear here.</string>
+    <string name="home_offline_hint">Go online to start receiving delivery offers.</string>
+    <string name="home_active_deliveries">Current deliveries</string>
+    <string name="home_no_active">No deliveries in progress.</string>
+    <string name="home_waiting_offers">Waiting for offers…</string>
+
+    <!-- Permissions -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_intro">Qabnah Captain uses your location only while you are online, to send you nearby offers and show customers where their order is.</string>
+    <string name="permission_location_title">Precise location</string>
+    <string name="permission_location_body">Needed to go online, match you with nearby orders and share your position during deliveries. Tracking stops when you go offline.</string>
+    <string name="permission_notifications_title">Notifications</string>
+    <string name="permission_notifications_body">Alerts you about new offers when the app is in the background, and shows that tracking is active.</string>
+    <string name="permission_background_title">Location “all the time”</string>
+    <string name="permission_background_body">Optional. Lets Android resume location sharing if it restarts the app while you\'re online. Never used while you\'re offline.</string>
+    <string name="permission_required">Required</string>
+    <string name="permission_recommended">Recommended</string>
+    <string name="permission_optional">Optional</string>
+    <string name="permission_allow">Allow</string>
+    <string name="permission_granted">Allowed</string>
+    <string name="permission_denied_settings">Location was denied. Enable it in the app settings to go online.</string>
+    <string name="permission_open_settings">Open settings</string>
+    <string name="permissions_go_online">Go online now</string>
+
+    <!-- Offers -->
+    <string name="offer_title">New delivery offer</string>
+    <string name="offer_more">+%1$s more</string>
+    <string name="offer_seconds_left">%1$s s to respond</string>
+    <string name="offer_you_earn">You earn</string>
+    <string name="offer_cod">Collect %1$s cash</string>
+    <string name="offer_parcel">Parcel · %1$s</string>
+    <string name="offer_pickup">Pickup</string>
+    <string name="offer_dropoff">Drop-off (approximate)</string>
+    <string name="offer_away">%1$s away</string>
+    <string name="offer_trip">Trip %1$s</string>
+    <string name="offer_vehicle">Vehicle: %1$s</string>
+    <string name="offer_accept">Accept</string>
+    <string name="offer_reject">Decline</string>
+    <string name="offer_gone">Offer no longer available – it expired or another captain took it.</string>
+    <string name="reject_title">Why are you declining?</string>
+    <string name="reject_too_far">Too far</string>
+    <string name="reject_busy">I\'m busy</string>
+    <string name="reject_vehicle">Not suitable for my vehicle</string>
+    <string name="reject_low_earning">Earning too low</string>
+    <string name="reject_other">Other</string>
+
+    <!-- Delivery -->
+    <string name="delivery_title">Delivery</string>
+    <string name="delivery_help">Get help</string>
+    <string name="delivery_items">%1$s items</string>
+    <string name="delivery_earning">Earning %1$s</string>
+    <string name="delivery_collect_cash">Collect %1$s cash</string>
+    <string name="delivery_package">Package: %1$s</string>
+    <string name="delivery_pickup">Pickup</string>
+    <string name="delivery_dropoff">Drop-off</string>
+    <string name="delivery_notes">Notes: %1$s</string>
+    <string name="delivery_navigate">Navigate</string>
+    <string name="delivery_no_actions">No further actions for this delivery.</string>
+    <string name="delivery_map_description">Map with the pickup and drop-off points</string>
+    <string name="nav_google_maps">Google Maps</string>
+    <string name="nav_waze">Waze</string>
+    <string name="nav_other">Other maps app</string>
+    <string name="action_arrive_pickup">I\'ve arrived at pickup</string>
+    <string name="action_pickup">Picked up</string>
+    <string name="action_arrive_dropoff">I\'ve arrived at drop-off</string>
+    <string name="action_complete">Complete delivery</string>
+    <string name="action_fail">Report a failed delivery</string>
+    <string name="action_release">Release this job</string>
+    <string name="action_unknown">Update</string>
+    <string name="reason_label">Reason</string>
+    <string name="reason_fail_hint">Explain what happened (e.g. recipient not reachable).</string>
+    <string name="reason_release_hint">The job will be offered to another captain. Only possible before pickup.</string>
+
+    <!-- Complete -->
+    <string name="complete_title">Proof of delivery</string>
+    <string name="complete_pin_hint">Ask the recipient for their delivery PIN.</string>
+    <string name="complete_pin">Delivery PIN</string>
+    <string name="complete_photo_hint">Optionally take a photo of the delivered order.</string>
+    <string name="complete_photo_hint_pin">If the recipient can\'t give the PIN, a photo is required.</string>
+    <string name="complete_take_photo">Take photo</string>
+    <string name="complete_retake_photo">Retake photo</string>
+    <string name="complete_photo_uploaded">Photo uploaded</string>
+    <string name="complete_photo_preview">Proof of delivery photo</string>
+    <string name="complete_pin_or_photo">Enter the PIN or attach a photo.</string>
+    <string name="complete_recipient">Recipient name</string>
+    <string name="complete_cod_collected">Cash collected</string>
+    <string name="complete_cod_due">Amount due: %1$s</string>
+    <string name="complete_note">Note (optional)</string>
+    <string name="complete_submit">Mark as delivered</string>
+
+    <!-- Deliveries -->
+    <string name="deliveries_title">Deliveries</string>
+    <string name="deliveries_active">Active</string>
+    <string name="deliveries_history">History</string>
+    <string name="deliveries_empty_active">No active deliveries</string>
+    <string name="deliveries_empty_history">No completed deliveries yet</string>
+
+    <!-- Earnings -->
+    <string name="earnings_title">Earnings</string>
+    <string name="earnings_today">Today</string>
+    <string name="earnings_week">This week</string>
+    <string name="earnings_month">This month</string>
+    <string name="earnings_earned">Earned</string>
+    <string name="earnings_deliveries">Deliveries</string>
+    <string name="earnings_cod_collected">Cash collected (owed to Qabnah)</string>
+    <string name="earnings_payouts">Payouts</string>
+    <string name="earnings_ledger">Activity</string>
+    <string name="earnings_no_entries">No activity in this period.</string>
+    <string name="balance_owed_to_you">Qabnah owes you</string>
+    <string name="balance_owed_to_you_body">Your earnings exceed the cash you hold. It will be paid in your next settlement.</string>
+    <string name="balance_you_owe">You owe Qabnah</string>
+    <string name="balance_you_owe_body">You hold more cash from cash-on-delivery orders than you have earned. Remit it to clear your balance.</string>
+    <string name="balance_settled">All settled</string>
+    <string name="balance_settled_body">Nothing is owed either way.</string>
+    <string name="payouts_empty">No payouts yet.</string>
+    <string name="payouts_entries">%1$s entries</string>
+    <string name="payouts_reference">Reference %1$s</string>
+    <string name="payouts_paid_at">Paid %1$s</string>
+    <string name="payout_draft">Draft</string>
+    <string name="payout_approved">Approved</string>
+    <string name="payout_paid">Paid</string>
+    <string name="payout_cancelled">Cancelled</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_acceptance">Acceptance %1$s%%</string>
+    <string name="profile_vehicle_payout">Vehicle &amp; payout details</string>
+    <string name="profile_sign_out_body">You\'ll go offline and stop receiving offers on this device.</string>
+
+    <!-- Notifications -->
+    <string name="channel_online">Online status</string>
+    <string name="channel_online_desc">Shown while you are online and sharing your location.</string>
+    <string name="channel_offers">Delivery offers</string>
+    <string name="channel_offers_desc">New delivery offers that need a quick response.</string>
+    <string name="notif_online_title">You\'re online</string>
+    <string name="notif_online_text">Sharing your location to receive delivery offers.</string>
+    <string name="notif_offer_title">New offer · %1$s</string>
+</resources>

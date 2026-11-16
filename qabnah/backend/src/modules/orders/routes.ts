@@ -46,8 +46,13 @@ export async function viewerFor(req: any, orderId: string): Promise<Viewer> {
 
 export default async function orderRoutes(app: FastifyInstance) {
   app.post('/quotes/delivery', async (req) => {
-    const b = parse(z.object({ type: z.enum(['marketplace', 'merchant_delivery', 'c2c']), pickup: zLatLng, dropoff: zLatLng, vehicleType: z.enum(['bike', 'car', 'van']).optional() }), req.body);
-    const { captainEarningBaisa, ...quote } = await quoteDelivery(pool, b);
+    const b = parse(z.object({
+      type: z.enum(['marketplace', 'merchant_delivery', 'c2c']), pickup: zLatLng, dropoff: zLatLng,
+      vehicleType: z.enum(['bike', 'car', 'van']).optional(), packageSize: z.enum(['small', 'medium', 'large']).optional(),
+    }), req.body);
+    // Same vehicle rule as shipment creation, so the quote matches the fee actually charged.
+    const vehicleType = b.vehicleType ?? (b.type === 'c2c' && b.packageSize === 'large' ? 'car' : undefined);
+    const { captainEarningBaisa, ...quote } = await quoteDelivery(pool, { ...b, vehicleType });
     return quote;
   });
 

@@ -24,7 +24,7 @@ object Notifications {
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val nm = context.getSystemService(NotificationManager::class.java)
+        val nm = context.getSystemService(NotificationManager::class.java) ?: return
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ONLINE, context.getString(R.string.channel_online), NotificationManager.IMPORTANCE_LOW).apply {
                 description = context.getString(R.string.channel_online_desc)

@@ -215,6 +215,14 @@ describe('C2C shipment', () => {
     expect(earn.codCollectedBaisa).toBe(quote.body.feeBaisa);
   });
 
+  it('quotes large parcels at the car rate, matching the shipment fee', async () => {
+    const s = await consumerWithAddress(MSQ);
+    const quote = await api('POST', '/quotes/delivery', { body: { type: 'c2c', pickup: MSQ, dropoff: QURUM, packageSize: 'large' } });
+    expect(quote.body.vehicleType).toBe('car');
+    const r = await api('POST', '/shipments', { token: s.token, body: { pickup: { location: MSQ }, dropoff: { location: QURUM, contactPhone: '91112222' }, package: { size: 'large', description: 'Chair' }, paymentMethod: 'cod', codPayer: 'sender' } });
+    expect(r.body.deliveryFeeBaisa).toBe(quote.body.feeBaisa);
+  });
+
   it('requires codPayer for cash shipments', async () => {
     const s = await consumerWithAddress(MSQ);
     const r = await api('POST', '/shipments', { token: s.token, body: { pickup: { addressId: s.addressId }, dropoff: { location: QURUM, contactPhone: '91112222' }, package: { size: 'small', description: 'Keys' }, paymentMethod: 'cod' } });

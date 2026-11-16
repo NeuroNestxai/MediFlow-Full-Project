@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import om.qabnah.android.locale.isArabic
 import om.qabnah.android.ui.components.LabelValueRow
 import om.qabnah.android.ui.components.LoadableContent
 import om.qabnah.android.ui.components.ScreenScaffold
@@ -64,6 +65,7 @@ import om.qabnah.consumer.ConsumerContainer
 import om.qabnah.consumer.R
 import om.qabnah.core.model.Order
 import om.qabnah.core.model.OrderType
+import om.qabnah.core.util.localized
 
 @Composable
 fun OrderDetailScreen(
@@ -193,7 +195,8 @@ private fun OrderBody(
                     Column(Modifier.weight(1f)) {
                         Text(loc(item.nameEn, item.nameAr), style = MaterialTheme.typography.bodyLarge)
                         if (item.options.isNotEmpty()) {
-                            Text(item.options.joinToString(" · ") { loc(it.nameEn, it.nameAr) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            val arabic = isArabic()
+                            Text(item.options.joinToString(" · ") { localized(it.nameEn, it.nameAr, arabic) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         item.notes?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }

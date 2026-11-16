@@ -48,7 +48,7 @@ private val MUSCAT: ZoneId = ZoneId.of("Asia/Muscat")
 fun dateTime(iso: String?): String {
     if (iso.isNullOrBlank()) return ""
     val instant = runCatching { Instant.parse(iso) }.getOrNull() ?: return iso
-    val locale = if (isArabic()) Locale("ar", "OM") else Locale.ENGLISH
+    val locale = if (isArabic()) Locale.forLanguageTag("ar-OM") else Locale.ENGLISH
     return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withLocale(locale)
         .withZone(MUSCAT)
@@ -60,7 +60,7 @@ fun dateTime(iso: String?): String {
 fun timeOnly(iso: String?): String {
     if (iso.isNullOrBlank()) return ""
     val instant = runCatching { Instant.parse(iso) }.getOrNull() ?: return iso
-    val locale = if (isArabic()) Locale("ar", "OM") else Locale.ENGLISH
+    val locale = if (isArabic()) Locale.forLanguageTag("ar-OM") else Locale.ENGLISH
     return DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).withZone(MUSCAT).format(instant)
 }
 

@@ -333,6 +333,7 @@ paths:
                 pickup: { $ref: '#/components/schemas/LatLng' }
                 dropoff: { $ref: '#/components/schemas/LatLng' }
                 vehicleType: { $ref: '#/components/schemas/VehicleType' }
+                packageSize: { type: string, enum: [small, medium, large], description: 'C2C: large parcels are priced for a car, as when the shipment is created' }
       responses:
         '200': { description: Quote, content: { application/json: { schema: { $ref: '#/components/schemas/DeliveryQuote' } } } }
         '422': { $ref: '#/components/responses/Error' }

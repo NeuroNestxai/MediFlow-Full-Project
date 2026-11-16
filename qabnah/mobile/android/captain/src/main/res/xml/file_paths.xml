@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Camera captures (documents, proof of delivery) live in the app cache and are shared with the camera app via FileProvider. -->
+<paths>
+    <cache-path name="captures" path="captures/" />
+</paths>

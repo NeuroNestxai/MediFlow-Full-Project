@@ -1,0 +1,5 @@
+libs/
+gen/
+build/
+.gradle/
+.kotlin/
