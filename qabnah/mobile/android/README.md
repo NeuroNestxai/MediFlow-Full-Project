@@ -129,6 +129,10 @@ reconnect with backoff and re-subscribe, location frames).
 
 ## What was verified (and what was not)
 
+**Update — verified on GitHub Actions (ubuntu-latest with the Android SDK, runs 43973156920 and 43973216012, 2026-11-16):** `./gradlew :core:test` passed and **`:consumer:assembleDebug :captain:assembleDebug` built both
+debug APKs successfully** (AGP configuration, resource linking and manifest merging included). The APKs are uploaded
+as the `qabnah-android-debug-apks` workflow artifact. Not yet done: lint, R8 release build, device/emulator runs.
+
 These modules were written in a container where `dl.google.com` (and therefore `maven.google.com`, which redirects
 there) is blocked, so neither the Android SDK nor AGP/AndroidX could be downloaded.
 

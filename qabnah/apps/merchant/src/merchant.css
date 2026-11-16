@@ -33,13 +33,6 @@
 @media (max-width: 760px) { .option-editor-row { grid-template-columns: 1fr 1fr; } }
 .option-group { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .option-group__legend { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 0; margin-block-end: 6px; }
-.option-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--q-border); border-radius: var(--q-radius-sm); cursor: pointer; background: var(--q-surface); }
-.option-row input { width: 18px; height: 18px; accent-color: var(--brand, var(--q-primary)); margin: 0; flex: none; }
-.option-row--on { border-color: var(--brand, var(--q-primary)); background: color-mix(in srgb, var(--brand, #0E7C66) 7%, white); }
-.option-row--disabled { opacity: 0.5; cursor: not-allowed; }
-.qty { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--q-border-strong); border-radius: 999px; padding: 3px; }
-.qty .btn { border-radius: 999px; border: 0; font-size: 1.1rem; }
-.qty__value { min-width: 28px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ───────── Store settings ───────── */
 .banner-list { list-style: none; margin: 0; padding: 0; }

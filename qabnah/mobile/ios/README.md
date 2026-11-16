@@ -122,6 +122,11 @@ QABNAH_WS_TEST_URL=ws://127.0.0.1:8765/v1/realtime swift test --filter RealtimeI
 
 ## What was and wasn't compiled
 
+**Update — verified on GitHub Actions (macOS 15 runner, run 43973216012, 2026-11-16):** `swift test` for
+QabnahKit passed on macOS, `xcodegen generate` succeeded, and **both app schemes (QabnahConsumer, QabnahCaptain)
+built successfully** with `xcodebuild … -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build`
+(see `.github/workflows/qabnah-ci.yml`). Not yet done: running on a simulator/device, UI tests, signing, push.
+
 This was written in a Linux container without macOS/Xcode.
 
 * **QabnahKit: built and tested on Linux** with Swift 6.0.3 (Ubuntu's `swiftlang_6.0.3` .deb unpacked

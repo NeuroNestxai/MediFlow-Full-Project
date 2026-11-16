@@ -47,7 +47,9 @@ export function statusTone(status: OrderStatus | DeliveryStatus | string): 'neut
     case 'placed': case 'unassigned': case 'pending_payment': return 'accent';
     case 'accepted': case 'preparing': case 'searching': case 'assigned': case 'at_pickup': return 'info';
     case 'ready_for_pickup': case 'out_for_delivery': case 'picked_up': case 'at_dropoff': return 'warning';
-    case 'delivered': case 'completed': case 'paid': case 'active': case 'approved': return 'success';
+    case 'pending': case 'pending_review': case 'pending_documents': case 'draft': return 'warning';
+    case 'open': return 'info';
+    case 'delivered': case 'completed': case 'paid': case 'active': case 'approved': case 'resolved': return 'success';
     case 'rejected': case 'cancelled': case 'failed': case 'expired': case 'suspended': return 'danger';
     default: return 'neutral';
   }

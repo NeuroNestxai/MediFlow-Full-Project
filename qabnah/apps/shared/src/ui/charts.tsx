@@ -7,7 +7,7 @@ export interface DayPoint { day: string; orders: number; gmvBaisa: number }
  * By-day chart: GMV bars with an orders line, simple SVG (no chart library). Includes a data table for screen
  * readers. Fills missing days in [from, to] with zeros so gaps are visible.
  */
-export function DailyChart({ data, from, to, height = 240 }: { data: DayPoint[]; from: string; to: string; height?: number }) {
+export function DailyChart({ data, from, to, height = 260 }: { data: DayPoint[]; from: string; to: string; height?: number }) {
   const { t, money, num, lang } = useI18n();
   const titleId = useId();
   const [hover, setHover] = useState<number | null>(null);
@@ -22,7 +22,7 @@ export function DailyChart({ data, from, to, height = 240 }: { data: DayPoint[];
     }
     return out;
   }, [data, from, to]);
-  const W = 760, H = height, padL = 8, padR = 8, padT = 16, padB = 28;
+  const W = 900, H = height, padL = 8, padR = 8, padT = 16, padB = 28;
   const maxG = Math.max(1, ...days.map((d) => d.gmvBaisa));
   const maxO = Math.max(1, ...days.map((d) => d.orders));
   const n = Math.max(1, days.length);
