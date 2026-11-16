@@ -282,6 +282,14 @@ async function seedOrders(ids: { merchantIds: Record<string, string>; captainIds
       const key = t === 'orders' ? 'id' : 'order_id';
       await q(pool, `UPDATE ${t} SET ${cols.map((c) => `${c} = ${c} - $2::interval`).join(', ')} WHERE ${key} = $1`, [orderId, shift]);
     }
+    if (p.outcome === 'delivered') {
+      // Give history realistic durations (the seed runs the flow instantly): assign ~2 min, ready ~15 min, deliver ~30–45 min after placing.
+      const mins = 30 + (plan.indexOf(p) % 4) * 5;
+      await q(pool, `UPDATE orders SET accepted_at = placed_at + interval '1 minute', ready_at = placed_at + interval '15 minutes',
+        delivered_at = placed_at + make_interval(mins => $2), updated_at = placed_at + make_interval(mins => $2) WHERE id = $1`, [orderId, mins]);
+      await q(pool, `UPDATE deliveries d SET assigned_at = o.placed_at + interval '2 minutes', at_pickup_at = o.placed_at + interval '14 minutes',
+        picked_up_at = o.placed_at + interval '16 minutes', delivered_at = o.delivered_at, updated_at = o.delivered_at FROM orders o WHERE o.id = d.order_id AND d.order_id = $1`, [orderId]);
+    }
     await q(pool, `UPDATE ledger_entries SET created_at = created_at - $2::interval WHERE order_id = $1`, [orderId, shift]);
     await q(pool, `UPDATE order_status_history SET created_at = created_at - $2::interval WHERE order_id = $1`, [orderId, shift]);
   }

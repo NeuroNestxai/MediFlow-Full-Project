@@ -38,6 +38,13 @@ export default async function storefrontRoutes(app: FastifyInstance) {
     return { items: rows.map(merchantSummaryDto), total: total.n, limit: f.limit, offset: f.offset };
   });
 
+  app.get('/merchants/slug-availability', async (req) => {
+    const { slug } = parse(z.object({ slug: z.string().max(60) }), req.query);
+    const valid = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(slug);
+    const taken = valid ? !!(await one(pool, `SELECT 1 FROM merchants WHERE slug = $1`, [slug])) : false;
+    return { slug, valid, available: valid && !taken };
+  });
+
   app.get('/stores/:slug', async (req) => {
     const { slug } = parse(z.object({ slug: z.string().max(60) }), req.params);
     const m = await one(pool, `${MERCHANT_SELECT} WHERE m.slug = $1 AND m.status = 'active'`, [slug]);

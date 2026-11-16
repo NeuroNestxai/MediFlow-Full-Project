@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext } from '@playwright/test';
 
-export const API = (process.env.QABNAH_API_URL ?? 'http://localhost:4100/v1').replace(/\/+$/, '');
+export const API = (process.env.QABNAH_API_URL ?? 'http://localhost:4000/v1').replace(/\/+$/, '');
 export const MERCHANT = process.env.QABNAH_MERCHANT_URL ?? 'http://localhost:5173';
 export const ADMIN = process.env.QABNAH_ADMIN_URL ?? 'http://localhost:5174';
 export const PASSWORD = 'Qabnah-Dev-2026!';

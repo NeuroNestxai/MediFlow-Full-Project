@@ -307,6 +307,14 @@ paths:
         - { $ref: '#/components/parameters/offset' }
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/MerchantSummary' } }, total: { type: integer } } } } } }
+  /merchants/slug-availability:
+    get:
+      tags: [Public]
+      security: []
+      summary: Check whether a storefront slug is valid and free (includes stores pending review)
+      parameters: [{ name: slug, in: query, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { slug: { type: string }, valid: { type: boolean }, available: { type: boolean } } } } } }
   /stores/{slug}:
     parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
     get:
@@ -1643,8 +1651,8 @@ components:
         isOpen: { type: boolean }
         pricesIncludeVat: { type: boolean }
         openingHours: { type: array, items: { type: object, properties: { weekday: { type: integer }, open: { type: string, example: '09:00' }, close: { type: string, example: '23:30' } } } }
-        logoUrl: { type: string }
-        coverUrl: { type: string }
+        logoUrl: { type: [string, 'null'], description: "URL; '' or null removes the image" }
+        coverUrl: { type: [string, 'null'], description: "URL; '' or null removes the image" }
         brandColor: { type: string }
         accentColor: { type: string }
         taglineEn: { type: string }

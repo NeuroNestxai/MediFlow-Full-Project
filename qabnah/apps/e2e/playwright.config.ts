@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import fs from 'node:fs';
 
 /**
- * Smoke tests against a running API (default http://localhost:4100/v1, seeded) and the two web apps.
+ * Smoke tests against a running API (default http://localhost:4000/v1, seeded) and the two web apps.
  * The Vite dev servers are started automatically unless they are already running.
  */
 const chromiumPath = ['/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', '/opt/pw-browsers/chromium'].find((p) => fs.existsSync(p));

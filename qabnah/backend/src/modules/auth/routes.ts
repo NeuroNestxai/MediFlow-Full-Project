@@ -80,7 +80,8 @@ export default async function authRoutes(app: FastifyInstance) {
     return { ...tokens, user: userDto(user), isNewUser: false };
   });
 
-  app.post('/auth/refresh', strict, async (req) => {
+  // Refresh is called by every open tab/app; give it a looser limit than sign-in.
+  app.post('/auth/refresh', { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req) => {
     const body = parse(z.object({ refreshToken: z.string().min(10) }), req.body);
     const r = await tx((c) => rotateRefreshToken(c, body.refreshToken, req.headers['user-agent']));
     if ('error' in r) throw r.error;

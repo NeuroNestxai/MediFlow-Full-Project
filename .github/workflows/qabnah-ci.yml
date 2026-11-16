@@ -28,6 +28,20 @@ jobs:
       - run: npm run build
       - run: docker build -t qabnah/backend:ci .
 
+  web:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: qabnah/apps } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: qabnah/apps/package-lock.json }
+      - run: npm ci
+        env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1' }
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: docker build --build-arg APP=merchant -t qabnah/merchant-web:ci . && docker build --build-arg APP=admin -t qabnah/admin-web:ci .
+
   android:
     runs-on: ubuntu-latest   # hosted runner ships the Android SDK (ANDROID_HOME), so the app modules are included
     defaults: { run: { working-directory: qabnah/mobile/android } }

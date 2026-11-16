@@ -26,7 +26,8 @@ Delivery and e-commerce platform for **Muscat, Oman**. It covers merchant orders
 ```bash
 cd qabnah/infra
 cp .env.example .env            # dev defaults: mock payments, console SMS/WhatsApp, OTP echoed in API responses
-docker compose up --build -d    # PostGIS, migrations, sample data (first run only), API :4000, dispatch worker
+docker compose up --build -d    # PostGIS, migrations, sample data (first run only), API :4000, worker,
+                                # merchant portal + storefront http://localhost:5173, admin http://localhost:5174
 curl localhost:4000/v1/health/ready
 node ../backend/scripts/smoke.mjs   # full journey: order → dispatch → delivery → ledger, C2C + online payment
 ```
@@ -76,5 +77,42 @@ scans in the seed are placeholders.
 - **Admin:** approvals, live operations map, orders and refunds, zones, pricing rules, dispatch rules, settings,
   plans, support queue, analytics, users, staff and roles, audit log.
 
-## Verification status
-See the table at the end of this file. It is updated with real command output only.
+## Web apps (development)
+```bash
+cd qabnah/apps && npm install
+npm run dev:merchant     # http://localhost:5173  (storefront: /s/saffron-grill, pay page: /pay/<code>)
+npm run dev:admin        # http://localhost:5174
+npm run typecheck && npm test && npm run build
+QABNAH_API_URL=http://localhost:4000/v1 npm run test:e2e   # Playwright, needs a seeded API
+```
+Set `VITE_API_URL` (default `http://localhost:4000/v1`) for other environments.
+
+## Mobile apps
+- iOS: `cd qabnah/mobile/ios && brew install xcodegen && xcodegen generate && open Qabnah.xcodeproj` — see `mobile/ios/README.md`.
+- Android: open `qabnah/mobile/android` in Android Studio — see `mobile/android/README.md`
+  (emulator talks to `http://10.0.2.2:4000/v1`).
+
+## Verification status (2026-11-16, real results only)
+
+| Component | Check | Where | Result |
+|---|---|---|---|
+| Backend | `npm run typecheck` | sandbox + GitHub Actions | ✅ pass |
+| Backend | `npm test` — 79 tests (30 unit, 49 integration on PostgreSQL 16 + PostGIS 3.4) | sandbox + GitHub Actions | ✅ 79/79 |
+| Backend | Docker image build; `docker compose up` (db, migrate, seed, api, worker) | sandbox + GitHub Actions (build) | ✅ |
+| Backend | `scripts/smoke.mjs` full journey against the Docker stack | sandbox | ✅ passed |
+| Web | `npm run typecheck` (shared, merchant, admin, e2e) | sandbox | ✅ pass |
+| Web | `npm test` — 43 tests (shared 35, merchant 8) | sandbox | ✅ 43/43 |
+| Web | Production builds (merchant 629 kB JS / 187 kB gzip, admin 558 kB / 165 kB) + nginx images | sandbox | ✅ |
+| Web | Playwright e2e — merchant board accept, admin live ops, storefront → OTP → quote; against the Docker stack (nginx-served apps + compiled API) | sandbox | ✅ 3/3 |
+| iOS | `swift test` QabnahKit (52 tests) | Linux sandbox (Swift 6.0.3) + macOS 15 GitHub runner | ✅ |
+| iOS | `xcodegen generate` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
+| Android | `./gradlew :core:test` (48 tests) | sandbox + GitHub Actions | ✅ 48/48 |
+| Android | `assembleDebug` consumer & captain APKs | GitHub Actions (Android SDK) | ✅ both build (APK artifact) |
+
+**Not verified / not done:**
+- Mobile apps not run on a device or simulator; no UI tests; not signed; no store submission.
+- No load test or penetration test.
+- No live Thawani, WhatsApp, SMS or push traffic (no credentials).
+- Map tiles could not load in the sandbox (OpenStreetMap blocked); production needs a tile provider that permits app traffic.
+- Admin MFA not implemented (launch blocker, IMPLEMENTATION_PLAN M10).
+- Everything in the DECISIONS compliance checklist is still "To validate" with Omani counsel and regulators.

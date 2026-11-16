@@ -134,6 +134,9 @@ describe('merchant onboarding, catalog and storefront', () => {
       body: { email: 'owner@ward-test.qabnah.test', password: 'Strong-Pass-123', fullName: 'Owner', merchant: { nameEn: 'Ward Test', nameAr: 'ورد', slug: 'ward-test', category: 'flowers', location: MSQ } },
     });
     expect(reg.status).toBe(201);
+    expect((await api('GET', '/merchants/slug-availability?slug=ward-test')).body).toEqual({ slug: 'ward-test', valid: true, available: false }); // pending stores count
+    expect((await api('GET', '/merchants/slug-availability?slug=brand-new-shop')).body.available).toBe(true);
+    expect((await api('GET', '/merchants/slug-availability?slug=Bad Slug')).body.valid).toBe(false);
     const dup = await api('POST', '/merchants/register', { body: { email: 'x@qabnah.test', password: 'Strong-Pass-123', fullName: 'Xy Z', merchant: { nameEn: 'Xy', nameAr: 'س س', slug: 'ward-test', category: 'flowers', location: MSQ } } });
     expect(dup.body.error.code).toBe('slug_taken');
     const t = reg.body.accessToken;
@@ -162,6 +165,9 @@ describe('merchant onboarding, catalog and storefront', () => {
     const up = await api('PATCH', `/merchants/${mid}`, { token: t, body: { brandColor: '#BE185D', taglineEn: 'Bouquets', openingHours: [], isOpen: true, whatsappEnabled: true, whatsappPhone: '91234567' } });
     expect(up.body).toMatchObject({ brandColor: '#BE185D', whatsappPhone: '+96891234567', storefrontUrl: expect.stringContaining('/s/ward-test') });
     expect((await api('PATCH', `/merchants/${mid}`, { token: t, body: { brandColor: 'pink' } })).status).toBe(400);
+    expect((await api('PATCH', `/merchants/${mid}`, { token: t, body: { logoUrl: 'https://example.com/logo.png' } })).body.logoUrl).toBe('https://example.com/logo.png');
+    expect((await api('PATCH', `/merchants/${mid}`, { token: t, body: { logoUrl: '' } })).body.logoUrl).toBeNull();
+    expect((await api('GET', `/merchants/${mid}/documents`, { token: t })).body.items[0].fileUrl).toContain('sig=');
     expect((await api('POST', `/merchants/${mid}/banners`, { token: t, body: { imageUrl: 'https://example.com/b.jpg', titleEn: 'Valentine' } })).status).toBe(201);
     const cat = (await api('POST', `/merchants/${mid}/categories`, { token: t, body: { nameEn: 'Bouquets', nameAr: 'باقات' } })).body;
     const m = { token: t, merchantId: mid };

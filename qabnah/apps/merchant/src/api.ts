@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { ApiClient, RealtimeClient, createTokenStore, isApiError } from '@qabnah/shared';
 
-export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:4100/v1').replace(/\/+$/, '');
+export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000/v1').replace(/\/+$/, '');
 
 /** Merchant staff session (email/password). */
 export const merchantTokens = createTokenStore('qabnah.merchant.session');

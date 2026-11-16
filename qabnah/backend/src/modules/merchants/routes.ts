@@ -38,8 +38,8 @@ const merchantUpdate = z.object({
   isOpen: z.boolean().optional(),
   pricesIncludeVat: z.boolean().optional(),
   openingHours: z.array(z.object({ weekday: z.number().int().min(0).max(6), open: zTime, close: zTime })).max(21).optional(),
-  logoUrl: z.string().url().optional(),
-  coverUrl: z.string().url().optional(),
+  logoUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(), // '' or null removes the image
+  coverUrl: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
   brandColor: hex.optional(),
   accentColor: hex.optional(),
   taglineEn: z.string().max(140).optional(),
@@ -79,7 +79,7 @@ export default async function merchantRoutes(app: FastifyInstance) {
     const params: unknown[] = [merchantId];
     for (const [k, v] of Object.entries(b)) {
       if (v === undefined || !(k in COLS)) continue;
-      params.push(k === 'openingHours' ? JSON.stringify(v) : v);
+      params.push(v === '' && (k === 'logoUrl' || k === 'coverUrl') ? null : v);
       sets.push(`${COLS[k]} = $${params.length}`);
     }
     if (b.openingHours) { params.push(JSON.stringify(b.openingHours)); sets.push(`opening_hours = $${params.length}`); }
@@ -179,7 +179,8 @@ export default async function merchantRoutes(app: FastifyInstance) {
     const { merchantId } = parse(mParams, req.params);
     requireMerchantPerm(req, merchantId, 'merchant.store:read');
     const rows = await q(pool, `SELECT * FROM merchant_documents WHERE merchant_id = $1 ORDER BY created_at DESC`, [merchantId]);
-    return { items: rows.map(merchantDocDto) };
+    const { signFileUrl } = await import('../../integrations/storage.js');
+    return { items: rows.map((d) => ({ ...merchantDocDto(d), fileUrl: signFileUrl(d.file_id) })) };
   });
   app.post('/merchants/:merchantId/documents', async (req, reply) => {
     const { merchantId } = parse(mParams, req.params);
@@ -212,7 +213,9 @@ export default async function merchantRoutes(app: FastifyInstance) {
     const { merchantId } = parse(mParams, req.params);
     requireMerchantPerm(req, merchantId, 'merchant.store:manage');
     const b = parse(z.object({ phone: z.string() }), req.body);
-    return sendWhatsAppTemplate({ to: normalizeOmanPhone(b.phone), template: WA_TEMPLATES.test, language: 'en_US', merchantId });
+    const { config } = await import('../../config.js');
+    const r = await sendWhatsAppTemplate({ to: normalizeOmanPhone(b.phone), template: WA_TEMPLATES.test, language: 'en_US', merchantId });
+    return { ...r, provider: config.WHATSAPP_PROVIDER, delivered: config.WHATSAPP_PROVIDER === 'cloud' && r.status === 'sent' };
   });
 }
 

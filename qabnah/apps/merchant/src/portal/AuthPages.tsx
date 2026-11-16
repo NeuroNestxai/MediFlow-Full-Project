@@ -69,14 +69,14 @@ export function RegisterPage() {
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
   useEffect(() => { if (!slugTouched) setF((x) => ({ ...x, slug: slugify(x.nameEn) })); }, [f.nameEn, slugTouched]);
 
-  // Slug availability: the public storefront endpoint 404s for unused slugs (it only knows active stores, so the
-  // server's 409 on submit remains the source of truth).
+  // Slug availability (GET /merchants/slug-availability also counts stores pending review; the 409 on submit stays authoritative).
   const debSlug = useDebounced(f.slug, 400);
   const slugValid = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(debSlug);
   const slugQ = useQuery({
     queryKey: ['slug', debSlug],
     queryFn: async () => {
-      try { await publicApi.get(`/stores/${debSlug}`, { auth: false }); return 'taken' as const; } catch (e) { if (isApiError(e) && e.status === 404) return 'free' as const; throw e; }
+      const r = await publicApi.get<{ available: boolean }>(`/merchants/slug-availability?slug=${encodeURIComponent(debSlug)}`, { auth: false });
+      return r.available ? ('free' as const) : ('taken' as const);
     },
     enabled: slugValid,
     staleTime: 60_000,
