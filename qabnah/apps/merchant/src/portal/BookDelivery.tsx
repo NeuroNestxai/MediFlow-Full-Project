@@ -27,8 +27,8 @@ export function BookDelivery() {
 
   const debDrop = useDebounced(dropoff, 300);
   const quote = useQuery({
-    queryKey: ['m', 'quote', pickup, debDrop],
-    queryFn: () => merchantApi.post<DeliveryQuote>('/quotes/delivery', { type: 'merchant_delivery', pickup, dropoff: debDrop }),
+    queryKey: ['m', 'quote', pickup, debDrop, size],
+    queryFn: () => merchantApi.post<DeliveryQuote>('/quotes/delivery', { type: 'merchant_delivery', pickup, dropoff: debDrop, packageSize: size }),
     enabled: !!pickup && !!debDrop,
     retry: false,
   });
