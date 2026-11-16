@@ -11,3 +11,4 @@ export * from './domain/orders';
 export * from './ui/components';
 export * from './ui/icons';
 export * from './ui/hooks';
+export * from './ui/charts';

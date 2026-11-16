@@ -131,6 +131,12 @@ export const common = {
 
     'error.network_error': 'Could not reach the server. Check your connection.',
     'error.rate_limited': 'Too many attempts. Please wait a moment.',
+    'chart.gmv': 'GMV', 'chart.orders': 'Orders', 'chart.ordersN': '{n} orders', 'chart.aria': 'Orders and GMV by day',
+    'status.active': 'Active', 'status.paid': 'Paid', 'status.expired': 'Expired', 'status.cancelled': 'Cancelled', 'status.pending': 'Pending',
+    'status.approved': 'Approved', 'status.rejected': 'Rejected', 'status.draft': 'Draft', 'status.sent': 'Sent', 'status.failed': 'Failed',
+    'status.delivered': 'Delivered', 'status.read': 'Read', 'status.queued': 'Queued', 'status.suspended': 'Suspended', 'status.pending_review': 'Pending review',
+    'status.pending_documents': 'Documents needed', 'status.open': 'Open', 'status.resolved': 'Resolved', 'status.closed': 'Closed', 'status.logged': 'Logged',
+    'status.offered': 'Offered', 'status.accepted': 'Accepted', 'status.declined': 'Declined', 'status.inactive': 'Inactive',
   },
   ar: {
     'app.name': 'قبناه',
@@ -263,5 +269,11 @@ export const common = {
 
     'error.network_error': 'تعذّر الاتصال بالخادم. تحقق من اتصالك.',
     'error.rate_limited': 'محاولات كثيرة. يرجى الانتظار قليلاً.',
+    'chart.gmv': 'المبيعات', 'chart.orders': 'الطلبات', 'chart.ordersN': '{n} طلبات', 'chart.aria': 'الطلبات والمبيعات حسب اليوم',
+    'status.active': 'نشط', 'status.paid': 'مدفوع', 'status.expired': 'منتهي', 'status.cancelled': 'ملغي', 'status.pending': 'قيد المراجعة',
+    'status.approved': 'معتمد', 'status.rejected': 'مرفوض', 'status.draft': 'مسودة', 'status.sent': 'مُرسل', 'status.failed': 'فشل',
+    'status.delivered': 'تم التسليم', 'status.read': 'مقروء', 'status.queued': 'في الانتظار', 'status.suspended': 'موقوف', 'status.pending_review': 'قيد المراجعة',
+    'status.pending_documents': 'بانتظار المستندات', 'status.open': 'مفتوح', 'status.resolved': 'تم الحل', 'status.closed': 'مغلق', 'status.logged': 'مسجّل',
+    'status.offered': 'معروض', 'status.accepted': 'مقبول', 'status.declined': 'مرفوض', 'status.inactive': 'غير نشط',
   },
 };

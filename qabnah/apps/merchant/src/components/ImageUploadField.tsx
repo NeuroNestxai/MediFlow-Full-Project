@@ -28,7 +28,7 @@ export function ImageUploadField({ label, value, onChange, purpose, aspect = '16
   return (
     <div className="field">
       <span className="field__label">{label}</span>
-      <div className={`upload-tile ${value ? 'upload-tile--filled' : ''}`} style={{ aspectRatio: aspect }}>
+      <div className={`upload-tile ${value ? 'upload-tile--filled' : ''}`} style={{ aspectRatio: aspect, maxInlineSize: aspect === '1 / 1' ? 220 : undefined }}>
         {value ? <img src={value} alt="" onError={() => setError(t('upload.previewError'))} /> : <span className="text-sm">{t('upload.empty')}</span>}
         <div className="upload-tile__actions">
           <FilePickerButton accept="image/jpeg,image/png,image/webp" onFile={upload} loading={busy} label={value ? t('upload.replace') : t('common.upload')} />

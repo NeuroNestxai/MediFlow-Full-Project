@@ -23,7 +23,7 @@ export function OrderCard({ order, perms, onAction, onOpen, highlight, busy }: {
         </div>
         <div className="row between row-nowrap">
           <span className="truncate">{order.customerName ?? order.delivery?.dropoff.contactName ?? t('orders.walkIn')}</span>
-          <span className="strong num">{money(order.totalBaisa)}</span>
+          <span className="strong num nowrap">{money(order.totalBaisa)}</span>
         </div>
         <div className="text-sm muted truncate">
           {order.type === 'merchant_delivery'

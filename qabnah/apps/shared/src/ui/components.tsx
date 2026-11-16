@@ -192,7 +192,9 @@ export function Badge({ tone = 'neutral', children, dot }: { tone?: Tone; childr
 /** Badge for an order/delivery/payment/link status using the shared translations. */
 export function StatusBadge({ status, kind = 'order' }: { status: string; kind?: 'order' | 'delivery' | 'payment' | 'raw' }) {
   const { t } = useI18n();
-  const label = kind === 'raw' ? status.replace(/_/g, ' ') : t(`${kind}.status.${status}`);
+  const rawKey = `status.${status}`;
+  const raw = t(rawKey);
+  const label = kind === 'raw' ? (raw === rawKey ? status.replace(/_/g, ' ') : raw) : t(`${kind}.status.${status}`);
   return <Badge tone={statusTone(status)} dot>{label}</Badge>;
 }
 
