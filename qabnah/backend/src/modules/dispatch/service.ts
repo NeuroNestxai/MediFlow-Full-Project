@@ -178,17 +178,21 @@ export async function offerDto(db: Queryable, offerId: string) {
 }
 
 export async function acceptOffer(db: Queryable, captainId: string, offerId: string, actorUserId: string) {
+  // Lock order is always delivery → offers (same as assignCaptain/cancel paths) to avoid deadlocks when captains race.
+  const peek = await one(db, `SELECT delivery_id, captain_id FROM delivery_offers WHERE id = $1`, [offerId]);
+  if (!peek || peek.captain_id !== captainId) throw notFound('Offer');
+  const d = await one(db, `SELECT * FROM deliveries WHERE id = $1 FOR UPDATE`, [peek.delivery_id]);
   const offer = await one(db, `SELECT * FROM delivery_offers WHERE id = $1 FOR UPDATE`, [offerId]);
-  if (!offer || offer.captain_id !== captainId) throw notFound('Offer');
-  if (offer.status !== 'pending' || new Date(offer.expires_at) < new Date()) throw conflict('This offer has expired', 'offer_expired');
-  const d = await one(db, `SELECT * FROM deliveries WHERE id = $1 FOR UPDATE`, [offer.delivery_id]);
+  if (offer.status !== 'pending' || new Date(offer.expires_at) < new Date()) throw conflict('This offer is no longer available', offer.status === 'cancelled' ? 'offer_taken' : 'offer_expired');
   if (d.captain_id || !['searching', 'unassigned'].includes(d.status)) {
+    // Returned (not thrown) so the caller's transaction commits the cancellation.
     await q(db, `UPDATE delivery_offers SET status = 'cancelled', responded_at = now() WHERE id = $1`, [offerId]);
-    throw conflict('Another captain took this delivery', 'offer_taken');
+    return { error: conflict('Another captain took this delivery', 'offer_taken') };
   }
   await q(db, `UPDATE delivery_offers SET status = 'accepted', responded_at = now() WHERE id = $1`, [offerId]);
   await q(db, `UPDATE captains SET offers_accepted = offers_accepted + 1 WHERE id = $1`, [captainId]);
   await assignCaptain(db, d, captainId, actorUserId, offerId);
+  return { ok: true as const };
 }
 
 /** Assign a captain (from an accepted offer or manually). Cancels other pending offers. */
@@ -211,28 +215,39 @@ export async function assignCaptain(db: Queryable, d: any, captainId: string, ac
 }
 
 export async function rejectOffer(db: Queryable, captainId: string, offerId: string, reason?: string) {
+  const peek = await one(db, `SELECT delivery_id FROM delivery_offers WHERE id = $1 AND captain_id = $2`, [offerId, captainId]);
+  if (!peek) throw notFound('Offer');
+  await q(db, `SELECT id FROM deliveries WHERE id = $1 FOR UPDATE`, [peek.delivery_id]); // lock order: delivery → offers
   const offer = await one(db, `UPDATE delivery_offers SET status = 'rejected', responded_at = now(), reject_reason = $3 WHERE id = $1 AND captain_id = $2 AND status = 'pending' RETURNING *`, [offerId, captainId, reason ?? null]);
   if (!offer) throw conflict('This offer is no longer pending', 'offer_expired');
   await runRound(db, offer.delivery_id);
 }
 
-/** Worker: expire stale offers and re-run dispatch for deliveries that need it. Safe with concurrent workers. */
-export async function dispatchTick(db: Queryable) {
-  const expired = await q(
-    db,
-    `UPDATE delivery_offers SET status = 'expired' WHERE id IN (
-       SELECT id FROM delivery_offers WHERE status = 'pending' AND expires_at < now() FOR UPDATE SKIP LOCKED) RETURNING id, delivery_id, captain_id`,
-  );
-  for (const e of expired) await publish(db, [`captain:${e.captain_id}`], 'offer.expired', { offerId: e.id, deliveryId: e.delivery_id });
+/**
+ * Worker: expire stale offers and re-run dispatch for deliveries that need it. Each step is its own short
+ * transaction (expiry first, then one transaction per delivery) so the worker never holds offer locks while
+ * waiting for a delivery lock — that ordering would deadlock against a captain accepting concurrently.
+ */
+export async function dispatchTick(pool: import('pg').Pool) {
+  const { tx } = await import('../../db/pool.js');
+  const expired = await tx(async (c) => {
+    const rows = await q(
+      c,
+      `UPDATE delivery_offers SET status = 'expired' WHERE id IN (
+         SELECT id FROM delivery_offers WHERE status = 'pending' AND expires_at < now() FOR UPDATE SKIP LOCKED) RETURNING id, delivery_id, captain_id`,
+    );
+    for (const e of rows) await publish(c, [`captain:${e.captain_id}`], 'offer.expired', { offerId: e.id, deliveryId: e.delivery_id });
+    return rows;
+  }, pool);
   const due = await q(
-    db,
+    pool,
     `SELECT d.id FROM deliveries d WHERE d.status = 'searching'
         AND NOT EXISTS (SELECT 1 FROM delivery_offers o WHERE o.delivery_id = d.id AND o.status = 'pending')
         AND (d.id = ANY($1) OR d.updated_at < now() - interval '10 seconds')
       ORDER BY d.created_at LIMIT 50`,
     [expired.map((e) => e.delivery_id)],
   );
-  for (const d of due) await runRound(db, d.id);
+  for (const d of due) await tx((c) => runRound(c, d.id), pool);
   return { expired: expired.length, rounds: due.length };
 }
 

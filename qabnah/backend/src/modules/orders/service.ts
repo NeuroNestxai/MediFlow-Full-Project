@@ -258,7 +258,6 @@ export async function createMerchantDelivery(c: pg.PoolClient, userId: string | 
 export async function transitionOrder(c: Queryable, orderId: string, to: string, actor: string | null, note?: string | null, extra: Record<string, unknown> = {}) {
   const o = await one(c, `SELECT * FROM orders WHERE id = $1 FOR UPDATE`, [orderId]);
   if (!o) throw notFound('Order');
-  if (o.status === to) return o;
   assertOrderTransition(o.status, to);
   const sets = ['status = $2', 'updated_at = now()'];
   const params: unknown[] = [orderId, to];

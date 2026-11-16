@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { config } from '../../config.js';
 import { pool, one, q, tx } from '../../db/pool.js';
 import { sendSms } from '../../integrations/sms.js';
-import { requireAuth } from '../../lib/auth.js';
 import { randomDigits, safeEqual, sha256 } from '../../lib/crypto.js';
 import { AppError, conflict, forbidden, unauthorized } from '../../lib/errors.js';
 import { normalizeOmanPhone } from '../../lib/phone.js';
@@ -40,17 +39,18 @@ export default async function authRoutes(app: FastifyInstance) {
   app.post('/auth/otp/verify', strict, async (req) => {
     const body = parse(z.object({ phone: z.string(), code: z.string().regex(/^\d{6}$/), fullName: z.string().trim().max(100).optional() }), req.body);
     const phone = normalizeOmanPhone(body.phone);
-    return tx(async (c) => {
+    // Failed attempts must be persisted, so the transaction returns an error value instead of throwing (a throw would roll back the counter).
+    const result = await tx(async (c) => {
       const otp = await one(
         c,
         `SELECT * FROM otp_codes WHERE phone = $1 AND consumed_at IS NULL AND expires_at > now() ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
         [phone],
       );
-      if (!otp) throw new AppError(401, 'invalid_code', 'The code is invalid or has expired');
-      if (otp.attempts >= OTP_MAX_ATTEMPTS) throw new AppError(401, 'too_many_attempts', 'Too many attempts. Request a new code.');
+      if (!otp) return { error: new AppError(401, 'invalid_code', 'The code is invalid or has expired') };
+      if (otp.attempts >= OTP_MAX_ATTEMPTS) return { error: new AppError(401, 'too_many_attempts', 'Too many attempts. Request a new code.') };
       if (!safeEqual(otp.code_hash, otpHash(phone, body.code))) {
         await q(c, `UPDATE otp_codes SET attempts = attempts + 1 WHERE id = $1`, [otp.id]);
-        throw new AppError(401, 'invalid_code', 'The code is invalid or has expired');
+        return { error: new AppError(401, 'invalid_code', 'The code is invalid or has expired') };
       }
       await q(c, `UPDATE otp_codes SET consumed_at = now() WHERE id = $1`, [otp.id]);
       let user = await one(c, `SELECT * FROM users WHERE phone = $1`, [phone]);
@@ -59,13 +59,15 @@ export default async function authRoutes(app: FastifyInstance) {
         user = await one(c, `INSERT INTO users (phone, full_name) VALUES ($1, $2) RETURNING *`, [phone, body.fullName ?? '']);
         isNewUser = true;
       } else if (user.status !== 'active') {
-        throw forbidden('This account is suspended. Contact support.');
+        return { error: forbidden('This account is suspended. Contact support.') };
       } else if (!user.full_name && body.fullName) {
         user = await one(c, `UPDATE users SET full_name = $2 WHERE id = $1 RETURNING *`, [user.id, body.fullName]);
       }
       const tokens = await issueTokens(c, user.id, req.headers['user-agent']);
-      return { ...tokens, user: userDto(user), isNewUser };
+      return { ok: { ...tokens, user: userDto(user), isNewUser } };
     });
+    if ('error' in result) throw result.error;
+    return result.ok;
   });
 
   app.post('/auth/login', strict, async (req) => {
@@ -80,7 +82,9 @@ export default async function authRoutes(app: FastifyInstance) {
 
   app.post('/auth/refresh', strict, async (req) => {
     const body = parse(z.object({ refreshToken: z.string().min(10) }), req.body);
-    return tx((c) => rotateRefreshToken(c, body.refreshToken, req.headers['user-agent']));
+    const r = await tx((c) => rotateRefreshToken(c, body.refreshToken, req.headers['user-agent']));
+    if ('error' in r) throw r.error;
+    return r.tokens;
   });
 
   app.post('/auth/logout', async (req, reply) => {
@@ -134,6 +138,4 @@ export default async function authRoutes(app: FastifyInstance) {
     reply.code(201);
     return result;
   });
-
-  app.get('/auth/whoami', async (req) => ({ userId: requireAuth(req).userId }));
 }

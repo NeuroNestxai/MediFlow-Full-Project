@@ -36,6 +36,10 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
     bodyLimit: 1024 * 1024,
   });
 
+  const routes: { method: string; url: string }[] = [];
+  (app as any)[Symbol.for('qabnah.routes')] = routes;
+  app.addHook('onRoute', (r) => { for (const m of [r.method].flat()) routes.push({ method: String(m), url: r.url }); });
+
   // Keep the raw JSON body (needed for webhook signature verification).
   app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body: Buffer, done) => {
     (req as any).rawBody = body;

@@ -23,15 +23,16 @@ export async function rotateRefreshToken(db: Queryable, token: string, userAgent
   if (!row) throw unauthorized('Invalid refresh token');
   if (row.revoked_at) {
     // Reuse of a rotated token: assume theft, revoke the whole family.
+    // Return (not throw) so the caller's transaction commits the revocation.
     await q(db, `UPDATE refresh_tokens SET revoked_at = now() WHERE family_id = $1 AND revoked_at IS NULL`, [row.family_id]);
-    throw unauthorized('Refresh token reuse detected; please sign in again');
+    return { error: unauthorized('Refresh token reuse detected; please sign in again') };
   }
   if (new Date(row.expires_at) < new Date()) throw unauthorized('Refresh token expired');
   if (row.user_status !== 'active') throw unauthorized('Account is not active');
   const tokens = await issueTokens(db, row.user_id, userAgent, row.family_id);
   const created = await one(db, `SELECT id FROM refresh_tokens WHERE token_hash = $1`, [sha256(tokens.refreshToken)]);
   await q(db, `UPDATE refresh_tokens SET revoked_at = now(), replaced_by = $2 WHERE id = $1`, [row.id, created!.id]);
-  return tokens;
+  return { tokens };
 }
 
 export async function revokeRefreshToken(db: Queryable, token: string) {

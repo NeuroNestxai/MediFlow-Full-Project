@@ -10,7 +10,7 @@ import { cancelOrder } from './modules/orders/service.js';
  *  - housekeeping: prune realtime outbox, OTPs, stale captain presence (every 10 min)
  */
 export async function runDispatchJob() {
-  return tx((c) => dispatchTick(c));
+  return dispatchTick(pool);
 }
 
 export async function runOrderTimeouts() {

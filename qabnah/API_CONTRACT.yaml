@@ -360,6 +360,24 @@ paths:
         content: { application/json: { schema: { type: object, properties: { outcome: { type: string, enum: [paid, failed] } } } } }
       responses: { '200': { description: Result applied } }
 
+  /payments/{paymentId}:
+    parameters: [{ name: paymentId, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Public]
+      security: []
+      summary: Payment status (re-confirmed with the provider). Used by the pay page and apps after returning from the gateway.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { paymentId: { type: string }, status: { type: string }, amountBaisa: { type: integer }, orderId: { type: [string, 'null'] } } } } } }
+  /payments/return:
+    get:
+      tags: [Public]
+      security: []
+      summary: Default gateway return page (HTML) telling the user to go back to the app
+      parameters:
+        - { name: paymentId, in: query, required: true, schema: { type: string } }
+        - { name: outcome, in: query, required: true, schema: { type: string, enum: [success, cancel] } }
+      responses: { '200': { description: HTML page } }
+
   # ─────────────── Consumer ───────────────
   /orders/quote:
     post:
@@ -385,7 +403,7 @@ paths:
       parameters: [{ $ref: '#/components/parameters/idempotencyKey' }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MarketplaceOrderInput' } } } }
       responses:
-        '201': { description: Created. If paymentMethod=online the order is pending_payment; call /orders/{id}/checkout., content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+        '201': { description: 'Created. If paymentMethod=online the order is pending_payment; call /orders/{id}/checkout.', content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
         '422': { $ref: '#/components/responses/Error' }
   /shipments:
     post:
@@ -778,6 +796,12 @@ paths:
         - { $ref: '#/components/parameters/limit' }
         - { $ref: '#/components/parameters/offset' }
       responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OrderPage' } } } } }
+  /merchants/{merchantId}/orders/{id}:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }, { $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Merchant]
+      summary: Store order detail (merchant.orders:read; 403 if the order belongs to another store)
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } } }
   /merchants/{merchantId}/orders/{id}/{action}:
     parameters:
       - { $ref: '#/components/parameters/merchantId' }
@@ -978,6 +1002,30 @@ paths:
       summary: Approve/reject a captain document
       requestBody: { $ref: '#/components/requestBodies/Review' }
       responses: { '200': { description: OK } }
+  /admin/fleet-partners:
+    get:
+      tags: [Admin]
+      summary: Licensed delivery companies that employ captains (captains:read) — see DECISIONS D-013
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Register a fleet partner (captains:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                crNumber: { type: string }
+                licenceNumber: { type: string }
+                licenceExpiresAt: { type: string, format: date }
+                contactName: { type: string }
+                contactPhone: { type: string }
+                contactEmail: { type: string }
+      responses: { '201': { description: Created } }
   /admin/operations/live:
     get:
       tags: [Admin]

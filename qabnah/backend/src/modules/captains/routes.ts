@@ -161,9 +161,11 @@ export default async function captainRoutes(app: FastifyInstance) {
     const auth = requireCaptain(req, { active: true });
     const { id } = parse(z.object({ id: zUuid }), req.params);
     const offer = await tx(async (c) => {
-      await acceptOffer(c, auth.captainId, id, auth.userId);
+      const r = await acceptOffer(c, auth.captainId, id, auth.userId);
+      if ('error' in r) return r;
       return one(c, `SELECT delivery_id FROM delivery_offers WHERE id = $1`, [id]);
     });
+    if ('error' in offer) throw offer.error;
     return captainDeliveryDto(pool, offer.delivery_id);
   });
 
