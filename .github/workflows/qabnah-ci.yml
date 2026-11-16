@@ -1,0 +1,29 @@
+name: Qabnah CI
+
+on:
+  push:
+    paths: ['qabnah/**', '.github/workflows/qabnah-ci.yml']
+  pull_request:
+    paths: ['qabnah/**', '.github/workflows/qabnah-ci.yml']
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: qabnah/backend } }
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: qabnah/backend/package-lock.json }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+        env: { TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/qabnah_test }
+      - run: npm run build
+      - run: docker build -t qabnah/backend:ci .
