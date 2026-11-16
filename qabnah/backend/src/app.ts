@@ -30,6 +30,10 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
     logger: opts.logger === false ? false : {
       level: config.LOG_LEVEL,
       redact: ['req.headers.authorization', 'req.body.password', 'req.body.code', 'req.body.refreshToken'],
+      serializers: {
+        // Never log access tokens (the WebSocket passes one in the query string) or file signatures.
+        req: (req: any) => ({ method: req.method, url: String(req.url).replace(/([?&](token|sig)=)[^&]+/g, '$1[redacted]'), remoteAddress: req.ip }),
+      },
       ...(config.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : {}),
     },
     trustProxy: true,

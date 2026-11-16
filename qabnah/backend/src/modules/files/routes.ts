@@ -51,7 +51,8 @@ export default async function fileRoutes(app: FastifyInstance) {
     if (f.visibility !== 'public') {
       const allowed =
         verifyFileSig(id, qs.exp, qs.sig) ||
-        (req.auth && (req.auth.userId === f.owner_user_id || hasPerm(req.auth, 'captains:review') || hasPerm(req.auth, 'merchants:review') || hasPerm(req.auth, 'support:read')));
+        (req.auth && (req.auth.userId === f.owner_user_id || hasPerm(req.auth, 'captains:review') || hasPerm(req.auth, 'merchants:review')));
+      // Everyone else (e.g. ops viewing a proof-of-delivery photo) gets a short-lived signed URL from an endpoint that already checked their permission.
       if (!allowed) throw forbidden('This file is private');
     }
     const data = await storage.get(f.storage_key);
