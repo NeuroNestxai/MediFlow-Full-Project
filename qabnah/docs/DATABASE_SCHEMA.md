@@ -59,7 +59,7 @@ audit_logs, platform_settings
 |---|---|
 | `zones` | Service areas (polygons) e.g. `MCT-KHUWAIR`. A point is in a zone if `ST_Covers(boundary, point)`. |
 | `pricing_rules` | Delivery fee rules. Matching: active rules filtered by zone (or NULL), delivery type (or NULL), vehicle (or NULL); most specific then highest `priority` wins. Fee = `max(min_fee, base + per_km × max(0, km − included_km)) × surge`, capped by `max_fee`. `captain_share_bps` = captain's share of the fee. |
-| `dispatch_rules` | Per-zone dispatch config (NULL zone = global default): strategy, radius growth, timeouts, scoring weights. |
+| `dispatch_rules` | Per-zone dispatch config (NULL zone = global default): strategy, radius growth, timeouts, scoring weights, `bike_blackout` windows (e.g. summer midday — DECISIONS D-016). |
 | `platform_settings` | Key/value JSON: `vat_rate_bps`, `service_fee_baisa`, `cod_max_baisa`, `default_commission_bps`, `order_auto_cancel_minutes`, … |
 
 ### Merchants & catalog
@@ -84,8 +84,9 @@ audit_logs, platform_settings
 ### Captains
 | Table | Purpose |
 |---|---|
-| `captains` | Onboarding status `pending_documents → pending_review → active ⇄ suspended`, `rejected`; vehicle; online flag; `max_concurrent`; rating; acceptance stats; payout bank details (IBAN). |
-| `captain_documents` | National ID / resident card, driving licence, vehicle registration (mulkiya), insurance, profile photo, police clearance; each reviewed individually. |
+| `fleet_partners` | Licensed delivery companies that employ riders (DECISIONS D-013): CR number, licence number/expiry, contact, status. |
+| `captains` | `employment_model` (`independent` / `fleet` + `fleet_partner_id`). Onboarding status `pending_documents → pending_review → active ⇄ suspended`, `rejected`; vehicle; online flag; `max_concurrent`; rating; acceptance stats; payout bank details (IBAN). |
+| `captain_documents` | National ID / resident card, driving licence, vehicle registration (mulkiya), insurance, profile photo, police clearance, Ministry of Labour professional licence, preventive driving licence, Naql registration; each reviewed individually, with expiry dates (an expired approved document blocks going online and dispatch). |
 | `captain_zones` | Zones the captain serves. |
 | `captain_availability` | Weekly schedule slots (weekday 0 = Sunday, local time). |
 | `captain_locations` | Latest location (one row per captain, upserted), used by dispatch. |

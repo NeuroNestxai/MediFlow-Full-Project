@@ -1,0 +1,82 @@
+# Qabnah local development stack.
+#   cd qabnah/infra && cp .env.example .env && docker compose up --build
+#   (first run seeds sample data once; wipe & re-seed with: SEED_IF_EMPTY=false docker compose run --rm seed)
+name: qabnah
+
+x-api-env: &api-env
+  NODE_ENV: ${NODE_ENV:-development}
+  DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/qabnah
+  JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-jwt-secret-change-me-0123456789}
+  OTP_PEPPER: ${OTP_PEPPER:-dev-only-otp-pepper}
+  FILE_SIGNING_SECRET: ${FILE_SIGNING_SECRET:-dev-only-file-signing-secret}
+  OTP_DEV_ECHO: ${OTP_DEV_ECHO:-true}
+  PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
+  MERCHANT_WEB_URL: ${MERCHANT_WEB_URL:-http://localhost:5173}
+  ADMIN_WEB_URL: ${ADMIN_WEB_URL:-http://localhost:5174}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174}
+  STORAGE_DIR: /app/storage
+  LOG_LEVEL: info
+  PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+  THAWANI_BASE_URL: ${THAWANI_BASE_URL:-https://uatcheckout.thawani.om/api/v1}
+  THAWANI_CHECKOUT_URL: ${THAWANI_CHECKOUT_URL:-https://uatcheckout.thawani.om/pay}
+  THAWANI_SECRET_KEY: ${THAWANI_SECRET_KEY:-}
+  THAWANI_PUBLISHABLE_KEY: ${THAWANI_PUBLISHABLE_KEY:-}
+  SMS_PROVIDER: ${SMS_PROVIDER:-console}
+  SMS_HTTP_URL: ${SMS_HTTP_URL:-}
+  SMS_HTTP_TOKEN: ${SMS_HTTP_TOKEN:-}
+  WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-console}
+  WHATSAPP_GRAPH_VERSION: ${WHATSAPP_GRAPH_VERSION:-v21.0}
+  WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+  WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+  WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+  WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: qabnah
+    ports: ["5433:5432"]
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d qabnah"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    image: qabnah/backend:dev
+    build: ../backend
+    environment: *api-env
+    command: ["node", "dist/db/migrate.js"]
+    depends_on: { db: { condition: service_healthy } }
+
+  seed:
+    image: qabnah/backend:dev
+    environment:
+      <<: *api-env
+      SEED_IF_EMPTY: ${SEED_IF_EMPTY:-true}
+    command: ["node", "dist/scripts/seed.js"]
+    volumes: [storage:/app/storage]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+
+  api:
+    image: qabnah/backend:dev
+    environment: *api-env
+    ports: ["4000:4000"]
+    volumes: [storage:/app/storage]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    restart: unless-stopped
+
+  worker:
+    image: qabnah/backend:dev
+    environment: *api-env
+    command: ["node", "dist/worker-main.js"]
+    healthcheck: { disable: true }
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  storage:

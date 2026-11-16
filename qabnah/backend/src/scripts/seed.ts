@@ -311,6 +311,10 @@ async function seedOrders(ids: { merchantIds: Record<string, string>; captainIds
 export async function seed() {
   if (config.NODE_ENV === 'production') throw new Error('Refusing to seed a production database');
   await migrate(config.DATABASE_URL, () => {});
+  if (process.env.SEED_IF_EMPTY === 'true') {
+    const existing = await one(pool, `SELECT count(*)::int AS n FROM merchants`);
+    if (existing.n > 0) return { skipped: true, reason: 'database already has data (set SEED_IF_EMPTY=false to wipe and reseed)' };
+  }
   await wipe();
   await seedReference();
   const ids = await seedPeople();
