@@ -1,0 +1,2040 @@
+openapi: 3.1.0
+info:
+  title: Qabnah API
+  version: 1.0.0
+  description: |
+    REST API for the Qabnah delivery & e-commerce platform (Muscat, Oman).
+
+    Conventions
+    - Base path `/v1`. JSON, camelCase. Times are ISO-8601 UTC.
+    - **Money is integer baisa** (1 OMR = 1000 baisa), fields end in `Baisa`. Currency is always `OMR`.
+    - Locations are `{lat, lng}` (WGS-84).
+    - Auth: `Authorization: Bearer <accessToken>` (JWT, 15 min). Refresh with `/auth/refresh`.
+    - Errors: `{ "error": { "code": "string", "message": "string", "details": {} } }` with HTTP 400/401/403/404/409/422/429/500.
+      Common codes: `validation_error`, `unauthorized`, `forbidden`, `not_found`, `conflict`,
+      `invalid_transition`, `out_of_service_area`, `merchant_closed`, `rate_limited`.
+    - Lists: `?limit=` (default 20, max 100) and `?offset=`; response `{items, total, limit, offset}`.
+    - Mutating order endpoints accept `Idempotency-Key` header.
+
+    Realtime (WebSocket) — `GET /v1/realtime?token=<accessToken>`
+    - Client → server: `{"type":"subscribe","channel":"order:<id>"}`, `{"type":"unsubscribe","channel":"…"}`,
+      `{"type":"location","lat":23.6,"lng":58.4,"heading":90,"speed":8.2,"accuracy":5}` (captains), `{"type":"ping"}`.
+    - Server → client: `{"type":"subscribed","channel":"…"}`, `{"type":"error","code":"forbidden","channel":"…"}`,
+      `{"type":"event","channel":"order:<id>","event":"order.status_changed","data":{…},"id":123}`, `{"type":"pong"}`.
+    - Channels: `order:<id>` (customer, merchant staff, assigned captain, ops), `delivery:<id>`,
+      `merchant:<id>` (staff with merchant.orders:read), `captain:me` (offers, assignment changes),
+      `user:me` (notifications), `admin:ops` (deliveries:read).
+    - Events: `order.created`, `order.status_changed`, `delivery.status_changed`, `delivery.assigned`,
+      `delivery.location` ({lat,lng,heading,etaDropoffAt}), `offer.created`, `offer.expired`, `offer.cancelled`,
+      `notification.created`, `captain.location` (admin:ops only).
+servers:
+  - url: http://localhost:4000/v1
+    description: Local development (docker compose)
+tags:
+  - name: Health
+  - name: Auth
+  - name: Me
+  - name: Public
+  - name: Consumer
+  - name: Captain
+  - name: Merchant
+  - name: Admin
+  - name: Webhooks
+security:
+  - bearer: []
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      security: []
+      summary: Liveness
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { status: { type: string, example: ok } } } } } }
+  /health/ready:
+    get:
+      tags: [Health]
+      security: []
+      summary: Readiness (database reachable)
+      responses:
+        '200': { description: Ready }
+        '503': { description: Not ready }
+
+  # ─────────────── Auth ───────────────
+  /auth/otp/request:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Send a login OTP by SMS (consumers and captains)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, description: 'Omani mobile in E.164, e.g. +96891234567', example: '+96891234567' }
+      responses:
+        '200':
+          description: Sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sent: { type: boolean }
+                  expiresInSeconds: { type: integer }
+                  devCode: { type: string, description: 'Only present when the server runs with OTP_DEV_ECHO=true (never in production).' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/otp/verify:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Verify OTP and sign in (creates the user on first login)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone: { type: string }
+                code: { type: string, example: '123456' }
+                fullName: { type: string, description: Used on first sign-up }
+      responses:
+        '200': { description: Signed in, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResult' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Email/password sign-in (merchant staff and platform staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Signed in, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResult' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Rotate refresh token
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [refreshToken], properties: { refreshToken: { type: string } } } } }
+      responses:
+        '200': { description: New tokens, content: { application/json: { schema: { $ref: '#/components/schemas/Tokens' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke a refresh token
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { refreshToken: { type: string } } } } }
+      responses:
+        '204': { description: Revoked }
+  /merchants/register:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Merchant self sign-up (creates owner account + merchant in pending_review)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, fullName, merchant]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 10 }
+                fullName: { type: string }
+                phone: { type: string }
+                merchant:
+                  type: object
+                  required: [nameEn, nameAr, slug, category, location]
+                  properties:
+                    nameEn: { type: string }
+                    nameAr: { type: string }
+                    slug: { type: string, pattern: '^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$' }
+                    category: { $ref: '#/components/schemas/MerchantCategory' }
+                    location: { $ref: '#/components/schemas/LatLng' }
+                    addressText: { type: string }
+                    crNumber: { type: string }
+                    contactPhone: { type: string }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResult' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+
+  # ─────────────── Me ───────────────
+  /me:
+    get:
+      tags: [Me]
+      summary: Current user, roles, permissions, merchant memberships, captain profile
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+    patch:
+      tags: [Me]
+      summary: Update profile
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { fullName: { type: string }, locale: { type: string, enum: [ar, en] }, email: { type: string } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+  /me/addresses:
+    get:
+      tags: [Me]
+      summary: List saved addresses
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Address' } } } } } } }
+    post:
+      tags: [Me]
+      summary: Add address
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AddressInput' } } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Address' } } } }
+  /me/addresses/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Me]
+      summary: Update address
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AddressInput' } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Address' } } } }
+    delete:
+      tags: [Me]
+      summary: Delete address
+      responses: { '204': { description: Deleted } }
+  /me/notifications:
+    get:
+      tags: [Me]
+      summary: In-app notifications
+      parameters: [{ $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/NotificationPage' } } } }
+  /me/notifications/{id}/read:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Me]
+      summary: Mark notification read
+      responses: { '204': { description: OK } }
+  /me/devices:
+    post:
+      tags: [Me]
+      summary: Register a push token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, app, token]
+              properties:
+                platform: { type: string, enum: [ios, android, web] }
+                app: { type: string, enum: [consumer, captain, merchant, admin] }
+                token: { type: string }
+      responses: { '204': { description: Registered } }
+  /files:
+    post:
+      tags: [Me]
+      summary: Upload a file (multipart/form-data, field `file`, plus `purpose`)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, purpose]
+              properties:
+                file: { type: string, format: binary }
+                purpose: { type: string, enum: [captain_document, merchant_document, product_image, branding, proof_of_delivery, support_attachment, other] }
+      responses:
+        '201': { description: Uploaded, content: { application/json: { schema: { $ref: '#/components/schemas/FileRef' } } } }
+  /files/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Me]
+      summary: Download a file. Public files need no auth; private files need auth (owner or reviewer) or a signed `?sig=&exp=` query.
+      security: []
+      responses: { '200': { description: File bytes }, '403': { $ref: '#/components/responses/Error' } }
+
+  # ─────────────── Public ───────────────
+  /zones:
+    get:
+      tags: [Public]
+      security: []
+      summary: Active service zones (GeoJSON boundaries)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Zone' } } } } } } }
+  /stores:
+    get:
+      tags: [Public]
+      security: []
+      summary: Browse active stores, optionally near a location
+      parameters:
+        - { name: lat, in: query, schema: { type: number } }
+        - { name: lng, in: query, schema: { type: number } }
+        - { name: category, in: query, schema: { $ref: '#/components/schemas/MerchantCategory' } }
+        - { name: q, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/MerchantSummary' } }, total: { type: integer } } } } } }
+  /stores/{slug}:
+    parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+    get:
+      tags: [Public]
+      security: []
+      summary: Branded storefront (profile, banners, categories with products, variants and add-ons)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Storefront' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /quotes/delivery:
+    post:
+      tags: [Public]
+      security: []
+      summary: Quote a delivery fee and ETA between two points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, pickup, dropoff]
+              properties:
+                type: { $ref: '#/components/schemas/OrderType' }
+                pickup: { $ref: '#/components/schemas/LatLng' }
+                dropoff: { $ref: '#/components/schemas/LatLng' }
+                vehicleType: { $ref: '#/components/schemas/VehicleType' }
+      responses:
+        '200': { description: Quote, content: { application/json: { schema: { $ref: '#/components/schemas/DeliveryQuote' } } } }
+        '422': { $ref: '#/components/responses/Error' }
+  /pay/{code}:
+    parameters: [{ name: code, in: path, required: true, schema: { type: string } }]
+    get:
+      tags: [Public]
+      security: []
+      summary: Payment link details for the public pay page
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PublicPaymentLink' } } } }
+  /pay/{code}/checkout:
+    parameters: [{ name: code, in: path, required: true, schema: { type: string } }]
+    post:
+      tags: [Public]
+      security: []
+      summary: Start checkout for a payment link (optionally with a dropoff for delivery)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerName: { type: string }
+                customerPhone: { type: string }
+                dropoff: { $ref: '#/components/schemas/PlaceInput' }
+      responses:
+        '200': { description: Checkout created, content: { application/json: { schema: { $ref: '#/components/schemas/Checkout' } } } }
+  /mock-pay/{paymentId}:
+    parameters: [{ name: paymentId, in: path, required: true, schema: { type: string } }]
+    get:
+      tags: [Public]
+      security: []
+      summary: Development-only hosted page for the mock payment provider (HTML)
+      responses: { '200': { description: HTML page } }
+  /mock-pay/{paymentId}/complete:
+    parameters: [{ name: paymentId, in: path, required: true, schema: { type: string } }]
+    post:
+      tags: [Public]
+      security: []
+      summary: Development-only — simulate gateway result (`outcome=paid|failed`)
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { outcome: { type: string, enum: [paid, failed] } } } } }
+      responses: { '200': { description: Result applied } }
+
+  # ─────────────── Consumer ───────────────
+  /orders/quote:
+    post:
+      tags: [Consumer]
+      summary: Price a marketplace cart (validates options, stock, store open, service area)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MarketplaceOrderInput' } } } }
+      responses:
+        '200': { description: Price breakdown, content: { application/json: { schema: { $ref: '#/components/schemas/PriceBreakdown' } } } }
+        '422': { $ref: '#/components/responses/Error' }
+  /orders:
+    get:
+      tags: [Consumer]
+      summary: My orders (all types), newest first
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [active, past] } }
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OrderPage' } } } }
+    post:
+      tags: [Consumer]
+      summary: Place a marketplace (B2C) order
+      parameters: [{ $ref: '#/components/parameters/idempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MarketplaceOrderInput' } } } }
+      responses:
+        '201': { description: Created. If paymentMethod=online the order is pending_payment; call /orders/{id}/checkout., content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+        '422': { $ref: '#/components/responses/Error' }
+  /shipments:
+    post:
+      tags: [Consumer]
+      summary: Create a C2C shipment (send a parcel)
+      parameters: [{ $ref: '#/components/parameters/idempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickup, dropoff, package, paymentMethod]
+              properties:
+                pickup: { $ref: '#/components/schemas/PlaceInput' }
+                dropoff: { $ref: '#/components/schemas/PlaceInput' }
+                package:
+                  type: object
+                  required: [size, description]
+                  properties:
+                    size: { type: string, enum: [small, medium, large] }
+                    description: { type: string }
+                    declaredValueBaisa: { type: integer }
+                vehicleType: { $ref: '#/components/schemas/VehicleType' }
+                paymentMethod: { type: string, enum: [online, cod] }
+                codPayer: { type: string, enum: [sender, recipient], description: Required when paymentMethod=cod }
+                notes: { type: string }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+  /orders/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Consumer]
+      summary: Order detail (customer, merchant staff of that merchant, assigned captain, or ops)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+  /orders/{id}/cancel:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Consumer]
+      summary: Cancel my order (allowed before the merchant accepts / before pickup for C2C)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { reason: { type: string } } } } } }
+      responses:
+        '200': { description: Cancelled, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /orders/{id}/checkout:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Consumer]
+      summary: Create an online payment checkout for an order in pending_payment
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { returnUrl: { type: string } } } } }
+      responses:
+        '200': { description: Checkout, content: { application/json: { schema: { $ref: '#/components/schemas/Checkout' } } } }
+  /orders/{id}/tracking:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Consumer]
+      summary: Live tracking snapshot (polling fallback for the WebSocket)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Tracking' } } } }
+  /orders/{id}/rating:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Consumer]
+      summary: Rate the captain and/or merchant of a delivered order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                captain: { type: object, properties: { score: { type: integer, minimum: 1, maximum: 5 }, comment: { type: string } } }
+                merchant: { type: object, properties: { score: { type: integer, minimum: 1, maximum: 5 }, comment: { type: string } } }
+      responses: { '204': { description: Saved } }
+  /support/tickets:
+    get:
+      tags: [Consumer]
+      summary: My support tickets
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Ticket' } } } } } } }
+    post:
+      tags: [Consumer]
+      summary: Open a support ticket (consumer, captain or merchant staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, category, message]
+              properties:
+                subject: { type: string }
+                category: { type: string, enum: [order_issue, payment, delivery, captain, merchant, account, other] }
+                orderId: { type: string, format: uuid }
+                message: { type: string }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Ticket' } } } }
+  /support/tickets/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Consumer]
+      summary: Ticket with messages (internal notes hidden from requester)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Ticket' } } } }
+  /support/tickets/{id}/messages:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Consumer]
+      summary: Reply on a ticket (requester or support staff; staff may set isInternal)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [body], properties: { body: { type: string }, isInternal: { type: boolean } } } } }
+      responses:
+        '201': { description: Created }
+
+  # ─────────────── Captain ───────────────
+  /captain/register:
+    post:
+      tags: [Captain]
+      summary: Create my captain profile (status pending_documents)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfileInput' } } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfile' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /captain/profile:
+    get:
+      tags: [Captain]
+      summary: My captain profile incl. documents, zones, availability, onboarding checklist
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfile' } } } }
+    patch:
+      tags: [Captain]
+      summary: Update vehicle / payout details (vehicle changes on an active captain move it back to pending_review)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfileInput' } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfile' } } } }
+  /captain/documents:
+    post:
+      tags: [Captain]
+      summary: Attach an uploaded file as a verification document. When all required documents are uploaded, status moves to pending_review.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [docType, fileId]
+              properties:
+                docType: { $ref: '#/components/schemas/CaptainDocType' }
+                fileId: { type: string, format: uuid }
+                number: { type: string }
+                expiresAt: { type: string, format: date }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainDocument' } } } }
+  /captain/zones:
+    put:
+      tags: [Captain]
+      summary: Replace my service zones
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [zoneIds], properties: { zoneIds: { type: array, items: { type: string, format: uuid } } } } } } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfile' } } } } }
+  /captain/availability:
+    put:
+      tags: [Captain]
+      summary: Replace my weekly availability (local Muscat time)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slots]
+              properties:
+                slots: { type: array, items: { $ref: '#/components/schemas/AvailabilitySlot' } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfile' } } } } }
+  /captain/status:
+    post:
+      tags: [Captain]
+      summary: Go online/offline (only active captains may go online; a location is required to go online)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [online]
+              properties:
+                online: { type: boolean }
+                location: { $ref: '#/components/schemas/LatLng' }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainProfile' } } } } }
+  /captain/location:
+    post:
+      tags: [Captain]
+      summary: Report location (REST fallback for the WebSocket `location` message)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LocationPing' } } } }
+      responses: { '204': { description: Stored } }
+  /captain/offers:
+    get:
+      tags: [Captain]
+      summary: My pending offers
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Offer' } } } } } } }
+  /captain/offers/{id}/accept:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Captain]
+      summary: Accept an offer (409 if expired or taken)
+      responses:
+        '200': { description: Assigned, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainDelivery' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /captain/offers/{id}/reject:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Captain]
+      summary: Reject an offer
+      requestBody: { content: { application/json: { schema: { type: object, properties: { reason: { type: string } } } } } }
+      responses: { '204': { description: Rejected } }
+  /captain/deliveries:
+    get:
+      tags: [Captain]
+      summary: My deliveries
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [active, history] } }
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/CaptainDelivery' } }, total: { type: integer } } } } } }
+  /captain/deliveries/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Captain]
+      summary: Delivery detail (assigned captain only)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainDelivery' } } } }
+  /captain/deliveries/{id}/status:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Captain]
+      summary: Advance the delivery (arrived at pickup, picked up, arrived at dropoff, failed, release before pickup)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [arrive_pickup, pickup, arrive_dropoff, fail, release] }
+                reason: { type: string, description: Required for fail and release }
+                location: { $ref: '#/components/schemas/LatLng' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainDelivery' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /captain/deliveries/{id}/complete:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Captain]
+      summary: Complete with proof of delivery (PIN from recipient when pinRequired; photo optional unless PIN missing)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pin: { type: string, example: '4821' }
+                photoFileId: { type: string, format: uuid }
+                recipientName: { type: string }
+                codCollectedBaisa: { type: integer }
+                note: { type: string }
+                location: { $ref: '#/components/schemas/LatLng' }
+      responses:
+        '200': { description: Delivered, content: { application/json: { schema: { $ref: '#/components/schemas/CaptainDelivery' } } } }
+        '422': { $ref: '#/components/responses/Error' }
+  /captain/earnings:
+    get:
+      tags: [Captain]
+      summary: Earnings summary and ledger for a period
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Earnings' } } } }
+  /captain/payouts:
+    get:
+      tags: [Captain]
+      summary: My settlements / payouts
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Settlement' } } } } } } }
+
+  # ─────────────── Merchant portal ───────────────
+  /merchants/{merchantId}:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: Store profile and settings (merchant.store:read)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MerchantDetail' } } } }
+    patch:
+      tags: [Merchant]
+      summary: Update profile, branding, hours, operating and WhatsApp settings (merchant.store:manage)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MerchantUpdate' } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MerchantDetail' } } } }
+  /merchants/{merchantId}/banners:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: List banners
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Banner' } } } } } } } }
+    post:
+      tags: [Merchant]
+      summary: Add banner
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BannerInput' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Banner' } } } } }
+  /merchants/{merchantId}/banners/{id}:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }, { $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Merchant]
+      summary: Update banner
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BannerInput' } } } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Banner' } } } } }
+    delete:
+      tags: [Merchant]
+      summary: Delete banner
+      responses: { '204': { description: Deleted } }
+  /merchants/{merchantId}/categories:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: List categories
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Category' } } } } } } } }
+    post:
+      tags: [Merchant]
+      summary: Create category (merchant.catalog:write)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CategoryInput' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } } }
+  /merchants/{merchantId}/categories/{id}:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }, { $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Merchant]
+      summary: Update category
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CategoryInput' } } } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } } }
+    delete:
+      tags: [Merchant]
+      summary: Delete category (products become uncategorised)
+      responses: { '204': { description: Deleted } }
+  /merchants/{merchantId}/products:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: List products with option groups
+      parameters: [{ name: categoryId, in: query, schema: { type: string } }, { name: q, in: query, schema: { type: string } }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Product' } } } } } } } }
+    post:
+      tags: [Merchant]
+      summary: Create product with variants and add-ons
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ProductInput' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } } }
+  /merchants/{merchantId}/products/{id}:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }, { $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Merchant]
+      summary: Product
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } } }
+    put:
+      tags: [Merchant]
+      summary: Replace product (option groups are replaced as a whole)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ProductInput' } } } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } } }
+    patch:
+      tags: [Merchant]
+      summary: Partial update (e.g. toggle isAvailable, stockQty)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, properties: { isAvailable: { type: boolean }, stockQty: { type: integer }, basePriceBaisa: { type: integer } } } } } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } } }
+    delete:
+      tags: [Merchant]
+      summary: Delete product
+      responses: { '204': { description: Deleted } }
+  /merchants/{merchantId}/orders:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: Store orders (merchant.orders:read)
+      parameters:
+        - { name: status, in: query, description: 'Comma-separated statuses, or `active`', schema: { type: string } }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/OrderType' } }
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OrderPage' } } } } }
+  /merchants/{merchantId}/orders/{id}/{action}:
+    parameters:
+      - { $ref: '#/components/parameters/merchantId' }
+      - { $ref: '#/components/parameters/id' }
+      - { name: action, in: path, required: true, schema: { type: string, enum: [accept, reject, preparing, ready, cancel] } }
+    post:
+      tags: [Merchant]
+      summary: Process an order (merchant.orders:process). accept takes prepTimeMinutes; reject/cancel take reason.
+      requestBody: { content: { application/json: { schema: { type: object, properties: { prepTimeMinutes: { type: integer }, reason: { type: string } } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /merchants/{merchantId}/deliveries:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    post:
+      tags: [Merchant]
+      summary: Book a merchant-initiated delivery (e.g. an Instagram/WhatsApp sale). Pickup defaults to the store.
+      parameters: [{ $ref: '#/components/parameters/idempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dropoff]
+              properties:
+                dropoff: { $ref: '#/components/schemas/PlaceInput' }
+                pickup: { $ref: '#/components/schemas/PlaceInput' }
+                codAmountBaisa: { type: integer, minimum: 0, description: Cash the captain collects from the customer for the merchant }
+                packageDescription: { type: string }
+                packageSize: { type: string, enum: [small, medium, large] }
+                vehicleType: { $ref: '#/components/schemas/VehicleType' }
+                notes: { type: string }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+  /merchants/{merchantId}/payment-links:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: List payment links
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/PaymentLink' } } } } } } } }
+    post:
+      tags: [Merchant]
+      summary: Create a payment link (merchant.payment_links:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, amountBaisa]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                amountBaisa: { type: integer, minimum: 100 }
+                customerName: { type: string }
+                customerPhone: { type: string }
+                requestDelivery: { type: boolean }
+                expiresInHours: { type: integer, default: 72 }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentLink' } } } } }
+  /merchants/{merchantId}/payment-links/{id}/cancel:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }, { $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Merchant]
+      summary: Cancel an unpaid link
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentLink' } } } } }
+  /merchants/{merchantId}/staff:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: List store staff
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/StaffMember' } } } } } } } }
+    post:
+      tags: [Merchant]
+      summary: Add staff (creates account with a temporary password returned once)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, fullName, role]
+              properties:
+                email: { type: string }
+                fullName: { type: string }
+                role: { type: string, enum: [merchant_manager, merchant_staff] }
+      responses: { '201': { description: Created, content: { application/json: { schema: { type: object, properties: { member: { $ref: '#/components/schemas/StaffMember' }, temporaryPassword: { type: string } } } } } } }
+  /merchants/{merchantId}/staff/{userId}:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }, { name: userId, in: path, required: true, schema: { type: string } }]
+    delete:
+      tags: [Merchant]
+      summary: Remove staff member's roles for this store
+      responses: { '204': { description: Removed } }
+  /merchants/{merchantId}/documents:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: KYB documents
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Merchant]
+      summary: Attach an uploaded KYB document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [docType, fileId]
+              properties:
+                docType: { type: string, enum: [commercial_registration, vat_certificate, municipality_license, owner_id, bank_letter, other] }
+                fileId: { type: string, format: uuid }
+                number: { type: string }
+                expiresAt: { type: string, format: date }
+      responses: { '201': { description: Created } }
+  /merchants/{merchantId}/whatsapp/messages:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: WhatsApp message log for this store
+      responses: { '200': { description: OK } }
+  /merchants/{merchantId}/whatsapp/test:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    post:
+      tags: [Merchant]
+      summary: Send a test WhatsApp template message to a phone
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [phone], properties: { phone: { type: string } } } } } }
+      responses: { '200': { description: Sent (or logged by the console provider) } }
+  /merchants/{merchantId}/finance:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: Balance, unsettled entries and settlements (merchant.finance:read)
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AccountFinance' } } } } }
+  /merchants/{merchantId}/analytics:
+    parameters: [{ $ref: '#/components/parameters/merchantId' }]
+    get:
+      tags: [Merchant]
+      summary: Store KPIs for a period
+      parameters: [{ name: from, in: query, schema: { type: string, format: date } }, { name: to, in: query, schema: { type: string, format: date } }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analytics' } } } } }
+
+  # ─────────────── Admin ───────────────
+  /admin/merchants:
+    get:
+      tags: [Admin]
+      summary: Merchants (merchants:read)
+      parameters: [{ name: status, in: query, schema: { type: string } }, { name: q, in: query, schema: { type: string } }, { $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses: { '200': { description: OK } }
+  /admin/merchants/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Admin]
+      summary: Merchant detail with documents and subscription
+      responses: { '200': { description: OK } }
+    patch:
+      tags: [Admin]
+      summary: Change plan / commission override (merchants:manage)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { planId: { type: string }, commissionBpsOverride: { type: [integer, 'null'] } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/merchants/{id}/{action}:
+    parameters: [{ $ref: '#/components/parameters/id' }, { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, suspend, reactivate] } }]
+    post:
+      tags: [Admin]
+      summary: Merchant lifecycle (approve/reject need merchants:review; suspend/reactivate need merchants:manage)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { reason: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/merchant-documents/{id}/review:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Approve/reject a KYB document
+      requestBody: { $ref: '#/components/requestBodies/Review' }
+      responses: { '200': { description: OK } }
+  /admin/captains:
+    get:
+      tags: [Admin]
+      summary: Captains (captains:read)
+      parameters: [{ name: status, in: query, schema: { type: string } }, { name: online, in: query, schema: { type: boolean } }, { name: q, in: query, schema: { type: string } }, { $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses: { '200': { description: OK } }
+  /admin/captains/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Admin]
+      summary: Captain detail with documents (signed URLs), zones, availability, stats
+      responses: { '200': { description: OK } }
+  /admin/captains/{id}/{action}:
+    parameters: [{ $ref: '#/components/parameters/id' }, { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, suspend, reactivate] } }]
+    post:
+      tags: [Admin]
+      summary: Captain lifecycle (approve requires all required documents approved)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { reason: { type: string } } } } } }
+      responses: { '200': { description: OK }, '409': { $ref: '#/components/responses/Error' } }
+  /admin/captain-documents/{id}/review:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Approve/reject a captain document
+      requestBody: { $ref: '#/components/requestBodies/Review' }
+      responses: { '200': { description: OK } }
+  /admin/operations/live:
+    get:
+      tags: [Admin]
+      summary: Live ops snapshot — active deliveries, online captains with locations, unassigned queue, KPIs
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/LiveOps' } } } } }
+  /admin/orders:
+    get:
+      tags: [Admin]
+      summary: All orders with filters (orders:read)
+      parameters: [{ name: status, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string } }, { name: merchantId, in: query, schema: { type: string } }, { name: q, in: query, schema: { type: string } }, { $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OrderPage' } } } } }
+  /admin/orders/{id}/cancel:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Cancel any order (orders:manage)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [reason], properties: { reason: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/orders/{id}/refund:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Refund an online payment fully or partially (orders:refund)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [amountBaisa, reason], properties: { amountBaisa: { type: integer }, reason: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/deliveries/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [Admin]
+      summary: Delivery detail with offers, events and track
+      responses: { '200': { description: OK } }
+  /admin/deliveries/{id}/assign:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Manually assign/reassign a captain (deliveries:dispatch)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [captainId], properties: { captainId: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/deliveries/{id}/redispatch:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Restart automatic dispatch (deliveries:dispatch)
+      responses: { '200': { description: OK } }
+  /admin/zones:
+    get:
+      tags: [Admin]
+      summary: All zones
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Create zone (zones:manage)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ZoneInput' } } } }
+      responses: { '201': { description: Created } }
+  /admin/zones/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Admin]
+      summary: Update zone
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ZoneInput' } } } }
+      responses: { '200': { description: OK } }
+  /admin/pricing-rules:
+    get:
+      tags: [Admin]
+      summary: Pricing rules
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Create pricing rule (pricing:manage)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PricingRule' } } } }
+      responses: { '201': { description: Created } }
+  /admin/pricing-rules/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Admin]
+      summary: Update pricing rule
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PricingRule' } } } }
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Admin]
+      summary: Delete pricing rule
+      responses: { '204': { description: Deleted } }
+  /admin/dispatch-rules:
+    get:
+      tags: [Admin]
+      summary: Dispatch rules (global + per zone)
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Upsert the dispatch rule for a zone (zoneId null = global) (dispatch_rules:manage)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DispatchRule' } } } }
+      responses: { '200': { description: OK } }
+  /admin/settings:
+    get:
+      tags: [Admin]
+      summary: Platform settings
+      responses: { '200': { description: OK } }
+    put:
+      tags: [Admin]
+      summary: Update platform settings (settings:manage)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+      responses: { '200': { description: OK } }
+  /admin/plans:
+    get:
+      tags: [Admin]
+      summary: Subscription plans
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Create plan (plans:manage)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Plan' } } } }
+      responses: { '201': { description: Created } }
+  /admin/plans/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Admin]
+      summary: Update plan
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Plan' } } } }
+      responses: { '200': { description: OK } }
+  /admin/support/tickets:
+    get:
+      tags: [Admin]
+      summary: Ticket queue (support:read)
+      parameters: [{ name: status, in: query, schema: { type: string } }, { name: assignedTo, in: query, schema: { type: string } }, { $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses: { '200': { description: OK } }
+  /admin/support/tickets/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    patch:
+      tags: [Admin]
+      summary: Update status / priority / assignee (support:reply, support:assign for assignee)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, properties: { status: { type: string }, priority: { type: string }, assignedTo: { type: [string, 'null'] } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/analytics/overview:
+    get:
+      tags: [Admin]
+      summary: Platform KPIs (analytics:read)
+      parameters: [{ name: from, in: query, schema: { type: string, format: date } }, { name: to, in: query, schema: { type: string, format: date } }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analytics' } } } } }
+  /admin/finance/balances:
+    get:
+      tags: [Admin]
+      summary: Unsettled balances per merchant/captain and platform revenue (finance:read)
+      parameters: [{ name: accountType, in: query, schema: { type: string, enum: [merchant, captain] } }]
+      responses: { '200': { description: OK } }
+  /admin/settlements:
+    get:
+      tags: [Admin]
+      summary: Settlements (finance:read)
+      parameters: [{ name: status, in: query, schema: { type: string } }, { name: accountType, in: query, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /admin/settlements/generate:
+    post:
+      tags: [Admin]
+      summary: Generate draft settlements for all accounts with unsettled entries up to periodEnd (settlements:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountType, periodStart, periodEnd]
+              properties:
+                accountType: { type: string, enum: [merchant, captain] }
+                periodStart: { type: string, format: date }
+                periodEnd: { type: string, format: date }
+      responses: { '201': { description: Created drafts } }
+  /admin/settlements/{id}/{action}:
+    parameters: [{ $ref: '#/components/parameters/id' }, { name: action, in: path, required: true, schema: { type: string, enum: [approve, mark-paid, cancel] } }]
+    post:
+      tags: [Admin]
+      summary: approve (settlements:approve, not by creator), mark-paid (settlements:manage, needs payoutReference), cancel (settlements:manage)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { payoutReference: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/captains/{id}/cod-remittance:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Record cash remitted by a captain (settlements:manage)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [amountBaisa], properties: { amountBaisa: { type: integer }, note: { type: string } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Users (users:read)
+      parameters: [{ name: q, in: query, schema: { type: string } }, { $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses: { '200': { description: OK } }
+  /admin/users/{id}/status:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Suspend / reactivate a user (users:manage)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [status], properties: { status: { type: string, enum: [active, suspended] } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/roles:
+    get:
+      tags: [Admin]
+      summary: Roles with permissions
+      responses: { '200': { description: OK } }
+  /admin/staff:
+    get:
+      tags: [Admin]
+      summary: Platform staff with roles (staff:manage)
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Admin]
+      summary: Create platform staff user (temporary password returned once) (staff:manage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, fullName, roleKeys]
+              properties:
+                email: { type: string }
+                fullName: { type: string }
+                roleKeys: { type: array, items: { type: string } }
+      responses: { '201': { description: Created } }
+  /admin/staff/{userId}/roles:
+    parameters: [{ name: userId, in: path, required: true, schema: { type: string } }]
+    put:
+      tags: [Admin]
+      summary: Replace platform roles of a staff user (staff:manage; cannot remove own super_admin)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [roleKeys], properties: { roleKeys: { type: array, items: { type: string } } } } } } }
+      responses: { '200': { description: OK } }
+  /admin/audit-logs:
+    get:
+      tags: [Admin]
+      summary: Audit log (audit:read)
+      parameters: [{ name: entityType, in: query, schema: { type: string } }, { name: entityId, in: query, schema: { type: string } }, { $ref: '#/components/parameters/limit' }, { $ref: '#/components/parameters/offset' }]
+      responses: { '200': { description: OK } }
+
+  # ─────────────── Webhooks ───────────────
+  /webhooks/payments/{provider}:
+    parameters: [{ name: provider, in: path, required: true, schema: { type: string, enum: [thawani, mock] } }]
+    post:
+      tags: [Webhooks]
+      security: []
+      summary: Payment gateway callback. Verified per provider; processed idempotently. The payment status is re-fetched from the provider before applying.
+      responses: { '200': { description: Accepted }, '401': { description: Signature invalid } }
+  /webhooks/whatsapp:
+    get:
+      tags: [Webhooks]
+      security: []
+      summary: Meta webhook verification (hub.mode, hub.verify_token, hub.challenge)
+      responses: { '200': { description: Challenge echoed }, '403': { description: Bad token } }
+    post:
+      tags: [Webhooks]
+      security: []
+      summary: WhatsApp Cloud API events (messages, statuses). Verified with X-Hub-Signature-256.
+      responses: { '200': { description: Accepted }, '401': { description: Signature invalid } }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    merchantId: { name: merchantId, in: path, required: true, schema: { type: string, format: uuid } }
+    limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    offset: { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+    idempotencyKey: { name: Idempotency-Key, in: header, required: false, schema: { type: string, maxLength: 100 } }
+  requestBodies:
+    Review:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [status]
+            properties:
+              status: { type: string, enum: [approved, rejected] }
+              reason: { type: string }
+  responses:
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties: { code: { type: string }, message: { type: string }, details: {} }
+    LatLng:
+      type: object
+      required: [lat, lng]
+      properties: { lat: { type: number, minimum: -90, maximum: 90 }, lng: { type: number, minimum: -180, maximum: 180 } }
+    PlaceInput:
+      type: object
+      required: [location]
+      properties:
+        location: { $ref: '#/components/schemas/LatLng' }
+        addressId: { type: string, format: uuid, description: Use a saved address instead of location }
+        address: { type: string }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        notes: { type: string }
+    Place:
+      type: object
+      properties:
+        location: { $ref: '#/components/schemas/LatLng' }
+        address: { type: string }
+        contactName: { type: [string, 'null'] }
+        contactPhone: { type: [string, 'null'], description: Masked or hidden depending on viewer and delivery state }
+        notes: { type: [string, 'null'] }
+    OrderType: { type: string, enum: [marketplace, merchant_delivery, c2c] }
+    VehicleType: { type: string, enum: [bike, car, van] }
+    MerchantCategory: { type: string, enum: [restaurant, cafe, grocery, pharmacy, retail, flowers, electronics, other] }
+    OrderStatus: { type: string, enum: [pending_payment, placed, accepted, preparing, ready_for_pickup, out_for_delivery, delivered, completed, rejected, cancelled] }
+    DeliveryStatus: { type: string, enum: [created, searching, unassigned, assigned, at_pickup, picked_up, at_dropoff, delivered, failed, returning, returned, cancelled] }
+    CaptainDocType: { type: string, enum: [national_id, driving_license, vehicle_registration, vehicle_insurance, profile_photo, police_clearance] }
+    Tokens:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: Access token lifetime in seconds }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        phone: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        fullName: { type: string }
+        locale: { type: string, enum: [ar, en] }
+        status: { type: string }
+    AuthResult:
+      allOf:
+        - { $ref: '#/components/schemas/Tokens' }
+        - type: object
+          properties:
+            user: { $ref: '#/components/schemas/User' }
+            isNewUser: { type: boolean }
+    Me:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        roles: { type: array, items: { type: object, properties: { key: { type: string }, merchantId: { type: [string, 'null'] } } } }
+        permissions: { type: array, items: { type: string }, description: Platform-scope permissions }
+        merchants:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              slug: { type: string }
+              nameEn: { type: string }
+              nameAr: { type: string }
+              status: { type: string }
+              logoUrl: { type: [string, 'null'] }
+              permissions: { type: array, items: { type: string } }
+        captain: { oneOf: [{ $ref: '#/components/schemas/CaptainProfile' }, { type: 'null' }] }
+    AddressInput:
+      type: object
+      required: [location]
+      properties:
+        label: { type: string, example: home }
+        location: { $ref: '#/components/schemas/LatLng' }
+        area: { type: string }
+        street: { type: string }
+        building: { type: string }
+        floor: { type: string }
+        apartment: { type: string }
+        landmark: { type: string }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        isDefault: { type: boolean }
+    Address:
+      allOf:
+        - { $ref: '#/components/schemas/AddressInput' }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            zoneId: { type: [string, 'null'], description: Zone covering this address, null if outside service area }
+            createdAt: { type: string, format: date-time }
+    FileRef:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, description: Public URL for public files; for private files a short-lived signed URL }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+    Zone:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        isActive: { type: boolean }
+        boundary: { type: object, description: GeoJSON Polygon }
+    ZoneInput:
+      type: object
+      properties:
+        code: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        isActive: { type: boolean }
+        boundary: { type: object, description: 'GeoJSON Polygon, coordinates [lng, lat]' }
+    MerchantSummary:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        category: { $ref: '#/components/schemas/MerchantCategory' }
+        logoUrl: { type: [string, 'null'] }
+        coverUrl: { type: [string, 'null'] }
+        brandColor: { type: string }
+        accentColor: { type: string }
+        taglineEn: { type: [string, 'null'] }
+        taglineAr: { type: [string, 'null'] }
+        ratingAvg: { type: number }
+        ratingCount: { type: integer }
+        isOpen: { type: boolean, description: Store toggle AND within opening hours }
+        prepTimeMinutes: { type: integer }
+        minOrderBaisa: { type: integer }
+        acceptsCod: { type: boolean }
+        acceptsOnline: { type: boolean }
+        distanceM: { type: [integer, 'null'] }
+        location: { $ref: '#/components/schemas/LatLng' }
+    Banner:
+      type: object
+      properties:
+        id: { type: string }
+        imageUrl: { type: string }
+        titleEn: { type: [string, 'null'] }
+        titleAr: { type: [string, 'null'] }
+        linkUrl: { type: [string, 'null'] }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+    BannerInput:
+      type: object
+      properties:
+        imageUrl: { type: string }
+        titleEn: { type: string }
+        titleAr: { type: string }
+        linkUrl: { type: string }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+    Category:
+      type: object
+      properties:
+        id: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+    CategoryInput:
+      type: object
+      required: [nameEn, nameAr]
+      properties:
+        nameEn: { type: string }
+        nameAr: { type: string }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+    ProductOption:
+      type: object
+      properties:
+        id: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        priceDeltaBaisa: { type: integer }
+        isAvailable: { type: boolean }
+    OptionGroup:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [variant, addon] }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        minSelect: { type: integer }
+        maxSelect: { type: integer }
+        options: { type: array, items: { $ref: '#/components/schemas/ProductOption' } }
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        categoryId: { type: [string, 'null'] }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        descriptionEn: { type: [string, 'null'] }
+        descriptionAr: { type: [string, 'null'] }
+        imageUrl: { type: [string, 'null'] }
+        sku: { type: [string, 'null'] }
+        basePriceBaisa: { type: integer }
+        compareAtPriceBaisa: { type: [integer, 'null'] }
+        isAvailable: { type: boolean }
+        trackStock: { type: boolean }
+        stockQty: { type: integer }
+        sortOrder: { type: integer }
+        optionGroups: { type: array, items: { $ref: '#/components/schemas/OptionGroup' } }
+    ProductInput:
+      type: object
+      required: [nameEn, nameAr, basePriceBaisa]
+      properties:
+        categoryId: { type: [string, 'null'] }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        descriptionEn: { type: string }
+        descriptionAr: { type: string }
+        imageUrl: { type: string }
+        sku: { type: string }
+        basePriceBaisa: { type: integer, minimum: 0 }
+        compareAtPriceBaisa: { type: [integer, 'null'] }
+        isAvailable: { type: boolean }
+        trackStock: { type: boolean }
+        stockQty: { type: integer }
+        sortOrder: { type: integer }
+        optionGroups:
+          type: array
+          items:
+            type: object
+            required: [kind, nameEn, nameAr, options]
+            properties:
+              kind: { type: string, enum: [variant, addon] }
+              nameEn: { type: string }
+              nameAr: { type: string }
+              minSelect: { type: integer }
+              maxSelect: { type: integer }
+              options:
+                type: array
+                items:
+                  type: object
+                  required: [nameEn, nameAr]
+                  properties:
+                    nameEn: { type: string }
+                    nameAr: { type: string }
+                    priceDeltaBaisa: { type: integer }
+                    isAvailable: { type: boolean }
+    Storefront:
+      type: object
+      properties:
+        merchant:
+          allOf:
+            - { $ref: '#/components/schemas/MerchantSummary' }
+            - type: object
+              properties:
+                addressText: { type: string }
+                whatsappPhone: { type: [string, 'null'] }
+                openingHours: { type: array, items: { type: object, properties: { weekday: { type: integer }, open: { type: string }, close: { type: string } } } }
+        banners: { type: array, items: { $ref: '#/components/schemas/Banner' } }
+        categories:
+          type: array
+          items:
+            allOf:
+              - { $ref: '#/components/schemas/Category' }
+              - type: object
+                properties:
+                  products: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        uncategorized: { type: array, items: { $ref: '#/components/schemas/Product' } }
+    MerchantDetail:
+      allOf:
+        - { $ref: '#/components/schemas/MerchantSummary' }
+        - type: object
+          properties:
+            status: { type: string }
+            legalName: { type: [string, 'null'] }
+            crNumber: { type: [string, 'null'] }
+            vatNumber: { type: [string, 'null'] }
+            contactPhone: { type: [string, 'null'] }
+            contactEmail: { type: [string, 'null'] }
+            whatsappPhone: { type: [string, 'null'] }
+            whatsappEnabled: { type: boolean }
+            whatsappNotifyEvents: { type: array, items: { type: string } }
+            addressText: { type: string }
+            zoneId: { type: [string, 'null'] }
+            pricesIncludeVat: { type: boolean }
+            openingHours: { type: array, items: { type: object } }
+            storeToggleOpen: { type: boolean }
+            commissionBps: { type: integer, description: Effective commission }
+            plan: { oneOf: [{ $ref: '#/components/schemas/Plan' }, { type: 'null' }] }
+            storefrontUrl: { type: string }
+    MerchantUpdate:
+      type: object
+      properties:
+        nameEn: { type: string }
+        nameAr: { type: string }
+        legalName: { type: string }
+        crNumber: { type: string }
+        vatNumber: { type: string }
+        category: { $ref: '#/components/schemas/MerchantCategory' }
+        contactPhone: { type: string }
+        contactEmail: { type: string }
+        whatsappPhone: { type: string }
+        whatsappEnabled: { type: boolean }
+        whatsappNotifyEvents: { type: array, items: { type: string } }
+        location: { $ref: '#/components/schemas/LatLng' }
+        addressText: { type: string }
+        prepTimeMinutes: { type: integer }
+        minOrderBaisa: { type: integer }
+        acceptsCod: { type: boolean }
+        acceptsOnline: { type: boolean }
+        isOpen: { type: boolean }
+        pricesIncludeVat: { type: boolean }
+        openingHours: { type: array, items: { type: object, properties: { weekday: { type: integer }, open: { type: string, example: '09:00' }, close: { type: string, example: '23:30' } } } }
+        logoUrl: { type: string }
+        coverUrl: { type: string }
+        brandColor: { type: string }
+        accentColor: { type: string }
+        taglineEn: { type: string }
+        taglineAr: { type: string }
+    MarketplaceOrderInput:
+      type: object
+      required: [merchantId, items, paymentMethod]
+      properties:
+        merchantId: { type: string, format: uuid }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId: { type: string, format: uuid }
+              quantity: { type: integer, minimum: 1, maximum: 99 }
+              optionIds: { type: array, items: { type: string, format: uuid } }
+              notes: { type: string }
+        addressId: { type: string, format: uuid }
+        dropoff: { $ref: '#/components/schemas/PlaceInput' }
+        paymentMethod: { type: string, enum: [online, cod] }
+        notes: { type: string }
+        source: { type: string, enum: [app, storefront] }
+    PriceBreakdown:
+      type: object
+      properties:
+        subtotalBaisa: { type: integer }
+        deliveryFeeBaisa: { type: integer }
+        serviceFeeBaisa: { type: integer }
+        discountBaisa: { type: integer }
+        vatBaisa: { type: integer, description: VAT included in or added to the total }
+        vatIncluded: { type: boolean }
+        totalBaisa: { type: integer }
+        distanceM: { type: integer }
+        estimatedDurationS: { type: integer }
+        currency: { type: string, example: OMR }
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string }
+              nameEn: { type: string }
+              nameAr: { type: string }
+              quantity: { type: integer }
+              unitPriceBaisa: { type: integer }
+              lineTotalBaisa: { type: integer }
+              options: { type: array, items: { type: object } }
+    DeliveryQuote:
+      type: object
+      properties:
+        feeBaisa: { type: integer }
+        distanceM: { type: integer }
+        estimatedDurationS: { type: integer }
+        zoneId: { type: [string, 'null'] }
+        vehicleType: { type: [string, 'null'] }
+        currency: { type: string }
+    OrderItem:
+      type: object
+      properties:
+        id: { type: string }
+        productId: { type: [string, 'null'] }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        unitPriceBaisa: { type: integer }
+        quantity: { type: integer }
+        options: { type: array, items: { type: object, properties: { groupNameEn: { type: string }, nameEn: { type: string }, nameAr: { type: string }, priceDeltaBaisa: { type: integer } } } }
+        lineTotalBaisa: { type: integer }
+        notes: { type: [string, 'null'] }
+    CaptainPublic:
+      type: object
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        vehicleType: { $ref: '#/components/schemas/VehicleType' }
+        vehiclePlate: { type: [string, 'null'] }
+        vehicleColor: { type: [string, 'null'] }
+        vehicleModel: { type: [string, 'null'] }
+        ratingAvg: { type: number }
+        phone: { type: [string, 'null'], description: Only while delivery is active }
+        location:
+          oneOf:
+            - type: 'null'
+            - type: object
+              properties: { lat: { type: number }, lng: { type: number }, heading: { type: [number, 'null'] }, updatedAt: { type: string, format: date-time } }
+    Delivery:
+      type: object
+      properties:
+        id: { type: string }
+        status: { $ref: '#/components/schemas/DeliveryStatus' }
+        vehicleType: { type: [string, 'null'] }
+        pickup: { $ref: '#/components/schemas/Place' }
+        dropoff: { $ref: '#/components/schemas/Place' }
+        packageSize: { type: [string, 'null'] }
+        packageDescription: { type: [string, 'null'] }
+        distanceM: { type: integer }
+        estimatedDurationS: { type: integer }
+        feeBaisa: { type: integer }
+        codAmountBaisa: { type: integer }
+        deliveryPin: { type: [string, 'null'], description: Shown to the customer/sender/merchant only, never to the captain }
+        pinRequired: { type: boolean }
+        captain: { oneOf: [{ $ref: '#/components/schemas/CaptainPublic' }, { type: 'null' }] }
+        etaPickupAt: { type: [string, 'null'], format: date-time }
+        etaDropoffAt: { type: [string, 'null'], format: date-time }
+        assignedAt: { type: [string, 'null'], format: date-time }
+        pickedUpAt: { type: [string, 'null'], format: date-time }
+        deliveredAt: { type: [string, 'null'], format: date-time }
+        failureReason: { type: [string, 'null'] }
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        number: { type: string, example: QB100001 }
+        type: { $ref: '#/components/schemas/OrderType' }
+        source: { type: string }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        paymentMethod: { type: string, enum: [online, cod, prepaid] }
+        paymentStatus: { type: string }
+        codPayer: { type: [string, 'null'] }
+        merchant:
+          oneOf:
+            - type: 'null'
+            - type: object
+              properties: { id: { type: string }, slug: { type: string }, nameEn: { type: string }, nameAr: { type: string }, logoUrl: { type: [string, 'null'] }, contactPhone: { type: [string, 'null'] } }
+        customerName: { type: [string, 'null'] }
+        customerPhone: { type: [string, 'null'] }
+        items: { type: array, items: { $ref: '#/components/schemas/OrderItem' } }
+        subtotalBaisa: { type: integer }
+        deliveryFeeBaisa: { type: integer }
+        serviceFeeBaisa: { type: integer }
+        discountBaisa: { type: integer }
+        vatBaisa: { type: integer }
+        totalBaisa: { type: integer }
+        codAmountBaisa: { type: integer }
+        currency: { type: string }
+        notes: { type: [string, 'null'] }
+        prepTimeMinutes: { type: [integer, 'null'] }
+        cancelReason: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        placedAt: { type: [string, 'null'], format: date-time }
+        acceptedAt: { type: [string, 'null'], format: date-time }
+        readyAt: { type: [string, 'null'], format: date-time }
+        deliveredAt: { type: [string, 'null'], format: date-time }
+        cancelledAt: { type: [string, 'null'], format: date-time }
+        delivery: { oneOf: [{ $ref: '#/components/schemas/Delivery' }, { type: 'null' }] }
+        timeline: { type: array, items: { type: object, properties: { status: { type: string }, at: { type: string, format: date-time }, note: { type: [string, 'null'] } } } }
+        rated: { type: boolean }
+    OrderPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Order' } }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+    Tracking:
+      type: object
+      properties:
+        orderId: { type: string }
+        orderStatus: { $ref: '#/components/schemas/OrderStatus' }
+        deliveryStatus: { oneOf: [{ $ref: '#/components/schemas/DeliveryStatus' }, { type: 'null' }] }
+        pickup: { $ref: '#/components/schemas/LatLng' }
+        dropoff: { $ref: '#/components/schemas/LatLng' }
+        captain: { oneOf: [{ $ref: '#/components/schemas/CaptainPublic' }, { type: 'null' }] }
+        etaPickupAt: { type: [string, 'null'], format: date-time }
+        etaDropoffAt: { type: [string, 'null'], format: date-time }
+        path: { type: array, items: { $ref: '#/components/schemas/LatLng' }, description: Recent breadcrumbs (max 200) }
+    Checkout:
+      type: object
+      properties:
+        paymentId: { type: string }
+        provider: { type: string, enum: [mock, thawani] }
+        checkoutUrl: { type: string }
+        status: { type: string }
+    PaymentLink:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        url: { type: string, description: Public pay page URL }
+        whatsappShareUrl: { type: string, description: 'wa.me link with prefilled message' }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        amountBaisa: { type: integer }
+        status: { type: string, enum: [active, paid, expired, cancelled] }
+        customerName: { type: [string, 'null'] }
+        customerPhone: { type: [string, 'null'] }
+        requestDelivery: { type: boolean }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        paidAt: { type: [string, 'null'], format: date-time }
+        orderId: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    PublicPaymentLink:
+      type: object
+      properties:
+        code: { type: string }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        amountBaisa: { type: integer }
+        status: { type: string }
+        requestDelivery: { type: boolean }
+        expiresAt: { type: [string, 'null'] }
+        merchant: { type: object, properties: { nameEn: { type: string }, nameAr: { type: string }, logoUrl: { type: [string, 'null'] }, brandColor: { type: string }, slug: { type: string } } }
+    CaptainProfileInput:
+      type: object
+      properties:
+        vehicleType: { $ref: '#/components/schemas/VehicleType' }
+        vehicleMake: { type: string }
+        vehicleModel: { type: string }
+        vehiclePlate: { type: string }
+        vehicleColor: { type: string }
+        nationalIdNumber: { type: string }
+        nationality: { type: string }
+        dateOfBirth: { type: string, format: date }
+        bankName: { type: string }
+        iban: { type: string }
+        maxConcurrent: { type: integer, minimum: 1, maximum: 3 }
+    CaptainDocument:
+      type: object
+      properties:
+        id: { type: string }
+        docType: { $ref: '#/components/schemas/CaptainDocType' }
+        fileId: { type: string }
+        fileUrl: { type: string }
+        number: { type: [string, 'null'] }
+        expiresAt: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [pending, approved, rejected] }
+        rejectionReason: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    AvailabilitySlot:
+      type: object
+      required: [weekday, start, end]
+      properties:
+        weekday: { type: integer, minimum: 0, maximum: 6, description: 0 = Sunday }
+        start: { type: string, example: '08:00' }
+        end: { type: string, example: '14:00' }
+    CaptainProfile:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        fullName: { type: string }
+        phone: { type: string }
+        status: { type: string, enum: [pending_documents, pending_review, active, suspended, rejected] }
+        rejectionReason: { type: [string, 'null'] }
+        vehicleType: { $ref: '#/components/schemas/VehicleType' }
+        vehicleMake: { type: [string, 'null'] }
+        vehicleModel: { type: [string, 'null'] }
+        vehiclePlate: { type: [string, 'null'] }
+        vehicleColor: { type: [string, 'null'] }
+        nationalIdNumber: { type: [string, 'null'] }
+        nationality: { type: [string, 'null'] }
+        dateOfBirth: { type: [string, 'null'] }
+        bankName: { type: [string, 'null'] }
+        iban: { type: [string, 'null'] }
+        isOnline: { type: boolean }
+        maxConcurrent: { type: integer }
+        ratingAvg: { type: number }
+        ratingCount: { type: integer }
+        acceptanceRate: { type: number }
+        zoneIds: { type: array, items: { type: string } }
+        availability: { type: array, items: { $ref: '#/components/schemas/AvailabilitySlot' } }
+        documents: { type: array, items: { $ref: '#/components/schemas/CaptainDocument' } }
+        requiredDocuments: { type: array, items: { $ref: '#/components/schemas/CaptainDocType' } }
+        missingDocuments: { type: array, items: { $ref: '#/components/schemas/CaptainDocType' } }
+    LocationPing:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+        heading: { type: number }
+        speed: { type: number, description: metres per second }
+        accuracy: { type: number, description: metres }
+    Offer:
+      type: object
+      properties:
+        id: { type: string }
+        deliveryId: { type: string }
+        status: { type: string }
+        orderType: { $ref: '#/components/schemas/OrderType' }
+        expiresAt: { type: string, format: date-time }
+        earningBaisa: { type: integer }
+        codAmountBaisa: { type: integer }
+        distanceToPickupM: { type: integer }
+        tripDistanceM: { type: integer }
+        pickupArea: { type: string }
+        dropoffArea: { type: string }
+        pickupLocation: { $ref: '#/components/schemas/LatLng' }
+        dropoffLocation: { $ref: '#/components/schemas/LatLng', description: Rounded to ~500 m until accepted }
+        merchantName: { type: [string, 'null'] }
+        packageSize: { type: [string, 'null'] }
+        vehicleType: { type: [string, 'null'] }
+    CaptainDelivery:
+      allOf:
+        - { $ref: '#/components/schemas/Delivery' }
+        - type: object
+          properties:
+            orderId: { type: string }
+            orderNumber: { type: string }
+            orderType: { $ref: '#/components/schemas/OrderType' }
+            orderStatus: { $ref: '#/components/schemas/OrderStatus' }
+            merchantName: { type: [string, 'null'] }
+            itemsCount: { type: integer }
+            earningBaisa: { type: integer }
+            nextActions: { type: array, items: { type: string, enum: [arrive_pickup, pickup, arrive_dropoff, complete, fail, release] } }
+    LedgerEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        entryType: { type: string }
+        amountBaisa: { type: integer }
+        orderId: { type: [string, 'null'] }
+        orderNumber: { type: [string, 'null'] }
+        description: { type: string }
+        settlementId: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    Earnings:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        deliveriesCount: { type: integer }
+        earningsBaisa: { type: integer, description: Sum of captain_earning + tips in period }
+        codCollectedBaisa: { type: integer, description: Cash collected in period (owed to platform) }
+        balanceBaisa: { type: integer, description: 'All-time unsettled balance; positive = platform owes captain, negative = captain owes platform (cash held)' }
+        entries: { type: array, items: { $ref: '#/components/schemas/LedgerEntry' } }
+    Settlement:
+      type: object
+      properties:
+        id: { type: string }
+        accountType: { type: string }
+        accountId: { type: string }
+        accountName: { type: string }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        creditsBaisa: { type: integer }
+        debitsBaisa: { type: integer }
+        netBaisa: { type: integer }
+        entryCount: { type: integer }
+        status: { type: string, enum: [draft, approved, paid, cancelled] }
+        payoutReference: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        paidAt: { type: [string, 'null'] }
+    AccountFinance:
+      type: object
+      properties:
+        balanceBaisa: { type: integer }
+        unsettledEntries: { type: array, items: { $ref: '#/components/schemas/LedgerEntry' } }
+        settlements: { type: array, items: { $ref: '#/components/schemas/Settlement' } }
+    StaffMember:
+      type: object
+      properties:
+        userId: { type: string }
+        fullName: { type: string }
+        email: { type: [string, 'null'] }
+        roles: { type: array, items: { type: string } }
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        body: { type: string }
+        data: { type: object }
+        readAt: { type: [string, 'null'] }
+        createdAt: { type: string }
+    NotificationPage:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        unread: { type: integer }
+        total: { type: integer }
+    Ticket:
+      type: object
+      properties:
+        id: { type: string }
+        number: { type: string }
+        subject: { type: string }
+        category: { type: string }
+        priority: { type: string }
+        status: { type: string }
+        orderId: { type: [string, 'null'] }
+        requester: { type: object, properties: { id: { type: string }, fullName: { type: string }, role: { type: string } } }
+        assignedTo: { type: [string, 'null'] }
+        messages: { type: array, items: { type: object, properties: { id: { type: string }, body: { type: string }, isInternal: { type: boolean }, author: { type: object, properties: { id: { type: string }, fullName: { type: string }, isStaff: { type: boolean } } }, createdAt: { type: string } } } }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+    PricingRule:
+      type: object
+      properties:
+        id: { type: string, readOnly: true }
+        name: { type: string }
+        zoneId: { type: [string, 'null'] }
+        deliveryType: { type: [string, 'null'], enum: [marketplace, merchant_delivery, c2c, null] }
+        vehicleType: { type: [string, 'null'], enum: [bike, car, van, null] }
+        baseFeeBaisa: { type: integer }
+        perKmBaisa: { type: integer }
+        includedKm: { type: number }
+        minFeeBaisa: { type: integer }
+        maxFeeBaisa: { type: [integer, 'null'] }
+        maxDistanceKm: { type: number }
+        surgeMultiplier: { type: number }
+        captainShareBps: { type: integer }
+        priority: { type: integer }
+        isActive: { type: boolean }
+    DispatchRule:
+      type: object
+      properties:
+        zoneId: { type: [string, 'null'] }
+        strategy: { type: string, enum: [sequential, broadcast, manual] }
+        autoDispatch: { type: boolean }
+        dispatchOnAccept: { type: boolean }
+        searchRadiusKm: { type: number }
+        radiusStepKm: { type: number }
+        maxRadiusKm: { type: number }
+        maxRounds: { type: integer }
+        broadcastSize: { type: integer }
+        offerTimeoutS: { type: integer }
+        locationMaxAgeS: { type: integer }
+        respectSchedule: { type: boolean }
+        weightDistance: { type: number }
+        weightRating: { type: number }
+        weightAcceptance: { type: number }
+    Plan:
+      type: object
+      properties:
+        id: { type: string, readOnly: true }
+        code: { type: string }
+        nameEn: { type: string }
+        nameAr: { type: string }
+        monthlyFeeBaisa: { type: integer }
+        commissionBps: { type: integer }
+        features: { type: object }
+        isActive: { type: boolean }
+    LiveOps:
+      type: object
+      properties:
+        kpis: { type: object, properties: { activeDeliveries: { type: integer }, unassigned: { type: integer }, onlineCaptains: { type: integer }, busyCaptains: { type: integer }, ordersToday: { type: integer }, gmvTodayBaisa: { type: integer }, avgDeliveryMinutesToday: { type: [number, 'null'] } } }
+        deliveries: { type: array, items: { type: object } }
+        captains: { type: array, items: { type: object, properties: { id: { type: string }, fullName: { type: string }, vehicleType: { type: string }, location: { $ref: '#/components/schemas/LatLng' }, activeDeliveries: { type: integer }, updatedAt: { type: string } } } }
+    Analytics:
+      type: object
+      properties:
+        from: { type: string }
+        to: { type: string }
+        orders: { type: integer }
+        completedOrders: { type: integer }
+        cancelledOrders: { type: integer }
+        gmvBaisa: { type: integer }
+        averageOrderValueBaisa: { type: integer }
+        deliveryFeesBaisa: { type: integer }
+        commissionBaisa: { type: integer }
+        avgDeliveryMinutes: { type: [number, 'null'] }
+        avgAssignSeconds: { type: [number, 'null'] }
+        byType: { type: array, items: { type: object, properties: { type: { type: string }, orders: { type: integer }, gmvBaisa: { type: integer } } } }
+        byDay: { type: array, items: { type: object, properties: { day: { type: string }, orders: { type: integer }, gmvBaisa: { type: integer } } } }
+        topProducts: { type: array, items: { type: object, properties: { nameEn: { type: string }, nameAr: { type: string }, quantity: { type: integer }, revenueBaisa: { type: integer } } } }
+        topMerchants: { type: array, items: { type: object } }
