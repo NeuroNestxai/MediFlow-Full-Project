@@ -1,0 +1,76 @@
+system locale: ar-OM | ['config: mcc310-mnc260-ar-rOM-ldrtl-sw411dp-w411dp-h842dp-normal-long-notround-nowidecg-lowdr-port-notnight-420dpi-finger-keysexposed-qwerty-navhidden-nonav-2209x1080-v34']
+   network: host reachable
+Performing Streamed Install
+Success
+== consumer: home
+   home showed an error, tapping retry (attempt 1)
+   home showed an error, tapping retry (attempt 2)
+   saved consumer-01-home.png (1320 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | ماذا تطلب اليوم؟ | ابحث عن متجر | سوق النخيل الطازج | مقاضي البيت إلى باب بيتك | بيت القهوة | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | الرئيسية | إرسال | الطلبات | حسابي
+== consumer: home-scrolled
+   saved consumer-02-home-scrolled.png (1499 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | سوق النخيل الطازج | بقالة  ·  ٢٥ د  ·  الحد الأدنى ٢٫٠٠٠ ر.ع. | بيت القهوة | الرئيسية | إرسال | الطلبات | حسابي
+== consumer: storefront
+   saved consumer-03-storefront.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: product
+   !! step failed: not on screen: /شاي كرك|Karak Tea/
+   saved consumer-04-product.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: added-to-cart
+   !! step failed: not on screen: /أضف\ إلى\ السلة|Add\ to\ cart|أضف\ .*\ إلى\ السلة|Add\ .*\ to\ cart/
+   saved consumer-05-added-to-cart.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: cart-or-checkout
+   !! step failed: not on screen: /عرض\ السلة|View\ cart/
+   saved consumer-06-cart-or-checkout.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: sign-in-phone
+   !! step failed: not on screen: /رقم\ الهاتف|Mobile\ number/
+   saved consumer-07-sign-in-phone.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: signed-in
+   !! step failed: not on screen: /رقم\ الهاتف|Mobile\ number/
+   saved consumer-08-signed-in.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: checkout
+   !! step failed: not on screen: /إتمام\ الطلب|Checkout/
+   saved consumer-09-checkout.png (48 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة | رجوع
+== consumer: home-signed-in
+   saved consumer-10-home-signed-in.png (1320 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | ماذا تطلب اليوم؟ | ابحث عن متجر | سوق النخيل الطازج | مقاضي البيت إلى باب بيتك | بيت القهوة | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | الرئيسية | إرسال | الطلبات | حسابي
+== consumer: orders
+   saved consumer-11-orders.png (134 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | قبناه | مرحباً بك في قبناه | تصفّح المتاجر لا يحتاج إلى حساب. سجّل الدخول برقم هاتفك لتطلب وترسل الطرود وتتابع طلباتك. | أدخل رقم هاتفك | سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية. | رقم الهاتف | إرسال الرمز | بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية. | الرئيسية | إرسال | الطلبات | حسابي
+== consumer: send-parcel
+   saved consumer-12-send-parcel.png (134 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | قبناه | مرحباً بك في قبناه | تصفّح المتاجر لا يحتاج إلى حساب. سجّل الدخول برقم هاتفك لتطلب وترسل الطرود وتتابع طلباتك. | أدخل رقم هاتفك | سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية. | رقم الهاتف | إرسال الرمز | بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية. | الرئيسية | إرسال | الطلبات | حسابي
+== consumer: account
+   saved consumer-13-account.png (134 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | قبناه | مرحباً بك في قبناه | تصفّح المتاجر لا يحتاج إلى حساب. سجّل الدخول برقم هاتفك لتطلب وترسل الطرود وتتابع طلباتك. | أدخل رقم هاتفك | سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية. | رقم الهاتف | إرسال الرمز | بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية. | الرئيسية | إرسال | الطلبات | حسابي
+   logcat (om.qabnah.consumer, pid 9678): 0 warning/error lines
+Performing Streamed Install
+Success
+== captain: welcome
+   saved captain-01-welcome.png (85 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | كابتن قبناه | مرحباً بك في كابتن قبناه | أدخل رقم هاتفك | سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية. | رقم الهاتف | إرسال الرمز | بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية.
+== captain: signed-in-home
+   dev code on screen: 178794
+   saved captain-02-signed-in-home.png (38 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة
+== captain: deliveries
+   !! step failed: not on screen: /التوصيلات|Deliveries/
+   saved captain-03-deliveries.png (38 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة
+== captain: earnings
+   !! step failed: not on screen: /الأرباح|Earnings/
+   saved captain-04-earnings.png (38 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة
+== captain: profile
+   !! step failed: not on screen: /الملف|Profile/
+   saved captain-05-profile.png (38 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حدث خطأ ما. | إعادة المحاولة
+   logcat (om.qabnah.captain, pid 10036): 0 warning/error lines
+consumer: 13 screenshots, failed steps: product, added-to-cart, cart-or-checkout, sign-in-phone, signed-in, checkout
+captain: 5 screenshots, failed steps: deliveries, earnings, profile
