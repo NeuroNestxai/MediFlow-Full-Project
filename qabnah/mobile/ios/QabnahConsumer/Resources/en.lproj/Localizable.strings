@@ -1,7 +1,15 @@
 /* QabnahConsumer en — generated; keep en and ar in sync. */
 
 "account.addresses" = "Addresses";
+"account.delete" = "Delete account";
+"account.delete_blocked" = "Your account can't be deleted yet:";
+"account.delete_confirm" = "Delete my account";
+"account.delete_message" = "Your profile, addresses, notifications and documents will be deleted and you'll be signed out on all devices. Orders and payments are kept for tax records without your personal details.";
+"account.delete_title" = "This can't be undone";
+"account.delete_type_prompt" = "Type DELETE to confirm";
 "account.email" = "Email";
+"account.export" = "Download my data";
+"account.export_hint" = "Get a copy of your personal data as a JSON file, or permanently delete your account. Deleting isn't possible while orders or deliveries are in progress or a balance is unsettled.";
 "account.language" = "Language";
 "account.no_name" = "Add your name";
 "account.notifications" = "Notifications";
@@ -9,6 +17,7 @@
 "account.profile" = "Profile";
 "account.sign_out" = "Sign out";
 "account.sign_out_confirm" = "Sign out of Qabnah?";
+"account.your_data" = "Your data";
 "address.apartment" = "Apartment";
 "address.area" = "Area";
 "address.building" = "Building / Villa";
@@ -48,6 +57,7 @@
 "auth.resend_in" = "Resend in %lds";
 "auth.send_code" = "Send code";
 "auth.subtitle_captain" = "Deliver with Qabnah and earn on your schedule.";
+"auth.subtitle_checkout" = "Sign in to place your order. Your cart is saved.";
 "auth.subtitle_consumer" = "Food, groceries and parcels across Muscat.";
 "auth.verify" = "Verify and continue";
 "cart.a11y" = "Cart, %ld items";
@@ -59,6 +69,7 @@
 "cart.replace_confirm" = "Start new cart";
 "cart.replace_message" = "Your cart has items from %@. Adding this will remove them.";
 "cart.replace_title" = "Start a new cart?";
+"cart.sign_in_to_checkout" = "You'll sign in with your mobile number before paying.";
 "cart.title" = "Your cart";
 "cart.view_count" = "View cart (%ld)";
 "category.all" = "All";
@@ -131,6 +142,9 @@
 "error.rate_limited" = "Too many attempts. Please wait a moment.";
 "error.unauthorized" = "Your session has ended. Please sign in again.";
 "error.validation_error" = "Please check the details and try again.";
+"guest.sign_in" = "Sign in";
+"guest.sign_in_message" = "Sign in with your mobile number to send parcels, see your orders and manage your account.";
+"guest.sign_in_title" = "Sign in to continue";
 "home.empty" = "No stores found";
 "home.empty_hint" = "Try another category or search.";
 "home.location_denied" = "Location is off — showing all stores. Enable it in Settings for nearby stores.";
@@ -149,6 +163,7 @@
 "order.cancel_title" = "Cancel this order?";
 "order.cod_hint" = "Please have %@ ready in cash.";
 "order.get_help" = "Get help with this order";
+"order.invoice" = "Invoice";
 "order.items" = "Items";
 "order.pay_now" = "Pay now";
 "order.pin_hint" = "Give this code to the captain only when you receive your order.";

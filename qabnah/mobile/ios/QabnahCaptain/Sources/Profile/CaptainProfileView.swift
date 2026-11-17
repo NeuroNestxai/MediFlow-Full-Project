@@ -67,6 +67,7 @@ struct CaptainProfileView: View {
                     }
                 }
                 Section(lang.t("account.language")) { LanguagePicker() }
+                AccountDataSection()
                 Section {
                     Button(role: .destructive) { confirmSignOut = true } label: {
                         Label(lang.t("account.sign_out"), systemImage: "rectangle.portrait.and.arrow.right")

@@ -5,9 +5,10 @@ struct CaptainHomeView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var session: SessionStore
     @EnvironmentObject var store: CaptainStore
+    @EnvironmentObject var router: CaptainRouter
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $router.homePath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let p = store.profile {
@@ -23,7 +24,7 @@ struct CaptainHomeView: View {
                     if !store.activeDeliveries.isEmpty {
                         Text(lang.t("home.active_jobs")).font(.title3.bold())
                         ForEach(store.activeDeliveries) { d in
-                            NavigationLink(value: d) { ActiveJobCard(delivery: d) }
+                            NavigationLink(value: CaptainRoute.delivery(d)) { ActiveJobCard(delivery: d) }
                                 .buttonStyle(.plain)
                         }
                     }
@@ -42,8 +43,8 @@ struct CaptainHomeView: View {
                 if store.isOnline { await store.refreshOffers() }
             }
             .navigationTitle(lang.t("app.name_captain"))
-            .navigationDestination(for: CaptainDelivery.self) { d in
-                ActiveDeliveryView(api: session.api, store: store, delivery: d)
+            .navigationDestination(for: CaptainRoute.self) { route in
+                destination(route)
             }
             .alert(lang.t("home.location_needed_title"), isPresented: $store.needsLocationPermission) {
                 Button(lang.t("common.open_settings")) {
@@ -53,6 +54,20 @@ struct CaptainHomeView: View {
             } message: {
                 Text(lang.t("home.location_needed_message"))
             }
+        }
+    }
+
+    @ViewBuilder
+    private func destination(_ route: CaptainRoute) -> some View {
+        switch route {
+        case .delivery(let d):
+            ActiveDeliveryView(api: session.api, store: store, delivery: d)
+        case .deliveryId(let id):
+            DeliveryByIdView(deliveryId: id)
+        case .ticket(let id):
+            TicketDetailView(api: session.api, ticketId: id)
+        case .documents:
+            DocumentsView()
         }
     }
 

@@ -29,7 +29,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>om.qabnah.consumer.payment-return</string>
+			<string>om.qabnah.consumer.deeplinks</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>qabnah</string>

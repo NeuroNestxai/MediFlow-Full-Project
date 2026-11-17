@@ -25,6 +25,7 @@ final class AccountDataViewModel: ObservableObject {
     @Published private(set) var isExporting = false
     @Published var exportFile: SharedFile?
     @Published var exportError: Error?
+    private var exportedURL: URL?
 
     func export(api: APIClient, app: ClientApp) async {
         isExporting = true
@@ -33,6 +34,7 @@ final class AccountDataViewModel: ObservableObject {
             let data = try await api.data(for: Endpoints.exportMyData())
             let url = try DataExport.write(data, app: app)
             exportError = nil
+            exportedURL = url
             exportFile = SharedFile(url: url)
         } catch {
             if (error as? APIError)?.isCancelled == true { return }
@@ -42,7 +44,8 @@ final class AccountDataViewModel: ObservableObject {
 
     /// The export holds personal data: don't leave it in the temporary directory.
     func exportClosed() {
-        if let url = exportFile?.url { try? FileManager.default.removeItem(at: url) }
+        if let url = exportedURL { try? FileManager.default.removeItem(at: url) }
+        exportedURL = nil
         exportFile = nil
     }
 }

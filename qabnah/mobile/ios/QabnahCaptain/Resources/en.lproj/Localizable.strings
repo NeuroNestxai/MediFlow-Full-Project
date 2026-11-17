@@ -1,8 +1,17 @@
 /* QabnahCaptain en — generated; keep en and ar in sync. */
 
+"account.delete" = "Delete account";
+"account.delete_blocked" = "Your account can't be deleted yet:";
+"account.delete_confirm" = "Delete my account";
+"account.delete_message" = "Your profile, addresses, notifications and documents will be deleted and you'll be signed out on all devices. Orders and payments are kept for tax records without your personal details.";
+"account.delete_title" = "This can't be undone";
+"account.delete_type_prompt" = "Type DELETE to confirm";
+"account.export" = "Download my data";
+"account.export_hint" = "Get a copy of your personal data as a JSON file, or permanently delete your account. Deleting isn't possible while orders or deliveries are in progress or a balance is unsettled.";
 "account.language" = "Language";
 "account.sign_out" = "Sign out";
 "account.sign_out_confirm" = "Sign out of Qabnah?";
+"account.your_data" = "Your data";
 "action.arrive_dropoff" = "I've arrived at drop-off";
 "action.arrive_pickup" = "I've arrived at pickup";
 "action.complete" = "Complete delivery";

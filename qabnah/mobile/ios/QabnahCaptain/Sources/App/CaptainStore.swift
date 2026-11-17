@@ -192,6 +192,16 @@ final class CaptainStore: ObservableObject {
         presentedOffer = offer
     }
 
+    /// Push tap / `qabnah://offer/<id>`: show that offer if it is still open.
+    func openOffer(id: String) async {
+        if let offer = offers.first(where: { $0.id == id && !$0.isExpired() }) {
+            showOffer(offer)
+            return
+        }
+        await refreshOffers()
+        if let offer = offers.first(where: { $0.id == id }) { showOffer(offer) }
+    }
+
     /// Returns the assigned delivery, or nil (409 taken/expired → `offerError`).
     func accept(_ offer: Offer) async -> CaptainDelivery? {
         respondingOfferId = offer.id

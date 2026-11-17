@@ -1,7 +1,15 @@
 /* QabnahConsumer ar — generated; keep en and ar in sync. */
 
 "account.addresses" = "العناوين";
+"account.delete" = "حذف الحساب";
+"account.delete_blocked" = "لا يمكن حذف حسابك بعد:";
+"account.delete_confirm" = "احذف حسابي";
+"account.delete_message" = "سيتم حذف ملفك الشخصي وعناوينك وإشعاراتك ومستنداتك وتسجيل خروجك من جميع الأجهزة. تُحفظ الطلبات والمدفوعات للسجلات الضريبية بدون بياناتك الشخصية.";
+"account.delete_title" = "لا يمكن التراجع عن ذلك";
+"account.delete_type_prompt" = "اكتب DELETE للتأكيد";
 "account.email" = "البريد الإلكتروني";
+"account.export" = "تنزيل بياناتي";
+"account.export_hint" = "احصل على نسخة من بياناتك الشخصية كملف JSON، أو احذف حسابك نهائياً. لا يمكن الحذف أثناء وجود طلبات أو توصيلات قيد التنفيذ أو رصيد غير مسوّى.";
 "account.language" = "اللغة";
 "account.no_name" = "أضف اسمك";
 "account.notifications" = "الإشعارات";
@@ -9,6 +17,7 @@
 "account.profile" = "الملف الشخصي";
 "account.sign_out" = "تسجيل الخروج";
 "account.sign_out_confirm" = "تسجيل الخروج من قبناه؟";
+"account.your_data" = "بياناتك";
 "address.apartment" = "الشقة";
 "address.area" = "المنطقة";
 "address.building" = "المبنى / الفيلا";
@@ -48,6 +57,7 @@
 "auth.resend_in" = "إعادة الإرسال بعد %ld ث";
 "auth.send_code" = "أرسل الرمز";
 "auth.subtitle_captain" = "وصّل مع قبناه واكسب حسب وقتك.";
+"auth.subtitle_checkout" = "سجّل الدخول لإتمام طلبك. سلتك محفوظة.";
 "auth.subtitle_consumer" = "طعام وبقالة وطرود في كل مسقط.";
 "auth.verify" = "تحقق وتابع";
 "cart.a11y" = "السلة، %ld منتجات";
@@ -59,6 +69,7 @@
 "cart.replace_confirm" = "بدء سلة جديدة";
 "cart.replace_message" = "سلتك تحتوي على منتجات من %@. إضافة هذا المنتج ستحذفها.";
 "cart.replace_title" = "بدء سلة جديدة؟";
+"cart.sign_in_to_checkout" = "ستسجّل الدخول برقم هاتفك قبل الدفع.";
 "cart.title" = "سلتك";
 "cart.view_count" = "عرض السلة (%ld)";
 "category.all" = "الكل";
@@ -131,6 +142,9 @@
 "error.rate_limited" = "محاولات كثيرة. انتظر قليلاً.";
 "error.unauthorized" = "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.";
 "error.validation_error" = "يرجى مراجعة البيانات والمحاولة مجدداً.";
+"guest.sign_in" = "تسجيل الدخول";
+"guest.sign_in_message" = "سجّل الدخول برقم هاتفك لإرسال الطرود ومتابعة طلباتك وإدارة حسابك.";
+"guest.sign_in_title" = "سجّل الدخول للمتابعة";
 "home.empty" = "لا توجد متاجر";
 "home.empty_hint" = "جرّب فئة أو بحثاً آخر.";
 "home.location_denied" = "الموقع غير مفعّل — نعرض كل المتاجر. فعّله من الإعدادات لرؤية الأقرب.";
@@ -149,6 +163,7 @@
 "order.cancel_title" = "إلغاء هذا الطلب؟";
 "order.cod_hint" = "يرجى تجهيز %@ نقداً.";
 "order.get_help" = "مساعدة بخصوص هذا الطلب";
+"order.invoice" = "الفاتورة";
 "order.items" = "المنتجات";
 "order.pay_now" = "ادفع الآن";
 "order.pin_hint" = "أعطِ هذا الرمز للكابتن فقط عند استلام طلبك.";

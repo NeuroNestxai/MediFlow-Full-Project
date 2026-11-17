@@ -6,6 +6,7 @@ import QabnahKit
 struct OfferCardView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var store: CaptainStore
+    @EnvironmentObject var router: CaptainRouter
     let offer: Offer
     @State private var showReject = false
     @State private var initialSeconds: Int = 0
@@ -77,7 +78,8 @@ struct OfferCardView: View {
         ].compactMap { $0 }
         return Group {
             if !points.isEmpty {
-                PlacesMap(points: points)
+                RouteMapView(points: points, dashedFrom: points.first?.coordinate,
+                             dashedTo: points.count > 1 ? points.last?.coordinate : nil, showsRecenterButton: false)
                     .frame(height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
                     .allowsHitTesting(false)
@@ -143,7 +145,10 @@ struct OfferCardView: View {
                 .buttonStyle(SecondaryButtonStyle(color: Brand.danger))
                 .disabled(busy || expired)
             Button {
-                Task { _ = await store.accept(offer) }
+                Task {
+                    // Accepted: the cover closes and the active delivery opens on Home.
+                    if let delivery = await store.accept(offer) { router.showDelivery(delivery) }
+                }
             } label: {
                 if busy { ProgressView().tint(.white) } else { Text(lang.t("offer.accept")) }
             }

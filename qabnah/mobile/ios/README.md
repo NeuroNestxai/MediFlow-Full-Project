@@ -7,7 +7,7 @@ Two native SwiftUI apps plus a shared Swift package:
 | `QabnahConsumer` | Customer app: stores, cart & checkout, orders, live tracking, send a parcel (C2C), account | `om.qabnah.consumer` |
 | `QabnahCaptain` | Courier app: onboarding & documents, online toggle, offers, active delivery, earnings | `om.qabnah.captain` |
 | `QabnahKit` (Swift package) | Models (mirror `API_CONTRACT.yaml`), `APIClient`, `TokenStore`, `RealtimeClient`, money/locale helpers, cart & option rules. Foundation-only, builds on Linux. | — |
-| `SharedUI/` | SwiftUI code compiled into **both** app targets (theme, auth flow, maps, support tickets, session store). | — |
+| `SharedUI/` | SwiftUI code compiled into **both** app targets (theme, auth flow + sign-in sheet, route map, push registration & notification routing, support tickets, data export / account deletion, session store). | — |
 
 iOS 16+, SwiftUI, async/await. Arabic-first (RTL) with an in-app ar/en toggle.
 
@@ -35,7 +35,8 @@ Pick the `QabnahConsumer` or `QabnahCaptain` scheme. To run on a device set your
 
 Both targets ship an `aps-environment` entitlement for APNs. If your team cannot sign push
 (e.g. a free personal team), delete the `CODE_SIGN_ENTITLEMENTS` line for that target in
-`project.yml` and regenerate; push registration is optional and failures are ignored.
+`project.yml` and regenerate; push registration is optional and failures are ignored
+(unsigned CI builds with `CODE_SIGNING_ALLOWED=NO` are unaffected).
 
 ## Point the apps at a backend
 
@@ -81,6 +82,15 @@ Omani mobiles only: 8 digits starting with 9 or 7 (the `+968` prefix is added fo
   `maxSelect`, `minSelect` validation, unit price = base + deltas, single-merchant cart.
 * `AppConfig`, `Localizer` (runtime ar/en switch), phone normalisation, Muscat date ranges
   (week starts Sunday), navigation/WhatsApp/tel links.
+* `PushPayload` / `AppRoute` / `DeepLink` (pure, unit-tested) — parses an APNs `userInfo` (custom keys
+  at the top level, or FCM-style under `data`, as a dictionary or JSON string; numeric ids accepted) into
+  `{type, orderId, deliveryId, offerId, ticketId, number, title, body}` and maps it to a screen per app;
+  parses `qabnah://order/<id>`, `qabnah://order/<id>/tracking`, `qabnah://offer/<id>`,
+  `qabnah://delivery/<id>`, `qabnah://ticket/<id>` (and `qabnah-captain://…`). In-app notifications use
+  the same mapping.
+* `DataExport` (file name + pretty-printing for `GET /me/export`), `AccountDeletionInput.isConfirmed`
+  (typed "DELETE" check), `Order.invoiceUrl` / `Order.hasInvoice` (same rule as the server: paid,
+  refunded or delivered), `APIClient.data(for:)` (raw bytes) and `APIClient.clearSession()`.
 
 ### Tests
 
@@ -89,12 +99,14 @@ cd QabnahKit
 swift test
 ```
 
-Fixtures in `Tests/QabnahKitTests/Fixtures/` are shaped after the contract schemas (Order, Storefront,
-Offer, CaptainProfile, Tracking, CaptainDelivery, Me, AuthResult, Earnings, notifications, ticket,
-error envelope). Tests cover decoding (including unknown enum values and missing optional fields),
-round-trips, money formatting/parsing, request building, single-flight refresh, session expiry,
-multipart bodies, realtime message coding, channel ref-counting, cart/option rules, phone and link
-helpers, date presets and backoff.
+Fixtures in `Tests/QabnahKitTests/Fixtures/` are shaped after the contract schemas (Order, delivered Order
+with `invoiceUrl`, Storefront, Offer, CaptainProfile, Tracking, CaptainDelivery, Me, `/me/export`, AuthResult,
+Earnings, notifications, ticket, error envelope, APNs and FCM-style push payloads). Tests cover decoding
+(including unknown enum values and missing optional fields), round-trips, money formatting/parsing, request
+building (incl. `/me/export`, `/me/delete`, `/me/devices[/unregister]`), single-flight refresh, session expiry,
+multipart bodies, realtime message coding, channel ref-counting, cart/option rules, phone and link helpers,
+date presets, backoff, push payload → route tables for both apps, deep-link parsing/round-trips, the
+deletion 409 envelope, export file naming and invoice visibility.
 
 `RealtimeIntegrationTests` is opt-in and talks to a real WebSocket server:
 
@@ -118,7 +130,33 @@ QABNAH_WS_TEST_URL=ws://127.0.0.1:8765/v1/realtime swift test --filter RealtimeI
   are labelled approximate.
 * **Captain location:** while online, standard + significant-change updates (background mode
   `location`), sent over the socket at most every 5 s with `POST /captain/location` as fallback.
-  Offers arrive via `captain:me` and a 5 s poll of `GET /captain/offers`.
+  Offers arrive via `captain:me` and a 5 s poll of `GET /captain/offers`. Accepting an offer closes the
+  offer card and opens the active-delivery screen on Home.
+* **Guest browsing (consumer):** Home and storefronts work without an account (`/stores`,
+  `/stores/{slug}`, `/zones` are public) and the cart is kept. Checkout, Send, Orders and Account present
+  the OTP sign-in as a sheet; after signing in the app continues to where the user was going (checkout,
+  the chosen tab, or a tapped notification / deep link).
+* **Push (APNs):** permission is requested right after sign-in, not at launch. The token goes to
+  `POST /me/devices` (`platform: ios`, `app: consumer|captain`), is re-sent on launch/foreground when
+  already authorized, and is removed with `POST /me/devices/unregister` on sign-out (before
+  `/auth/logout`). `UNUserNotificationCenterDelegate` shows banners in the foreground; a tap routes via
+  `PushPayload.route(for:)`: consumer → order detail, live tracking (`delivery.assigned` /
+  `delivery.picked_up`) or support ticket; captain → offer card, active delivery, documents or ticket.
+* **Deep links:** both Info.plists register the `qabnah` scheme (the captain app also
+  `qabnah-captain`, because iOS picks an arbitrary app when two register the same scheme); `.onOpenURL`
+  uses the same router as push. A consumer link opened while signed out asks for sign-in first.
+* **Maps:** `RouteMapView` (SharedUI) wraps `MKMapView`: pickup / dropoff / captain markers, the
+  `Tracking.path` breadcrumbs (plus the latest live position) as a solid polyline, a dashed line from the
+  captain to the next stop (pickup until picked up, then dropoff), auto-fit when the markers change and a
+  re-fit button. Used in consumer tracking, the captain active delivery (own position, the trail driven
+  while the screen is open, dashed line to the next stop) and the offer preview.
+* **Your data (both apps):** Account / Profile → "Download my data" (`GET /me/export`, saved as a
+  pretty-printed JSON file and handed to the share sheet; the temp file is deleted when it closes) and
+  "Delete account" (type DELETE → `POST /me/delete`; a 409 `account_deletion_blocked` shows the server's
+  reasons; on 204 the app clears the local session without calling `/auth/logout`).
+* **Invoice (consumer):** order detail shows "Invoice" when `invoiceUrl` is present and the order is
+  paid / refunded / delivered; the order is refetched first (the link is signed for ~30 min) and opened
+  in `SFSafariViewController`.
 
 ## What was and wasn't compiled
 
@@ -143,13 +181,24 @@ This was written in a Linux container without macOS/Xcode.
 * `.strings` files were parsed with Foundation's property-list parser; en/ar have the same keys and
   matching format specifiers.
 
+**Update 2026-11-17 (push, deep links, guest browsing, route maps, data export/deletion, invoices):**
+QabnahKit was built and tested on Linux again (Swift 6.0.3): `swift build` has no warnings (also with
+`-strict-concurrency=complete`) and `swift test` runs 70 tests, 0 failures (the opt-in realtime integration
+test skipped). The app sources were only syntax-checked with `swift-frontend -parse`; the macOS CI build of
+both schemes has to confirm they type-check.
+
 ## Known gaps / TODO
 
-* First Xcode build and a run on the simulator against the real backend; UI tests.
-* Push: device token registration only. No notification handling or deep links from push yet.
+* Run on the simulator / a device against the real backend; UI tests. Push delivery was not tested
+  end-to-end (needs a signed build with the push capability and the backend's APNs credentials).
+* The route line is the captain's breadcrumbs plus a straight dashed line to the next stop, not a
+  road route (no directions request).
+* Both apps register `qabnah://`; with both installed iOS picks one for external links. Use
+  `qabnah-captain://` for captain links; push taps are unaffected (they are routed in-process).
+* Notification actions (e.g. accept an offer from the banner), badge counts and rich notifications are
+  not implemented.
 * No call masking: captain phone / WhatsApp buttons use the number the API returns, which the
   server masks or hides by delivery state.
 * Captain offer card: the dropoff pin is rounded by the server until acceptance, as the contract says.
-* Map routes / polylines are not drawn (iOS 16 SwiftUI `Map` has no overlays). Tracking shows pins only.
-* Store browsing requires sign-in, although `/stores` is public.
-* The cart is persisted in `UserDefaults` and is not tied to the signed-in user (cleared on sign-out).
+* The cart is persisted in `UserDefaults` and is not tied to the signed-in user (cleared on sign-out;
+  kept across guest → signed-in).

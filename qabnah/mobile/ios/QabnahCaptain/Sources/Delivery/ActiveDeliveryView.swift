@@ -69,7 +69,7 @@ struct ActiveDeliveryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                PlacesMap(points: points, showsUserLocation: true)
+                ActiveDeliveryMap(location: store.location, delivery: d, points: points)
                     .frame(height: 240)
                     .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
 
@@ -227,6 +227,71 @@ struct ActiveDeliveryView: View {
                 }
             }
             .disabled(vm.runningAction != nil)
+        }
+    }
+}
+
+/// Route map for the captain: pickup / dropoff markers, own position (system dot), the trail
+/// driven while this screen is open and a dashed line to the next stop.
+struct ActiveDeliveryMap: View {
+    @ObservedObject var location: CaptainLocationService
+    let delivery: CaptainDelivery
+    let points: [MapPoint]
+    @State private var trail: [CLLocationCoordinate2D] = []
+
+    private var nextStop: CLLocationCoordinate2D? {
+        guard delivery.isActive, let target = delivery.currentTarget?.location else { return nil }
+        return CLLocationCoordinate2D(target)
+    }
+
+    var body: some View {
+        RouteMapView(points: points, path: trail, dashedFrom: location.lastLocation?.coordinate,
+                     dashedTo: nextStop, showsUserLocation: true)
+            .onChange(of: location.lastLocation) { loc in
+                if let loc { record(loc) }
+            }
+            .onAppear {
+                if let loc = location.lastLocation { record(loc) }
+            }
+    }
+
+    private func record(_ loc: CLLocation) {
+        if let last = trail.last {
+            let previous = CLLocation(latitude: last.latitude, longitude: last.longitude)
+            guard previous.distance(from: loc) >= 10 else { return }
+        }
+        trail.append(loc.coordinate)
+        if trail.count > 300 { trail.removeFirst(trail.count - 300) }
+    }
+}
+
+/// `qabnah://delivery/<id>` / push tap: loads the delivery, then shows the active-delivery screen.
+struct DeliveryByIdView: View {
+    @EnvironmentObject var session: SessionStore
+    @EnvironmentObject var store: CaptainStore
+    let deliveryId: String
+    @State private var state: Loadable<CaptainDelivery> = .idle
+
+    var body: some View {
+        LoadableView(state: state, retry: { Task { await load() } }) { delivery in
+            ActiveDeliveryView(api: session.api, store: store, delivery: delivery)
+        }
+        .task {
+            if state.value == nil { await load() }
+        }
+    }
+
+    private func load() async {
+        if let known = store.activeDeliveries.first(where: { $0.id == deliveryId }) {
+            state = .loaded(known)
+            return
+        }
+        state = .loading
+        do {
+            state = .loaded(try await session.api.send(Endpoints.captainDelivery(id: deliveryId)))
+        } catch {
+            if (error as? APIError)?.isCancelled == true { return }
+            state = .failed(error)
         }
     }
 }

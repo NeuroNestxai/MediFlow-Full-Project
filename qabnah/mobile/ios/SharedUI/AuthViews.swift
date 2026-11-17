@@ -257,7 +257,7 @@ struct SignInSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $isPresented, onDismiss: dismissed) {
-                AuthFlowView(api: session.api, subtitleKey: subtitleKey, onCancel: { isPresented = false })
+                AuthFlowView(api: session.api, subtitleKey: subtitleKey, onCancel: cancel)
                     .environmentObject(lang)
                     .environmentObject(session)
                     .qabnahLocalized(lang)
@@ -268,7 +268,17 @@ struct SignInSheetModifier: ViewModifier {
     }
 
     private func dismissed() {
-        if session.isSignedIn { onSignedIn() }
+        if session.isSignedIn {
+            onSignedIn()
+        } else if session.api.isSignedIn {
+            // Closed at the "your name" step: drop the tokens stored for PATCH /me so the app
+            // doesn't come back signed in on the next launch without the user finishing.
+            session.api.clearSession()
+        }
+    }
+
+    private func cancel() {
+        isPresented = false
     }
 }
 
