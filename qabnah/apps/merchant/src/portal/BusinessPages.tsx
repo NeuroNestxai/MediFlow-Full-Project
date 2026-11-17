@@ -28,12 +28,11 @@ export function FinancePage() {
           <Card flush title={t('finance.unsettledEntries')}>
             {!q.data.unsettledEntries.length ? <EmptyState icon="wallet" title={t('finance.noEntries')} /> : (
               <div className="table-wrap"><table className="table">
-                <thead><tr><th>{t('common.date')}</th><th>{t('finance.entryType')}</th><th>{t('finance.description')}</th><th>{t('orders.number')}</th><th className="num">{t('common.amount')}</th></tr></thead>
+                <thead><tr><th>{t('common.date')}</th><th>{t('finance.entryType')}</th><th>{t('orders.number')}</th><th className="num">{t('common.amount')}</th></tr></thead>
                 <tbody>{q.data.unsettledEntries.map((e) => (
                   <tr key={e.id}>
                     <td className="nowrap">{dateTime(e.createdAt)}</td>
                     <td><Badge tone={e.amountBaisa >= 0 ? 'success' : 'danger'}>{t(`ledger.${e.entryType}`)}</Badge></td>
-                    <td className="text-sm">{e.description}</td>
                     <td>{e.orderId ? <Link className="ltr" to={`/orders/${e.orderId}`}>#{e.orderNumber}</Link> : '—'}</td>
                     <td className={`num strong ${e.amountBaisa < 0 ? 'danger-text' : 'success-text'}`}>{money(e.amountBaisa, { signed: true })}</td>
                   </tr>

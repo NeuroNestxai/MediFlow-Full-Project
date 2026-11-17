@@ -201,7 +201,7 @@ private fun EarnedCard(e: Earnings, preset: DateRanges.Preset) {
 private fun LedgerRow(entry: LedgerEntry) {
     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(entry.description.ifBlank { ledgerTypeLabel(entry.entryType) }, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(ledgerTypeLabel(entry.entryType), style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(entry.orderNumber?.let { digits("#$it") }, dateTime(entry.createdAt)).joinToString("  ·  "),
                 style = MaterialTheme.typography.bodySmall,
