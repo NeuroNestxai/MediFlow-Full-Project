@@ -20,31 +20,49 @@ ANDROID = Path(__file__).resolve().parents[1] / "android"
 LOCALE = "ar-OM"
 
 
-def strings(module: str) -> dict[str, str]:
-    out: dict[str, str] = {}
-    path = ANDROID / module / "src/main/res/values-ar/strings.xml"
-    if path.exists():
-        for el in ET.parse(path).getroot().iter("string"):
-            out[el.get("name", "")] = (el.text or "").replace("\\'", "'").replace("\\n", "\n")
+def strings(module: str) -> dict[str, list[str]]:
+    """String resources of a module in both languages, so the flows work whichever locale the device ends up in."""
+    out: dict[str, list[str]] = {}
+    for folder in ("values-ar", "values"):
+        path = ANDROID / module / "src/main/res" / folder / "strings.xml"
+        if path.exists():
+            for el in ET.parse(path).getroot().iter("string"):
+                out.setdefault(el.get("name", ""), []).append((el.text or "").replace("\\'", "'").replace("\\n", "\n"))
     return out
 
 
 COMMON = strings("android-common")
 
 
-def rx(table: dict[str, str], key: str) -> str:
-    """Regex for a string resource; format arguments match anything. Unknown keys match nothing (the step then fails)."""
-    value = table.get(key) or COMMON.get(key)
-    if not value:
+def rx(table: dict[str, list[str]], key: str) -> str:
+    """Regex for a string resource (either language); format arguments match anything. Unknown keys match nothing."""
+    values = table.get(key) or COMMON.get(key)
+    if not values:
         return f"<missing string {key}>"
-    return re.sub(r"%\d*\\?\$?[sd]", ".*", re.escape(value).replace("\\%", "%"))
+    return "|".join(re.sub(r"%\d*\\?\$?[sd]", ".*", re.escape(v).replace("\\%", "%")) for v in values)
+
+
+def set_system_locale() -> None:
+    """Arabic system locale (emulator images allow root): set the property and restart the framework."""
+    ui.adb("root")
+    time.sleep(4)
+    ui.adb("wait-for-device", timeout=120)
+    ui.shell(f"setprop persist.sys.locale {LOCALE}; setprop ctl.restart zygote")
+    time.sleep(25)
+    for _ in range(60):
+        if "package:" in ui.shell("pm path android") and ui.shell("getprop sys.boot_completed").strip() == "1":
+            break
+        time.sleep(3)
+    time.sleep(10)
+    ui.shell("input keyevent 82")  # dismiss the keyguard if it came back
+    print("system locale:", ui.shell("getprop persist.sys.locale").strip(), "|", ui.shell("am get-config").splitlines()[:1])
 
 
 def prepare(package: str, apk: str) -> None:
     print(ui.adb("install", "-r", "-g", apk, timeout=300).stdout.decode(errors="replace").strip())
     for perm in ("POST_NOTIFICATIONS", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "CAMERA"):
         ui.shell(f"pm grant {package} android.permission.{perm}")
-    ui.shell(f"cmd locale set-app-locales {package} --locales {LOCALE}")
+    ui.shell(f"cmd locale set-app-locales {package} --user 0 --locales {LOCALE}")
 
 
 def launch(package: str) -> None:
@@ -74,10 +92,10 @@ def consumer(out: str, apk: str) -> ui.Session:
     s = ui.Session(out, "consumer")
     prepare(pkg, apk)
     launch(pkg)
-    s.step("home", lambda: ui.wait_for("بيت القهوة|مشويات الزعفران", 40), settle=4)
+    s.step("home", lambda: ui.wait_for("بيت القهوة|مشويات الزعفران|Qahwa House", 40), settle=4)
     s.step("home-scrolled", lambda: ui.swipe_up(0.45))
-    s.step("storefront", lambda: ui.tap("بيت القهوة"), settle=5)
-    s.step("product", lambda: ui.tap("شاي كرك"), settle=3)
+    s.step("storefront", lambda: ui.tap("بيت القهوة|Qahwa House"), settle=5)
+    s.step("product", lambda: ui.tap("شاي كرك|Karak Tea"), settle=3)
     s.step("added-to-cart", lambda: ui.tap(f"{rx(S, 'product_add_label')}|{rx(S, 'product_add_to_cart')}"), settle=3)
     s.step("cart-or-checkout", lambda: ui.tap(f"{rx(S, 'cart_view_short')}"), settle=4)
     s.step("sign-in-phone", lambda: ui.wait_for(rx(COMMON, "auth_phone_label"), 10))
@@ -106,6 +124,8 @@ def captain(out: str, apk: str) -> ui.Session:
 
 def main() -> int:
     out, consumer_apk, captain_apk = sys.argv[1:4]
+    ui.shell("settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0")
+    set_system_locale()
     ui.shell("settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0")
     ui.adb("emu", "geo", "fix", "58.4059", "23.5880")  # Muscat (lng lat)
     sessions = [consumer(out, consumer_apk), captain(out, captain_apk)]
