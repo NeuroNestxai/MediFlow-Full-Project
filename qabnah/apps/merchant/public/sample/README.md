@@ -21,3 +21,7 @@ Full-resolution originals (2336×1760) are in the Canva account under these medi
 | seasonal-bouquet.jpg | MAHbJGDxbig |
 | shawarma.jpg | MAHbJHfLZSY |
 | tawook.jpg | MAHbJA7kiFA |
+| bananas.jpg | MAHbJffy2Lw |
+| tomatoes.jpg | MAHbJdEDxkE |
+| rice.jpg | MAHbJW9chg4 |
+| milk.jpg | MAHbJW21grk |

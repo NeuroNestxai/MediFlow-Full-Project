@@ -116,8 +116,27 @@ const MERCHANTS = [
 const PRODUCT_IMAGES: Record<string, string> = {
   'Chicken Shawarma': 'shawarma', 'Beef Shawarma': 'beef-shawarma', 'Mixed Grill Platter': 'grill', 'Shish Tawook': 'tawook', Laban: 'laban',
   'Fresh Lemon Mint': 'lemon-mint', 'Karak Tea': 'karak', 'Omani Qahwa Dallah': 'qahwa', Luqaimat: 'luqaimat', 'Date Cake': 'date-cake',
-  'Omani Bananas (1kg)': 'groceries', 'Tomatoes (1kg)': 'groceries', 'Basmati Rice (5kg)': 'groceries', 'Fresh Milk (2L)': 'groceries',
+  'Omani Bananas (1kg)': 'bananas', 'Tomatoes (1kg)': 'tomatoes', 'Basmati Rice (5kg)': 'rice', 'Fresh Milk (2L)': 'milk',
   'Red Roses Bouquet': 'roses', 'Seasonal Mix': 'seasonal-bouquet',
+};
+/** Menu-style descriptions for the sample catalogue: [English, Arabic]. */
+const PRODUCT_DESCRIPTIONS: Record<string, [string, string]> = {
+  'Chicken Shawarma': ['Marinated chicken, garlic sauce and pickles in fresh saj bread.', 'دجاج متبّل مع ثومية ومخلل في خبز صاج طازج.'],
+  'Beef Shawarma': ['Slow-roasted beef with tahini, onion and parsley.', 'لحم مشوي على مهل مع طحينة وبصل وبقدونس.'],
+  'Mixed Grill Platter': ['Kebab, shish tawook and lamb chops with grilled vegetables and bread.', 'كباب وشيش طاووق وريش غنم مع خضار مشوية وخبز.'],
+  'Shish Tawook': ['Charcoal-grilled chicken skewers with garlic sauce.', 'أسياخ دجاج مشوية على الفحم مع ثومية.'],
+  Laban: ['Chilled salted yoghurt drink.', 'لبن مملّح بارد.'],
+  'Fresh Lemon Mint': ['Fresh lemon juice blended with mint and ice.', 'عصير ليمون طازج مع النعناع والثلج.'],
+  'Karak Tea': ['Strong black tea simmered with milk and cardamom.', 'شاي أسود مغلي مع الحليب والهيل.'],
+  'Omani Qahwa Dallah': ['A dallah of Omani coffee with cardamom, served with dates.', 'دلة قهوة عُمانية بالهيل تُقدَّم مع التمر.'],
+  Luqaimat: ['Crisp golden dumplings drizzled with date syrup.', 'لقيمات ذهبية مقرمشة مع دبس التمر.'],
+  'Date Cake': ['Soft date cake with a caramel glaze.', 'كعكة تمر طرية بصوص الكراميل.'],
+  'Omani Bananas (1kg)': ['Fresh Omani bananas, one kilogram.', 'موز عُماني طازج، كيلوغرام واحد.'],
+  'Tomatoes (1kg)': ['Fresh red tomatoes, one kilogram.', 'طماطم حمراء طازجة، كيلوغرام واحد.'],
+  'Basmati Rice (5kg)': ['Long-grain basmati rice, 5 kg bag.', 'أرز بسمتي طويل الحبة، كيس ٥ كجم.'],
+  'Fresh Milk (2L)': ['Full-fat fresh milk, 2 litre bottle.', 'حليب طازج كامل الدسم، عبوة ٢ لتر.'],
+  'Red Roses Bouquet': ['Hand-tied red roses wrapped in kraft paper.', 'ورود حمراء منسّقة يدوياً ومغلّفة بورق كرافت.'],
+  'Seasonal Mix': ['A mixed bouquet of the season’s flowers.', 'باقة منوّعة من زهور الموسم.'],
 };
 const COVER_IMAGES: Record<string, string> = { 'saffron-grill': 'grill', 'qahwa-house': 'qahwa', 'nakheel-market': 'groceries', 'ward-flowers': 'roses' };
 const sampleUrl = (name: string) => `${config.MERCHANT_WEB_URL}/sample/${name}.jpg`;
@@ -192,7 +211,7 @@ async function seedPeople() {
       const cat = await one(pool, `INSERT INTO categories (merchant_id, name_en, name_ar, sort_order) VALUES ($1,$2,$3,$4) RETURNING id`, [row.id, cen, car, ci]);
       for (const [pi, [pen, par, price, groups, stock]] of (products as any[]).entries()) {
         const p = await one(pool, `INSERT INTO products (merchant_id, category_id, name_en, name_ar, base_price_baisa, sort_order, track_stock, stock_qty, description_en, description_ar, image_url)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, [row.id, cat.id, pen, par, price, pi, stock != null, stock ?? 0, `${pen} — sample product`, `${par} — منتج تجريبي`,
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, [row.id, cat.id, pen, par, price, pi, stock != null, stock ?? 0, PRODUCT_DESCRIPTIONS[pen]?.[0] ?? null, PRODUCT_DESCRIPTIONS[pen]?.[1] ?? null,
           PRODUCT_IMAGES[pen] ? sampleUrl(PRODUCT_IMAGES[pen]) : null]);
         for (const [gi, g] of (groups as any[]).entries()) {
           const grp = await one(pool, `INSERT INTO product_option_groups (product_id, kind, name_en, name_ar, min_select, max_select, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`, [p.id, g.kind, g.en, g.ar, g.min, g.max, gi]);
