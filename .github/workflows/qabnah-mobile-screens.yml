@@ -5,8 +5,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'qabnah/mobile/screens/**'
-      - 'qabnah/mobile/ios/QabnahScreens/**'
+      - 'qabnah/mobile/**'
       - '.github/workflows/qabnah-mobile-screens.yml'
 
 permissions:
