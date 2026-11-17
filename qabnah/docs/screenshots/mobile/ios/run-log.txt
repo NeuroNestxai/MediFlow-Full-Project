@@ -8,7 +8,7 @@ shot: captain-04-online
 shot: captain-06-deliveries
 shot: captain-07-earnings
 shot: captain-08-profile
-Test Case '-[QabnahScreens.QabnahScreensTests testCaptainScreens]' passed (117.653 seconds).
+Test Case '-[QabnahScreens.QabnahScreensTests testCaptainScreens]' passed (133.486 seconds).
 Test Case '-[QabnahScreens.QabnahScreensTests testConsumerScreens]' started.
 shot: consumer-01-home
 shot: consumer-02-home-stores
@@ -28,8 +28,8 @@ missing: auth.verify
 shot: consumer-12-orders
 shot: consumer-14-send
 shot: consumer-16-account
-Test Case '-[QabnahScreens.QabnahScreensTests testConsumerScreens]' passed (176.934 seconds).
-	 Executed 2 tests, with 0 failures (0 unexpected) in 294.587 (294.590) seconds
-	 Executed 2 tests, with 0 failures (0 unexpected) in 294.587 (294.593) seconds
-	 Executed 2 tests, with 0 failures (0 unexpected) in 294.587 (294.607) seconds
+Test Case '-[QabnahScreens.QabnahScreensTests testConsumerScreens]' passed (188.643 seconds).
+	 Executed 2 tests, with 0 failures (0 unexpected) in 322.129 (322.136) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 322.129 (322.145) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 322.129 (322.147) seconds
 ** TEST SUCCEEDED **
