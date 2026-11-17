@@ -319,7 +319,7 @@ fun DeliveryCard(d: CaptainDelivery, onClick: () -> Unit, modifier: Modifier = M
     QCard(modifier.fillMaxWidth(), onClick = onClick, containerColor = QabnahColors.Night) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(digits("#" + d.orderNumber), style = MaterialTheme.typography.titleMedium.tabular())
+                Text("#" + d.orderNumber, style = MaterialTheme.typography.titleMedium.tabular())
                 d.merchantName?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             }
             StatusPill(deliveryStatusLabel(d.status), QabnahColors.Primary)

@@ -126,7 +126,7 @@ private fun OrderRow(order: Order, onClick: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    digits("#" + order.number) + "  ·  " + dateTime(order.createdAt),
+                    "#" + order.number + "  ·  " + dateTime(order.createdAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

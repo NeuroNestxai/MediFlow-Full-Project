@@ -99,7 +99,7 @@ fun OrderDetailScreen(
     val actions by vm.actions.collectAsStateWithLifecycle()
 
     ScreenScaffold(
-        title = state.data?.let { digits("#" + it.number) } ?: stringResource(R.string.order_title),
+        title = state.data?.let { "#" + it.number } ?: stringResource(R.string.order_title),
         onBack = onBack,
         actions = {
             IconButton(onClick = onHelp) { Icon(Icons.Outlined.SupportAgent, contentDescription = stringResource(R.string.order_help)) }

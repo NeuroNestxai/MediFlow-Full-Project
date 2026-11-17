@@ -203,7 +203,7 @@ private fun LedgerRow(entry: LedgerEntry) {
         Column(Modifier.weight(1f)) {
             Text(ledgerTypeLabel(entry.entryType), style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                listOfNotNull(entry.orderNumber?.let { digits("#$it") }, dateTime(entry.createdAt)).joinToString("  ·  "),
+                listOfNotNull(entry.orderNumber?.let { "#$it" }, dateTime(entry.createdAt)).joinToString("  ·  "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

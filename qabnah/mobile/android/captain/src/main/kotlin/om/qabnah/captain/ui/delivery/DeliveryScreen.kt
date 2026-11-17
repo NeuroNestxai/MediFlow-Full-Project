@@ -98,7 +98,7 @@ fun DeliveryScreen(
     val onAction: (DeliveryAction) -> Unit = { a -> if (a == DeliveryAction.COMPLETE) onComplete() else vm.onAction(a) }
 
     ScreenScaffold(
-        title = state.data?.let { digits("#" + it.orderNumber) } ?: stringResource(R.string.delivery_title),
+        title = state.data?.let { "#" + it.orderNumber } ?: stringResource(R.string.delivery_title),
         onBack = onBack,
         actions = {
             state.data?.let { d ->

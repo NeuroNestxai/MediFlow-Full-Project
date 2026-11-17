@@ -49,10 +49,14 @@ fun dateTime(iso: String?): String {
     if (iso.isNullOrBlank()) return ""
     val instant = runCatching { Instant.parse(iso) }.getOrNull() ?: return iso
     val locale = if (isArabic()) Locale.forLanguageTag("ar-OM") else Locale.ENGLISH
-    return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-        .withLocale(locale)
-        .withZone(MUSCAT)
-        .format(instant)
+    // Dates use the same digits as every other number on screen (java.time keeps Latin digits for "ar-OM").
+    return Units.localizeDigits(
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+            .withLocale(locale)
+            .withZone(MUSCAT)
+            .format(instant),
+        isArabic(),
+    )
 }
 
 /** Time only, e.g. "14:05". */
@@ -61,7 +65,7 @@ fun timeOnly(iso: String?): String {
     if (iso.isNullOrBlank()) return ""
     val instant = runCatching { Instant.parse(iso) }.getOrNull() ?: return iso
     val locale = if (isArabic()) Locale.forLanguageTag("ar-OM") else Locale.ENGLISH
-    return DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).withZone(MUSCAT).format(instant)
+    return Units.localizeDigits(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).withZone(MUSCAT).format(instant), isArabic())
 }
 
 @Composable
