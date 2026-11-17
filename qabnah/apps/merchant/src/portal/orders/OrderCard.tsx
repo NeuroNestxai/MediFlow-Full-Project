@@ -31,7 +31,7 @@ export function OrderCard({ order, perms, onAction, onOpen, highlight, busy, thu
         <span className="order-card__mid">
           <Photo src={thumbUrl} category={order.type === 'marketplace' ? category : 'other'} glyph={order.type === 'marketplace' ? undefined : 'box'} className="order-card__photo photo--sm" />
           <span className="order-card__info">
-            <span className="order-card__customer truncate">{order.customerName ?? order.delivery?.dropoff.contactName ?? t('orders.walkIn')}</span>
+            <span className="order-card__customer">{order.customerName ?? order.delivery?.dropoff.contactName ?? t('orders.walkIn')}</span>
             <span className="order-card__items">
               {order.type === 'merchant_delivery'
                 ? order.delivery?.packageDescription ?? t('order.type.merchant_delivery')

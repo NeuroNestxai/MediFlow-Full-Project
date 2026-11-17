@@ -14,7 +14,9 @@ const exe = ['/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', '/opt/pw-br
 fs.mkdirSync(OUT, { recursive: true });
 
 const j = async (r) => { const t = await r.text(); try { return JSON.parse(t); } catch { return t; } };
-const call = async (method, p, token, body) => j(await fetch(`${API}${p}`, { method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : method === 'GET' ? undefined : '{}' }));
+const callOnce = async (method, p, token, body) => j(await fetch(`${API}${p}`, { method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : method === 'GET' ? undefined : '{}' }));
+// /auth/* allows 10 requests a minute — wait and retry instead of failing half-way through.
+const call = async (...args) => { for (let i = 0; ; i++) { const r = await callOnce(...args); if (r?.error?.code !== 'rate_limited' || i >= 6) return r; await new Promise((res) => setTimeout(res, 15000)); } };
 const login = async (email) => (await call('POST', '/auth/login', null, { email, password: PASSWORD })).accessToken;
 const shot = async (page, name, opts = {}) => {
   await page.waitForTimeout(opts.wait ?? 700);
@@ -53,33 +55,6 @@ await call('PATCH', `/merchants/${smid}`, saffron, { isOpen: true, openingHours:
 await call('POST', `/merchants/${smid}/payment-links`, saffron, { title: 'وليمة عائلية — طلب خاص', amountBaisa: 18500, requestDelivery: false });
 await call('POST', `/merchants/${smid}/payment-links`, saffron, { title: 'طلب مشاوي عبر إنستغرام', amountBaisa: 7200, requestDelivery: false });
 
-// ───────── Merchant portal (Arabic, desktop) ─────────
-{
-  const ctx = await browser.newContext(desktop);
-  const page = await ctx.newPage();
-  await page.goto(`${M}/login`);
-  await shot(page, '32-merchant-login.png', { wait: 1200 });
-  await page.fill('input[type=email]', 'owner@saffron-grill.qabnah.test');
-  await page.fill('input[type=password]', PASSWORD);
-  await page.click('button[type=submit]');
-  await page.waitForURL(/\/orders$/);
-  await page.waitForSelector('[data-testid=order-card]', { timeout: 10000 }).catch(() => undefined);
-  await shot(page, '10-merchant-orders-board.png', { wait: 1500 });
-  if (await page.locator('[data-testid=order-card] .order-card__main').count()) {
-    await page.locator('[data-testid=order-card] .order-card__main').first().click();
-    await shot(page, '11-merchant-order-drawer.png', { wait: 1500 });
-  }
-  await page.goto(`${M}/catalog`); await page.waitForSelector('[data-testid=catalog-card]'); await shot(page, '12-merchant-catalog.png', { wait: 1200 });
-  await page.locator('[data-testid=catalog-card] a').first().click(); await page.waitForSelector('.editor-layout'); await shot(page, '13-merchant-product-variants.png', { wait: 1200, full: true, tall: true });
-  await page.goto(`${M}/store?tab=branding`); await page.waitForSelector('.phone'); await shot(page, '14-merchant-branding.png', { wait: 1500 });
-  await page.goto(`${M}/deliveries/new`); await shot(page, '15-merchant-book-delivery.png', { wait: 1500 });
-  await page.goto(`${M}/payment-links`); await shot(page, '16-merchant-payment-links.png', { wait: 1200 });
-  await page.goto(`${M}/whatsapp`); await shot(page, '17-merchant-whatsapp.png', { wait: 1200 });
-  await page.goto(`${M}/finance`); await shot(page, '18-merchant-finance.png', { wait: 1200 });
-  await page.goto(`${M}/analytics`); await shot(page, '19-merchant-analytics.png', { wait: 1500 });
-  await ctx.close();
-}
-
 // ───────── Storefront (Arabic, phone) ─────────
 {
   const ctx = await browser.newContext(phone);
@@ -109,6 +84,16 @@ await call('POST', `/merchants/${smid}/payment-links`, saffron, { title: 'طلب
   const delivery = live.deliveries.find((d) => d.orderId === orderId);
   const captain = live.captains.find((c) => /Ahmed/.test(c.fullName)) ?? live.captains[0];
   if (delivery && captain) await call('POST', `/admin/deliveries/${delivery.id}/assign`, admin, { captainId: captain.id });
+  // Two more real orders at Saffron Grill from the same signed-in customer, so the merchant board shows several stages.
+  const consumer = JSON.parse(await page.evaluate(() => localStorage.getItem('qabnah.consumer.session'))).accessToken;
+  const addressId = (await call('GET', '/me/addresses', consumer)).items[0].id;
+  const menu = (await call('GET', '/stores/saffron-grill')).categories.flatMap((cat) => cat.products);
+  const line = (name, quantity) => { const pr = menu.find((x) => x.nameEn === name); return { productId: pr.id, quantity, optionIds: (pr.optionGroups ?? []).filter((g) => g.minSelect > 0).map((g) => g.options[0].id) }; };
+  const place = async (items, paymentMethod) => call('POST', '/orders', consumer, { merchantId: smid, addressId, paymentMethod, source: 'storefront', items });
+  const o1 = await place([line('Mixed Grill Platter', 1), line('Fresh Lemon Mint', 2)], 'cod');
+  const o2 = await place([line('Chicken Shawarma', 3), line('Laban', 3)], 'cod');
+  if (o1?.id) await call('POST', `/merchants/${smid}/orders/${o1.id}/accept`, saffron, { prepTimeMinutes: 20 });
+  if (o2?.id) { await call('POST', `/merchants/${smid}/orders/${o2.id}/accept`, saffron, { prepTimeMinutes: 15 }); await call('POST', `/merchants/${smid}/orders/${o2.id}/preparing`, saffron); }
   await page.reload(); await page.waitForSelector('.track');
   await shot(page, '03-order-tracking-phone.png', { wait: 1800, full: true });
   const state = await ctx.storageState();
@@ -121,6 +106,33 @@ await call('POST', `/merchants/${smid}/payment-links`, saffron, { title: 'طلب
   const wmid = (await call('GET', '/me', ward)).merchants[0].id;
   const link = await call('POST', `/merchants/${wmid}/payment-links`, ward, { title: 'باقة ورد أحمر', amountBaisa: 12500, requestDelivery: false });
   await page.goto(`${M}/pay/${link.code}`); await page.waitForSelector('.receipt'); await shot(page, '05-payment-link-phone.png', { wait: 1200, full: true });
+  await ctx.close();
+}
+
+// ───────── Merchant portal (Arabic, desktop) ─────────
+{
+  const ctx = await browser.newContext(desktop);
+  const page = await ctx.newPage();
+  await page.goto(`${M}/login`);
+  await shot(page, '32-merchant-login.png', { wait: 1200 });
+  await page.fill('input[type=email]', 'owner@saffron-grill.qabnah.test');
+  await page.fill('input[type=password]', PASSWORD);
+  await page.click('button[type=submit]');
+  await page.waitForURL(/\/orders$/);
+  await page.waitForSelector('[data-testid=order-card]', { timeout: 10000 }).catch(() => undefined);
+  await shot(page, '10-merchant-orders-board.png', { wait: 1500 });
+  if (await page.locator('[data-testid=order-card] .order-card__main').count()) {
+    await page.locator('[data-testid=order-card] .order-card__main').first().click();
+    await shot(page, '11-merchant-order-drawer.png', { wait: 1500 });
+  }
+  await page.goto(`${M}/catalog`); await page.waitForSelector('[data-testid=catalog-card]'); await shot(page, '12-merchant-catalog.png', { wait: 1200 });
+  await page.locator('[data-testid=catalog-card] a').first().click(); await page.waitForSelector('.editor-layout'); await shot(page, '13-merchant-product-variants.png', { wait: 1200, full: true, tall: true });
+  await page.goto(`${M}/store?tab=branding`); await page.waitForSelector('.phone'); await shot(page, '14-merchant-branding.png', { wait: 1500 });
+  await page.goto(`${M}/deliveries/new`); await shot(page, '15-merchant-book-delivery.png', { wait: 1500 });
+  await page.goto(`${M}/payment-links`); await shot(page, '16-merchant-payment-links.png', { wait: 1200 });
+  await page.goto(`${M}/whatsapp`); await shot(page, '17-merchant-whatsapp.png', { wait: 1200 });
+  await page.goto(`${M}/finance`); await shot(page, '18-merchant-finance.png', { wait: 1200 });
+  await page.goto(`${M}/analytics`); await shot(page, '19-merchant-analytics.png', { wait: 1500 });
   await ctx.close();
 }
 
