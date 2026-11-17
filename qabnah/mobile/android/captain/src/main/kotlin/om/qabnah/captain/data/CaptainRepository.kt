@@ -21,6 +21,7 @@ import om.qabnah.core.model.LatLng
 import om.qabnah.core.model.Me
 import om.qabnah.core.model.ProfileUpdate
 import om.qabnah.core.model.Settlement
+import om.qabnah.core.model.Tracking
 import om.qabnah.core.model.Zone
 import om.qabnah.core.util.DateRanges
 
@@ -61,6 +62,9 @@ class CaptainRepository(private val api: QabnahApi) {
     suspend fun advance(id: String, action: DeliveryAction, reason: String?, location: LatLng?): CaptainDelivery =
         api.advanceDelivery(id, action, reason, location)
     suspend fun complete(id: String, input: CompleteDeliveryInput): CaptainDelivery = api.completeDelivery(id, input)
+
+    /** `GET /orders/{orderId}/tracking` (allowed for the assigned captain): used for the breadcrumb path on the map. */
+    suspend fun tracking(orderId: String): Tracking = api.tracking(orderId)
 
     suspend fun earnings(range: DateRanges.Range): Earnings = api.earnings(range.fromIso, range.toIso)
     suspend fun payouts(): List<Settlement> = api.payouts().sortedByDescending { it.periodEnd }

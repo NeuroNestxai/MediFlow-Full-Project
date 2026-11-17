@@ -46,7 +46,25 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="qabnah" android:host="payment-return" />
             </intent-filter>
+            <!-- Deep links (contract): qabnah://order/<orderId>, qabnah://ticket/<ticketId>. Routed by ConsumerRoot. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="qabnah" />
+                <data android:host="order" />
+                <data android:host="ticket" />
+            </intent-filter>
         </activity>
+
+        <!-- FCM (only active when FCM_* BuildConfig fields are configured, see README) -->
+        <service
+            android:name=".push.ConsumerMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- Persists the in-app language on API < 33 (AppCompatDelegate.setApplicationLocales). -->
         <service

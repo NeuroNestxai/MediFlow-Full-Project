@@ -215,5 +215,6 @@
     <string name="channel_offers_desc">عروض توصيل جديدة تحتاج رداً سريعاً.</string>
     <string name="notif_online_title">أنت متصل</string>
     <string name="notif_online_text">تتم مشاركة موقعك لاستقبال عروض التوصيل.</string>
+    <string name="notif_offer_push_title">عرض توصيل جديد</string>
     <string name="notif_offer_title">عرض جديد · %1$s</string>
 </resources>

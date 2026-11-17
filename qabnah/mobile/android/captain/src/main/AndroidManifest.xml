@@ -53,7 +53,27 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Deep links (contract): qabnah://offer/<offerId>, qabnah://delivery/<deliveryId>, qabnah://ticket/<ticketId>.
+                 Routed by CaptainRoot. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="qabnah" />
+                <data android:host="offer" />
+                <data android:host="delivery" />
+                <data android:host="ticket" />
+            </intent-filter>
         </activity>
+
+        <!-- FCM (only active when FCM_* BuildConfig fields are configured, see README) -->
+        <service
+            android:name=".push.CaptainMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".service.LocationService"

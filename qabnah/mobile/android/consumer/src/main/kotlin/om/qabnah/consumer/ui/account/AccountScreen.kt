@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import om.qabnah.android.account.PrivacySection
 import om.qabnah.android.locale.AppLocale
 import om.qabnah.android.locale.isArabic
 import om.qabnah.android.ui.components.ConfirmDialog
@@ -57,7 +58,7 @@ fun AccountScreen(
     onNotifications: () -> Unit,
     onSupport: () -> Unit,
 ) {
-    val vm: AccountViewModel = viewModel { AccountViewModel(container.account, container.cart, container.realtime) }
+    val vm: AccountViewModel = viewModel { AccountViewModel(container.account, container.cart, container.realtime, container.push) }
     val me by vm.me.collectAsStateWithLifecycle()
     val unread by vm.unread.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
@@ -101,6 +102,8 @@ fun AccountScreen(
             supportingContent = { Text(stringResource(if (isArabic()) CommonR.string.language_ar else CommonR.string.language_en)) },
             modifier = Modifier.clickable { choosingLanguage = true },
         )
+        HorizontalDivider()
+        PrivacySection(container.api, onAccountDeleted = container::onAccountDeleted)
         HorizontalDivider()
         ListItem(
             leadingContent = { Icon(Icons.Filled.PowerSettingsNew, contentDescription = null, tint = MaterialTheme.colorScheme.error) },

@@ -39,7 +39,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import om.qabnah.android.auth.AuthScreen
 import om.qabnah.android.auth.CompleteProfileGate
-import om.qabnah.android.push.PushRegistration
+import om.qabnah.android.links.HandleDeepLinks
 import om.qabnah.android.support.NewTicketScreen
 import om.qabnah.android.support.NotificationsScreen
 import om.qabnah.android.support.TicketDetailScreen
@@ -64,6 +64,8 @@ import om.qabnah.captain.ui.onboarding.ZonesScreen
 import om.qabnah.captain.ui.permissions.PermissionsScreen
 import om.qabnah.captain.ui.profile.ProfileScreen
 import om.qabnah.core.api.SessionEvent
+import om.qabnah.core.push.DeepLink
+import kotlinx.coroutines.launch
 
 object Routes {
     const val HOME = "home"
@@ -107,6 +109,7 @@ fun CaptainRoot(container: CaptainContainer) {
         container.services.apiClient.sessionEvents.collect {
             if (it == SessionEvent.Expired) {
                 container.online.stopTracking()
+                container.push.forget() // cannot unregister without a session; the server drops stale tokens
                 snackbar.showSnackbar(sessionExpiredText)
             }
         }
@@ -114,7 +117,7 @@ fun CaptainRoot(container: CaptainContainer) {
     LaunchedEffect(signedIn) {
         if (signedIn) {
             container.realtime.connect()
-            PushRegistration.register(container.api, "captain", container.pushTokens)
+            container.push.registerCurrent()
         } else {
             container.online.stopTracking()
             container.realtime.disconnect()
@@ -184,8 +187,27 @@ private fun MainScaffold(container: CaptainContainer, snackbar: SnackbarHostStat
         ) { padding ->
             CaptainNavHost(container, nav, Modifier.padding(padding))
         }
-        // Incoming offers cover everything until accepted, rejected or expired.
-        OfferOverlay(container, snackbar, onAccepted = { deliveryId -> nav.navigate(Routes.delivery(deliveryId)) })
+        // Incoming offers cover everything until accepted, rejected or expired. Accepting goes straight to the
+        // active delivery (Home stays underneath for Back).
+        OfferOverlay(container, snackbar, onAccepted = { deliveryId ->
+            nav.navigate(Routes.delivery(deliveryId)) {
+                popUpTo(Routes.HOME)
+                launchSingleTop = true
+            }
+        })
+    }
+    // Deep links / notification taps, once signed in, registered and the graph exists.
+    HandleDeepLinks(container.deepLinks, ready = backStack != null) { link ->
+        when (link) {
+            is DeepLink.Offer -> {
+                // The overlay shows it if it is still pending (it may have expired or been taken meanwhile).
+                container.services.appScope.launch { container.offers.refresh() }
+                nav.navigate(Routes.HOME) { popUpTo(Routes.HOME); launchSingleTop = true }
+            }
+            is DeepLink.Delivery -> nav.navigate(Routes.delivery(link.deliveryId)) { launchSingleTop = true }
+            is DeepLink.Ticket -> nav.navigate(Routes.ticket(link.ticketId)) { launchSingleTop = true }
+            is DeepLink.Order, is DeepLink.PaymentReturn -> Unit // consumer app links
+        }
     }
 }
 

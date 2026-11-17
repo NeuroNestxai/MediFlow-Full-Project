@@ -17,10 +17,19 @@ class NotificationCompat {
         fun setAutoCancel(auto: Boolean): Builder = this
         fun setFullScreenIntent(intent: PendingIntent?, highPriority: Boolean): Builder = this
         fun setTimeoutAfter(durationMs: Long): Builder = this
+        fun setStyle(style: Style?): Builder = this
         fun build(): Notification = TODO()
     }
+    abstract class Style
+    class BigTextStyle : Style() {
+        fun bigText(text: CharSequence?): BigTextStyle = this
+    }
     companion object {
+        const val PRIORITY_DEFAULT = 0
+        const val PRIORITY_HIGH = 1
         const val PRIORITY_MAX = 2
+        const val CATEGORY_MESSAGE = "msg"
+        const val CATEGORY_STATUS = "status"
         const val CATEGORY_CALL = "call"
         const val CATEGORY_SERVICE = "service"
     }

@@ -13,7 +13,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import om.qabnah.captain.MainActivity
 import om.qabnah.captain.R
+import om.qabnah.android.push.PushNotifications
 import om.qabnah.core.model.Offer
+import om.qabnah.core.push.DeepLink
+import om.qabnah.core.push.PushPayload
 import om.qabnah.core.money.Money
 
 object Notifications {
@@ -21,6 +24,8 @@ object Notifications {
     const val CHANNEL_OFFERS = "offers"
     const val ID_ONLINE = 1001
     private const val ID_OFFER_BASE = 2000
+    /** Offers expire within a minute or two; the push carries no expiry, so drop the alert after 2 min. */
+    private const val OFFER_PUSH_TIMEOUT_MS = 120_000L
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -71,6 +76,34 @@ object Notifications {
             .setTimeoutAfter(OfferTimeout.millisUntil(offer))
             .build()
         NotificationManagerCompat.from(context).notify(ID_OFFER_BASE + (offer.id.hashCode() and 0xFFFF), n)
+    }
+
+    /**
+     * Offer alert from an FCM push (we only have the push text, not the full Offer). Uses the same notification id as
+     * [offer], so a socket-driven alert and a push for the same offer replace each other instead of stacking.
+     */
+    @android.annotation.SuppressLint("MissingPermission") // checked by canPost()
+    fun offerPush(context: Context, payload: PushPayload) {
+        val offerId = payload.offerId ?: return
+        if (!canPost(context)) return
+        val open = PendingIntent.getActivity(
+            context,
+            offerId.hashCode(),
+            PushNotifications.intentFor(context, MainActivity::class.java, DeepLink.Offer(offerId)),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val n = NotificationCompat.Builder(context, CHANNEL_OFFERS)
+            .setSmallIcon(om.qabnah.android.R.drawable.ic_notification)
+            .setContentTitle(payload.title ?: context.getString(R.string.notif_offer_push_title))
+            .setContentText(payload.body)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setAutoCancel(true)
+            .setContentIntent(open)
+            .setFullScreenIntent(open, true)
+            .setTimeoutAfter(OFFER_PUSH_TIMEOUT_MS)
+            .build()
+        NotificationManagerCompat.from(context).notify(ID_OFFER_BASE + (offerId.hashCode() and 0xFFFF), n)
     }
 
     fun cancelOffer(context: Context, offerId: String) {

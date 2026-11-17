@@ -1,6 +1,7 @@
 package om.qabnah.consumer.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -37,13 +38,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import om.qabnah.android.auth.AuthScreen
 import om.qabnah.android.auth.CompleteProfileGate
-import om.qabnah.android.push.PushRegistration
+import om.qabnah.android.links.HandleDeepLinks
 import om.qabnah.android.support.NewTicketScreen
 import om.qabnah.android.support.NotificationsScreen
 import om.qabnah.android.support.TicketDetailScreen
 import om.qabnah.android.support.TicketsScreen
 import om.qabnah.android.ui.components.DevBanner
+import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.core.api.SessionEvent
+import om.qabnah.core.push.DeepLink
 import om.qabnah.consumer.BuildConfig
 import om.qabnah.consumer.ConsumerContainer
 import om.qabnah.consumer.R
@@ -97,6 +100,11 @@ private val tabs = listOf(
     Tab(Routes.ACCOUNT, R.string.tab_account, Icons.Filled.AccountCircle),
 )
 
+/**
+ * Guests can browse Home and storefronts (`/stores`, `/stores/{slug}`, `/zones` are public). Checkout, the Send / Orders /
+ * Account tabs and order/ticket screens show the OTP sign-in in place ([RequireSignIn]); once signed in the same
+ * destination renders its content, so the user continues where they were (e.g. the cart's checkout).
+ */
 @Composable
 fun ConsumerRoot(container: ConsumerContainer) {
     val signedIn by container.services.apiClient.signedIn.collectAsStateWithLifecycle()
@@ -104,15 +112,19 @@ fun ConsumerRoot(container: ConsumerContainer) {
     val sessionExpiredText = stringResource(om.qabnah.android.R.string.error_session)
 
     LaunchedEffect(Unit) {
-        container.services.apiClient.sessionEvents.collect { if (it == SessionEvent.Expired) snackbar.showSnackbar(sessionExpiredText) }
+        container.services.apiClient.sessionEvents.collect {
+            if (it == SessionEvent.Expired) {
+                container.push.forget() // cannot unregister without a session; the server drops stale tokens
+                snackbar.showSnackbar(sessionExpiredText)
+            }
+        }
     }
     LaunchedEffect(signedIn) {
         if (signedIn) {
             container.realtime.connect()
-            PushRegistration.register(container.api, "consumer", container.pushTokens)
+            container.push.registerCurrent()
         } else {
             container.realtime.disconnect()
-            container.cart.clear()
         }
     }
 
@@ -120,13 +132,38 @@ fun ConsumerRoot(container: ConsumerContainer) {
         Column(Modifier.fillMaxSize()) {
             if (BuildConfig.DEBUG) DevBanner(stringResource(om.qabnah.android.R.string.common_dev_banner, BuildConfig.API_BASE_URL))
             Box(Modifier.weight(1f)) {
-                if (!signedIn) {
-                    AuthScreen(container.api, appName = stringResource(R.string.app_name), logo = R.drawable.ic_logo)
-                } else {
-                    CompleteProfileGate(container.api)
-                    MainScaffold(container, snackbar)
-                }
+                if (signedIn) CompleteProfileGate(container.api)
+                MainScaffold(container, snackbar)
             }
+        }
+    }
+}
+
+/** Shows [content] when signed in, otherwise the OTP sign-in (with a back arrow when [onBack] is given). */
+@Composable
+fun RequireSignIn(
+    container: ConsumerContainer,
+    onBack: (() -> Unit)? = null,
+    title: String? = null,
+    content: @Composable () -> Unit,
+) {
+    val signedIn by container.services.apiClient.signedIn.collectAsStateWithLifecycle()
+    if (signedIn) {
+        content()
+        return
+    }
+    val reason = stringResource(om.qabnah.android.R.string.auth_required_body)
+    if (onBack == null) {
+        AuthScreen(container.api, appName = stringResource(R.string.app_name), logo = R.drawable.ic_logo, reason = reason)
+    } else {
+        ScreenScaffold(title = title ?: stringResource(om.qabnah.android.R.string.auth_required_title), onBack = onBack) { padding ->
+            AuthScreen(
+                container.api,
+                appName = stringResource(R.string.app_name),
+                logo = R.drawable.ic_logo,
+                reason = reason,
+                modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+            )
         }
     }
 }
@@ -164,6 +201,21 @@ private fun MainScaffold(container: ConsumerContainer, snackbar: SnackbarHostSta
     ) { padding ->
         ConsumerNavHost(container, nav, Modifier.padding(padding))
     }
+    // Deep links / notification taps, once the graph exists. Protected destinations ask for sign-in themselves.
+    HandleDeepLinks(container.deepLinks, ready = backStack != null) { link ->
+        when (link) {
+            is DeepLink.Order -> {
+                nav.navigate(Routes.order(link.orderId)) { launchSingleTop = true }
+                if (link.openTracking) nav.navigate(Routes.tracking(link.orderId)) { launchSingleTop = true }
+            }
+            is DeepLink.Ticket -> nav.navigate(Routes.ticket(link.ticketId)) { launchSingleTop = true }
+            // Back from the hosted payment page: PaymentScreen polls on resume. After a cold start, show the order.
+            is DeepLink.PaymentReturn -> if (link.orderId != null && nav.currentDestination?.route != Routes.PAYMENT) {
+                nav.navigate(Routes.order(link.orderId)) { launchSingleTop = true }
+            }
+            is DeepLink.Offer, is DeepLink.Delivery -> Unit // captain app links
+        }
+    }
 }
 
 @Composable
@@ -173,20 +225,24 @@ private fun ConsumerNavHost(container: ConsumerContainer, nav: NavHostController
             HomeScreen(container, onOpenStore = { nav.navigate(Routes.store(it)) }, onOpenCart = { nav.navigate(Routes.CHECKOUT) })
         }
         composable(Routes.SEND) {
-            SendScreen(container, onCreated = { order ->
-                nav.navigate(if (order.needsPayment) Routes.payment(order.id) else Routes.order(order.id))
-            })
+            RequireSignIn(container) {
+                SendScreen(container, onCreated = { order ->
+                    nav.navigate(if (order.needsPayment) Routes.payment(order.id) else Routes.order(order.id))
+                })
+            }
         }
         composable(Routes.ORDERS) {
-            OrdersScreen(container, onOpen = { nav.navigate(Routes.order(it)) })
+            RequireSignIn(container) { OrdersScreen(container, onOpen = { nav.navigate(Routes.order(it)) }) }
         }
         composable(Routes.ACCOUNT) {
-            AccountScreen(
-                container,
-                onAddresses = { nav.navigate(Routes.ADDRESSES) },
-                onNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
-                onSupport = { nav.navigate(Routes.TICKETS) },
-            )
+            RequireSignIn(container) {
+                AccountScreen(
+                    container,
+                    onAddresses = { nav.navigate(Routes.ADDRESSES) },
+                    onNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
+                    onSupport = { nav.navigate(Routes.TICKETS) },
+                )
+            }
         }
         composable(Routes.STORE, arguments = listOf(navArgument("slug") { type = NavType.StringType })) { entry ->
             StoreScreen(
@@ -198,85 +254,106 @@ private fun ConsumerNavHost(container: ConsumerContainer, nav: NavHostController
         }
         composable(Routes.CHECKOUT) { entry ->
             val newAddressId by entry.savedStateHandle.getStateFlow<String?>(Routes.RESULT_ADDRESS_ID, null).collectAsStateWithLifecycle()
-            CheckoutScreen(
-                container,
-                newAddressId = newAddressId,
-                onBack = { nav.popBackStack() },
-                onAddAddress = { nav.navigate(Routes.addressEdit()) },
-                onPlaced = { order ->
-                    val target = if (order.needsPayment) Routes.payment(order.id) else Routes.order(order.id)
-                    nav.navigate(target) { popUpTo(Routes.HOME) }
-                },
-            )
+            // Guests sign in here and then continue to the checkout of the cart they built.
+            RequireSignIn(container, onBack = { nav.popBackStack() }, title = stringResource(R.string.checkout_title)) {
+                CheckoutScreen(
+                    container,
+                    newAddressId = newAddressId,
+                    onBack = { nav.popBackStack() },
+                    onAddAddress = { nav.navigate(Routes.addressEdit()) },
+                    onPlaced = { order ->
+                        val target = if (order.needsPayment) Routes.payment(order.id) else Routes.order(order.id)
+                        nav.navigate(target) { popUpTo(Routes.HOME) }
+                    },
+                )
+            }
         }
         composable(Routes.PAYMENT, arguments = listOf(navArgument("orderId") { type = NavType.StringType })) { entry ->
             val id = entry.arguments?.getString("orderId").orEmpty()
-            PaymentScreen(
-                container,
-                orderId = id,
-                onDone = { nav.navigate(Routes.order(id)) { popUpTo(Routes.PAYMENT) { inclusive = true } } },
-            )
+            RequireSignIn(container, onBack = { nav.popBackStack() }, title = stringResource(R.string.payment_title)) {
+                PaymentScreen(
+                    container,
+                    orderId = id,
+                    onDone = { nav.navigate(Routes.order(id)) { popUpTo(Routes.PAYMENT) { inclusive = true } } },
+                )
+            }
         }
         composable(Routes.ORDER, arguments = listOf(navArgument("orderId") { type = NavType.StringType })) { entry ->
             val id = entry.arguments?.getString("orderId").orEmpty()
-            OrderDetailScreen(
-                container,
-                orderId = id,
-                onBack = { if (!nav.popBackStack()) nav.navigate(Routes.ORDERS) },
-                onTrack = { nav.navigate(Routes.tracking(id)) },
-                onPay = { nav.navigate(Routes.payment(id)) },
-                onHelp = { nav.navigate(Routes.newTicket(id)) },
-            )
+            RequireSignIn(container, onBack = { nav.popBackStack() }, title = stringResource(R.string.order_title)) {
+                OrderDetailScreen(
+                    container,
+                    orderId = id,
+                    onBack = { if (!nav.popBackStack()) nav.navigate(Routes.ORDERS) },
+                    onTrack = { nav.navigate(Routes.tracking(id)) },
+                    onPay = { nav.navigate(Routes.payment(id)) },
+                    onHelp = { nav.navigate(Routes.newTicket(id)) },
+                )
+            }
         }
         composable(Routes.TRACKING, arguments = listOf(navArgument("orderId") { type = NavType.StringType })) { entry ->
-            TrackingScreen(container, orderId = entry.arguments?.getString("orderId").orEmpty(), onBack = { nav.popBackStack() })
+            RequireSignIn(container, onBack = { nav.popBackStack() }, title = stringResource(R.string.tracking_title)) {
+                TrackingScreen(container, orderId = entry.arguments?.getString("orderId").orEmpty(), onBack = { nav.popBackStack() })
+            }
         }
         composable(Routes.ADDRESSES) {
-            AddressesScreen(
-                container,
-                onBack = { nav.popBackStack() },
-                onAdd = { nav.navigate(Routes.addressEdit()) },
-                onEdit = { nav.navigate(Routes.addressEdit(it)) },
-            )
+            RequireSignIn(container, onBack = { nav.popBackStack() }) {
+                AddressesScreen(
+                    container,
+                    onBack = { nav.popBackStack() },
+                    onAdd = { nav.navigate(Routes.addressEdit()) },
+                    onEdit = { nav.navigate(Routes.addressEdit(it)) },
+                )
+            }
         }
         composable(
             Routes.ADDRESS_EDIT,
             arguments = listOf(navArgument("id") { type = NavType.StringType; nullable = true; defaultValue = null }),
         ) { entry ->
-            AddressEditScreen(
-                container,
-                addressId = entry.arguments?.getString("id"),
-                onBack = { nav.popBackStack() },
-                onSaved = { id ->
-                    nav.previousBackStackEntry?.savedStateHandle?.set(Routes.RESULT_ADDRESS_ID, id)
-                    nav.popBackStack()
-                },
-            )
+            RequireSignIn(container, onBack = { nav.popBackStack() }) {
+                AddressEditScreen(
+                    container,
+                    addressId = entry.arguments?.getString("id"),
+                    onBack = { nav.popBackStack() },
+                    onSaved = { id ->
+                        nav.previousBackStackEntry?.savedStateHandle?.set(Routes.RESULT_ADDRESS_ID, id)
+                        nav.popBackStack()
+                    },
+                )
+            }
         }
         composable(Routes.NOTIFICATIONS) {
-            NotificationsScreen(container.support, onBack = { nav.popBackStack() }, onOpenOrder = { nav.navigate(Routes.order(it)) })
+            RequireSignIn(container, onBack = { nav.popBackStack() }) {
+                NotificationsScreen(container.support, onBack = { nav.popBackStack() }, onOpenOrder = { nav.navigate(Routes.order(it)) })
+            }
         }
         composable(Routes.TICKETS) {
-            TicketsScreen(
-                container.support,
-                onBack = { nav.popBackStack() },
-                onOpen = { nav.navigate(Routes.ticket(it)) },
-                onNew = { nav.navigate(Routes.newTicket()) },
-            )
+            RequireSignIn(container, onBack = { nav.popBackStack() }) {
+                TicketsScreen(
+                    container.support,
+                    onBack = { nav.popBackStack() },
+                    onOpen = { nav.navigate(Routes.ticket(it)) },
+                    onNew = { nav.navigate(Routes.newTicket()) },
+                )
+            }
         }
         composable(Routes.TICKET, arguments = listOf(navArgument("ticketId") { type = NavType.StringType })) { entry ->
-            TicketDetailScreen(container.support, ticketId = entry.arguments?.getString("ticketId").orEmpty(), onBack = { nav.popBackStack() })
+            RequireSignIn(container, onBack = { nav.popBackStack() }) {
+                TicketDetailScreen(container.support, ticketId = entry.arguments?.getString("ticketId").orEmpty(), onBack = { nav.popBackStack() })
+            }
         }
         composable(
             Routes.TICKET_NEW,
             arguments = listOf(navArgument("orderId") { type = NavType.StringType; nullable = true; defaultValue = null }),
         ) { entry ->
-            NewTicketScreen(
-                container.support,
-                orderId = entry.arguments?.getString("orderId"),
-                onBack = { nav.popBackStack() },
-                onCreated = { id -> nav.navigate(Routes.ticket(id)) { popUpTo(Routes.TICKET_NEW) { inclusive = true } } },
-            )
+            RequireSignIn(container, onBack = { nav.popBackStack() }) {
+                NewTicketScreen(
+                    container.support,
+                    orderId = entry.arguments?.getString("orderId"),
+                    onBack = { nav.popBackStack() },
+                    onCreated = { id -> nav.navigate(Routes.ticket(id)) { popUpTo(Routes.TICKET_NEW) { inclusive = true } } },
+                )
+            }
         }
     }
 }

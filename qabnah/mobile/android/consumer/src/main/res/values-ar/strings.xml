@@ -101,6 +101,7 @@
     <string name="order_cancel_body">يمكن إلغاء الطلب قبل قبول المتجر له (أو قبل الاستلام بالنسبة للطرود).</string>
     <string name="order_cancel_reason_label">السبب (اختياري)</string>
     <string name="order_keep">الإبقاء على الطلب</string>
+    <string name="order_invoice">الفاتورة</string>
     <string name="order_help">مساعدة</string>
     <string name="rate_captain">الكابتن</string>
     <string name="rate_store">المتجر</string>

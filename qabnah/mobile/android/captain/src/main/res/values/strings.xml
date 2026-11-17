@@ -229,5 +229,6 @@
     <string name="channel_offers_desc">New delivery offers that need a quick response.</string>
     <string name="notif_online_title">You\'re online</string>
     <string name="notif_online_text">Sharing your location to receive delivery offers.</string>
+    <string name="notif_offer_push_title">New delivery offer</string>
     <string name="notif_offer_title">New offer · %1$s</string>
 </resources>

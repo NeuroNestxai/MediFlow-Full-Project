@@ -40,11 +40,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import om.qabnah.android.state.WhileStarted
 import om.qabnah.android.ui.components.LoadableContent
 import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.android.ui.components.StatusPill
@@ -62,6 +64,7 @@ import om.qabnah.captain.R
 import om.qabnah.core.model.CaptainDelivery
 import om.qabnah.core.model.DeliveryAction
 import om.qabnah.core.model.Place
+import om.qabnah.core.util.MapRoute
 
 @Composable
 fun DeliveryScreen(
@@ -76,7 +79,10 @@ fun DeliveryScreen(
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val actions by vm.actions.collectAsStateWithLifecycle()
+    val map by vm.map.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { vm.released.collect { onBack() } }
+    // Socket + polling + location only while this screen is visible.
+    WhileStarted(vm) { vm.observeWhileVisible() }
 
     ScreenScaffold(
         title = state.data?.let { digits("#" + it.orderNumber) } ?: stringResource(R.string.delivery_title),
@@ -88,7 +94,7 @@ fun DeliveryScreen(
         },
     ) { padding ->
         LoadableContent(state = state, onRefresh = { vm.load(refresh = true) }, modifier = Modifier.padding(padding)) { d ->
-            DeliveryBody(d, actions, onAction = { a -> if (a == DeliveryAction.COMPLETE) onComplete() else vm.onAction(a) })
+            DeliveryBody(d, map, actions, onAction = { a -> if (a == DeliveryAction.COMPLETE) onComplete() else vm.onAction(a) })
         }
     }
 
@@ -98,17 +104,25 @@ fun DeliveryScreen(
 }
 
 @Composable
-private fun DeliveryBody(d: CaptainDelivery, actions: DeliveryActionsUi, onAction: (DeliveryAction) -> Unit) {
+private fun DeliveryBody(d: CaptainDelivery, map: DeliveryMapUi, actions: DeliveryActionsUi, onAction: (DeliveryAction) -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         val markers = buildList {
             d.pickup.location?.let { add(MapMarker("pickup", it, om.qabnah.android.R.drawable.ic_pin_pickup, stringResource(om.qabnah.android.R.string.map_pickup))) }
             d.dropoff.location?.let { add(MapMarker("dropoff", it, om.qabnah.android.R.drawable.ic_pin_dropoff, stringResource(om.qabnah.android.R.string.map_dropoff))) }
+            map.captain?.let {
+                add(MapMarker("captain", it, om.qabnah.android.R.drawable.ic_pin_captain, stringResource(om.qabnah.android.R.string.map_captain), anchorCenter = true))
+            }
         }
+        val nextStop = MapRoute.nextStop(d.status, d.pickup.location, d.dropoff.location)
         Box(Modifier.fillMaxWidth().height(220.dp)) {
             OsmMap(
                 modifier = Modifier.fillMaxSize(),
                 markers = markers,
-                fitKey = d.id,
+                path = map.path,
+                dashedPath = MapRoute.remainingLeg(map.captain, nextStop),
+                dashedColor = QabnahColors.Accent.toArgb(),
+                // Re-fit when the job moves to the next stop or the first location fix arrives.
+                fitKey = "${d.id}:${d.status}:${map.captain != null}",
                 contentDescription = stringResource(R.string.delivery_map_description),
             )
         }

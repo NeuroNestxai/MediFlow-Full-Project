@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Star
@@ -38,6 +39,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
@@ -61,6 +64,7 @@ import om.qabnah.android.ui.components.orderStatusColor
 import om.qabnah.android.ui.components.orderStatusLabel
 import om.qabnah.android.ui.components.paymentMethodLabel
 import om.qabnah.android.ui.theme.QabnahColors
+import om.qabnah.android.util.Intents
 import om.qabnah.consumer.ConsumerContainer
 import om.qabnah.consumer.R
 import om.qabnah.core.model.Order
@@ -253,6 +257,16 @@ private fun OrderBody(
             if (order.canProbablyCancel) {
                 OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth(), enabled = !busy) {
                     Text(stringResource(R.string.order_cancel), color = MaterialTheme.colorScheme.error)
+                }
+            }
+            order.invoiceUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                // Signed link, valid ~30 min from the last GET /orders/{id} (pull to refresh renews it); no auth header needed.
+                val context = LocalContext.current
+                val toolbar = MaterialTheme.colorScheme.primary.toArgb()
+                OutlinedButton(onClick = { Intents.openCustomTab(context, url, toolbar) }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.Description, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.order_invoice))
                 }
             }
             OutlinedButton(onClick = onHelp, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.order_help)) }

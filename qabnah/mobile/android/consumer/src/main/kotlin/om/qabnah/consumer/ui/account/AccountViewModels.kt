@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import om.qabnah.android.locale.AppLocale
+import om.qabnah.android.push.PushManager
 import om.qabnah.android.state.Loadable
 import om.qabnah.android.state.launchLoad
 import om.qabnah.consumer.data.AccountRepository
@@ -26,6 +27,7 @@ class AccountViewModel(
     private val repo: AccountRepository,
     private val cart: CartRepository,
     private val realtime: RealtimeClient,
+    private val push: PushManager,
 ) : ViewModel() {
     private val _me = MutableStateFlow(Loadable<Me>())
     val me: StateFlow<Loadable<Me>> = _me.asStateFlow()
@@ -66,9 +68,10 @@ class AccountViewModel(
     fun signOut() {
         viewModelScope.launch {
             _busy.value = true
+            push.unregister() // POST /me/devices/unregister while the session is still valid
             realtime.disconnect()
             cart.clear()
-            repo.signOut() // clears tokens → root shows the sign-in screen
+            repo.signOut() // clears tokens → protected tabs show the sign-in screen
             _busy.value = false
         }
     }

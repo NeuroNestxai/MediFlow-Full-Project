@@ -9,4 +9,5 @@ class ActivityResultContracts {
     class RequestPermission : ActivityResultContract<String, Boolean>()
     open class TakePicture : ActivityResultContract<Uri, Boolean>()
     open class OpenDocument : ActivityResultContract<Array<String>, Uri?>()
+    open class CreateDocument(mimeType: String) : ActivityResultContract<String, Uri?>()
 }

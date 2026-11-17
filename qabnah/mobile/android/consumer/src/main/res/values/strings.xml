@@ -101,6 +101,7 @@
     <string name="order_cancel_body">Orders can be cancelled before the store accepts them (or before pickup for parcels).</string>
     <string name="order_cancel_reason_label">Reason (optional)</string>
     <string name="order_keep">Keep order</string>
+    <string name="order_invoice">Invoice</string>
     <string name="order_help">Get help</string>
     <string name="rate_captain">Captain</string>
     <string name="rate_store">Store</string>

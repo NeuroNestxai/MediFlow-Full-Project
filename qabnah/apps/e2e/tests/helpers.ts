@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { expect, type APIRequestContext } from '@playwright/test';
 
 export const API = (process.env.QABNAH_API_URL ?? 'http://localhost:4000/v1').replace(/\/+$/, '');
@@ -31,4 +32,23 @@ export async function openStore(request: APIRequestContext, ownerToken: string, 
   const r = await request.patch(`${API}/merchants/${m.id}`, { headers: auth(ownerToken), data: { isOpen: true, openingHours: [] } });
   expect(r.ok(), `open store ${r.status()}`).toBeTruthy();
   return m.id as string;
+}
+
+/** RFC 6238 TOTP (HMAC-SHA1, 30 s, 6 digits) from a base32 secret, for driving MFA in tests. */
+export function totp(secretB32: string, at = Date.now(), stepOffset = 0): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = 0, value = 0;
+  const bytes: number[] = [];
+  for (const c of secretB32.replace(/[\s=]/g, '').toUpperCase()) {
+    value = (value << 5) | alphabet.indexOf(c);
+    bits += 5;
+    if (bits >= 8) { bytes.push((value >>> (bits - 8)) & 255); bits -= 8; }
+  }
+  const counter = Math.floor(at / 1000 / 30) + stepOffset;
+  const msg = Buffer.alloc(8);
+  msg.writeBigUInt64BE(BigInt(counter));
+  const h = crypto.createHmac('sha1', Buffer.from(bytes)).update(msg).digest();
+  const off = h[h.length - 1] & 0xf;
+  const bin = ((h[off] & 0x7f) << 24) | (h[off + 1] << 16) | (h[off + 2] << 8) | h[off + 3];
+  return String(bin % 1_000_000).padStart(6, '0');
 }

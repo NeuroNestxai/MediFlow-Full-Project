@@ -1,11 +1,13 @@
 package om.qabnah.consumer.data
 
+import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import om.qabnah.core.api.QabnahApi
 import om.qabnah.core.cart.Cart
+import om.qabnah.core.cart.CartCodec
 import om.qabnah.core.cart.CartLine
 import om.qabnah.core.cart.CartMerchant
 import om.qabnah.core.model.Address
@@ -64,18 +66,43 @@ class AccountRepository(private val api: QabnahApi) {
     suspend fun signOut() = api.logout()
 }
 
-/** Single-merchant cart held in memory for the app session. */
-class CartRepository {
-    private val _cart = MutableStateFlow(Cart())
+/**
+ * Single-merchant cart, persisted to SharedPreferences ([CartCodec] JSON) on every change so it survives process death
+ * and app restarts (also while browsing as a guest). Carts older than [MAX_AGE_MS] are dropped; checkout re-quotes
+ * prices with `POST /orders/quote`, so a stored price is never what gets charged.
+ */
+class CartRepository(private val prefs: SharedPreferences? = null) {
+    private val _cart = MutableStateFlow(CartCodec.decode(prefs?.getString(KEY, null), maxAgeMs = MAX_AGE_MS))
     val cart: StateFlow<Cart> = _cart.asStateFlow()
 
     fun add(merchant: CartMerchant, line: CartLine): Cart.AddResult {
         val result = _cart.value.add(merchant, line)
-        if (result is Cart.AddResult.Added) _cart.value = result.cart
+        if (result is Cart.AddResult.Added) set(result.cart)
         return result
     }
 
-    fun replace(merchant: CartMerchant, line: CartLine) = _cart.update { it.replaceWith(merchant, line) }
-    fun setQuantity(index: Int, quantity: Int) = _cart.update { it.setQuantity(index, quantity) }
-    fun clear() { _cart.value = Cart() }
+    fun replace(merchant: CartMerchant, line: CartLine) = mutate { it.replaceWith(merchant, line) }
+    fun setQuantity(index: Int, quantity: Int) = mutate { it.setQuantity(index, quantity) }
+    fun clear() = set(Cart())
+
+    private fun mutate(transform: (Cart) -> Cart) {
+        _cart.update(transform)
+        persist(_cart.value)
+    }
+
+    private fun set(cart: Cart) {
+        _cart.value = cart
+        persist(cart)
+    }
+
+    private fun persist(cart: Cart) {
+        val p = prefs ?: return
+        if (cart.isEmpty) p.edit().remove(KEY).apply() else p.edit().putString(KEY, CartCodec.encode(cart)).apply()
+    }
+
+    companion object {
+        const val PREFS = "qabnah_cart"
+        private const val KEY = "cart"
+        const val MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
+    }
 }

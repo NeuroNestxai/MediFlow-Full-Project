@@ -52,6 +52,8 @@ import om.qabnah.android.ui.components.ConfirmDialog
 import om.qabnah.android.ui.components.StatusPill
 import om.qabnah.android.ui.components.digits
 import om.qabnah.android.ui.components.vehicleLabel
+import om.qabnah.android.account.PrivacySection
+import om.qabnah.android.push.PushManager
 import om.qabnah.captain.BuildConfig
 import om.qabnah.captain.CaptainContainer
 import om.qabnah.captain.R
@@ -69,6 +71,7 @@ class ProfileViewModel(
     private val online: OnlineController,
     private val api: QabnahApi,
     private val realtime: RealtimeClient,
+    private val push: PushManager,
 ) : ViewModel() {
     val profile: StateFlow<CaptainProfile?> = repo.profile
     private val _signingOut = MutableStateFlow(false)
@@ -87,6 +90,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             _signingOut.value = true
             if (repo.profile.value?.isOnline == true) runCatching { online.goOffline() } else online.stopTracking()
+            push.unregister() // POST /me/devices/unregister while the session is still valid
             realtime.disconnect()
             api.logout()
             repo.clear()
@@ -106,7 +110,7 @@ fun ProfileScreen(
     onNotifications: () -> Unit,
     onSupport: () -> Unit,
 ) {
-    val vm: ProfileViewModel = viewModel { ProfileViewModel(container.captain, container.online, container.api, container.realtime) }
+    val vm: ProfileViewModel = viewModel { ProfileViewModel(container.captain, container.online, container.api, container.realtime, container.push) }
     val profile by vm.profile.collectAsStateWithLifecycle()
     var choosingLanguage by rememberSaveable { mutableStateOf(false) }
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
@@ -147,6 +151,8 @@ fun ProfileScreen(
             supportingContent = { Text(stringResource(if (isArabic()) CommonR.string.language_ar else CommonR.string.language_en)) },
             modifier = Modifier.clickable { choosingLanguage = true },
         )
+        HorizontalDivider()
+        PrivacySection(container.api, onAccountDeleted = container::onAccountDeleted)
         HorizontalDivider()
         ListItem(
             leadingContent = { Icon(Icons.Filled.PowerSettingsNew, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
