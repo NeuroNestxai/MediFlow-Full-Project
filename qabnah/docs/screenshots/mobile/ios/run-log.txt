@@ -1,0 +1,38 @@
+Test Case '-[QabnahScreens.QabnahScreensTests testCaptainScreens]' started.
+shot: captain-01-sign-in
+shot: captain-02-sign-in-phone
+shot: captain-02-sign-in-code
+missing: auth.verify
+    t =   103.50s Failed to construct element query matching interruption. Interrupting element Alert, foreground application Application 'com.apple.springboard', element application: (null). If your test failed after this unhandled interruption, please file a bug and attach your .xcresult bundle.
+shot: captain-03-home
+shot: captain-04-online
+shot: captain-06-deliveries
+shot: captain-07-earnings
+shot: captain-08-profile
+Test Case '-[QabnahScreens.QabnahScreensTests testCaptainScreens]' passed (167.177 seconds).
+Test Case '-[QabnahScreens.QabnahScreensTests testConsumerScreens]' started.
+    t =    14.09s Failed to construct element query matching interruption. Interrupting element Alert, foreground application Application 'com.apple.springboard', element application: (null). If your test failed after this unhandled interruption, please file a bug and attach your .xcresult bundle.
+shot: consumer-01-home
+shot: consumer-02-home-stores
+shot: consumer-03-storefront
+shot: consumer-04-product
+shot: consumer-05-storefront-cart-bar
+shot: consumer-06-cart
+shot: consumer-07-sign-in-phone
+shot: consumer-07-sign-in-code
+missing: auth.verify
+    t =    80.87s Failed to construct element query matching interruption. Interrupting element Alert, foreground application Application 'com.apple.springboard', element application: (null). If your test failed after this unhandled interruption, please file a bug and attach your .xcresult bundle.
+shot: consumer-08-checkout-address
+shot: consumer-09-checkout-payment
+shot: consumer-10-checkout-review
+shot: consumer-11-sign-in-phone
+shot: consumer-11-sign-in-code
+missing: auth.verify
+shot: consumer-12-orders
+shot: consumer-14-send
+shot: consumer-16-account
+Test Case '-[QabnahScreens.QabnahScreensTests testConsumerScreens]' passed (190.933 seconds).
+	 Executed 2 tests, with 0 failures (0 unexpected) in 358.110 (358.119) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 358.110 (358.121) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 358.110 (358.123) seconds
+** TEST SUCCEEDED **
