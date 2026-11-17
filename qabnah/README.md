@@ -19,7 +19,13 @@ Delivery and e-commerce platform for **Muscat, Oman**. It covers merchant orders
 > checklist) and [`docs/research/MARKET_AND_COMPLIANCE_RESEARCH.md`](docs/research/MARKET_AND_COMPLIANCE_RESEARCH.md).
 
 ## Screenshots
-Real screens from the running Docker stack with sample data are in [`docs/screenshots/`](docs/screenshots/): storefront and tracking (phone), invoice, merchant portal, admin panel.
+Real screens from the running stack with sample data are in [`docs/screenshots/`](docs/screenshots/): stores directory,
+storefront, product sheet, cart, checkout and tracking (phone), invoice, merchant portal, admin panel — regenerate with
+`apps/e2e/scripts/doc-screenshots.mjs`. Screens of the native apps running on an Android emulator / iPhone simulator
+against the same backend are produced by the `Qabnah mobile screenshots` workflow into `docs/screenshots/mobile/`
+(see [`mobile/screens/`](mobile/screens/)). The design language for every surface is
+[`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md); sample photos are illustrative AI-generated previews
+(`apps/merchant/public/sample/`), to be replaced with real photography.
 
 ## Documents
 - [Implementation plan](docs/IMPLEMENTATION_PLAN.md) · [Architecture](docs/ARCHITECTURE.md) · [Decisions & compliance checklist](docs/DECISIONS.md)
@@ -114,15 +120,15 @@ stores" and "register your store" go), optional `VITE_CONTACT_EMAIL`. Design rul
 |---|---|---|---|
 | Backend | `npm run typecheck` | sandbox + GitHub Actions | ✅ |
 | Backend | `npm test` — 94 tests (unit + integration on PostgreSQL 16/PostGIS 3.4; includes MFA, push signing, S3 via s3rver emulator, OSRM via mock server, invoices, PDPL export/deletion, billing, reminders, realtime WebSocket) | sandbox + GitHub Actions | ✅ 94/94 |
-| Backend | Docker image; `docker compose up` (db, migrate, seed, api, worker, merchant-web, admin-web) | sandbox | ✅ |
+| Backend | Docker image; `docker compose up` (db, migrate, seed, api, worker, merchant-web, admin-web, site-web) | sandbox | ✅ |
 | Backend | `scripts/smoke.mjs` full journey against the Docker stack | sandbox | ✅ |
 | Backend | `scripts/loadtest.mjs` (see TEST_PLAN §4) | sandbox | ✅ ~2.1k req/s reads, 0 errors |
 | Production config | `docker compose -f infra/prod/docker-compose.prod.yml config`; `caddy validate` | sandbox | ✅ valid (not deployed) |
-| Web | typecheck; `npm test` — 49 tests (shared 41, merchant 8); production builds (main chunks: merchant 336 kB / 107 kB gzip, admin 316 kB / 101 kB gzip) | sandbox + GitHub Actions | ✅ |
-| Web | Playwright e2e — admin 2FA sign-in, admin live ops, merchant board accept, storefront → OTP → quote; against Docker (nginx-served apps + compiled API) | sandbox | ✅ 4/4 |
-| iOS | `swift test` QabnahKit (70 tests) | Linux sandbox + macOS 15 GitHub runner | ✅ |
+| Web | typecheck; `npm test` — 50 tests (shared 42, merchant 8); production builds of merchant, admin and site (main chunks: merchant 341 kB / 109 kB gzip, admin 319 kB / 102 kB gzip; site 17 kB + lazy 3D scene 526 kB / 136 kB gzip) | sandbox + GitHub Actions | ✅ |
+| Web | Playwright e2e — admin 2FA sign-in, admin live ops, merchant board accept, storefront → OTP → quote, marketing site; against Docker (nginx-served apps + compiled API) | sandbox | ✅ 5/5 |
+| iOS | `swift test` QabnahKit (74 tests) | Linux sandbox + macOS 15 GitHub runner | ✅ |
 | iOS | `xcodegen` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
-| Android | `./gradlew :core:test` (65 tests) | sandbox + GitHub Actions | ✅ |
+| Android | `./gradlew :core:test` (67 tests) | sandbox + GitHub Actions | ✅ |
 | Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions (runs 16–17) | ✅ both build (APK artifact) |
 
 **Not verified / needs people or accounts:**
