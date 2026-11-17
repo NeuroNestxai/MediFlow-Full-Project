@@ -6,8 +6,8 @@ Success
    saved consumer-01-home.png (1321 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | ماذا تطلب اليوم؟ | ابحث عن متجر | سوق النخيل الطازج | مقاضي البيت إلى باب بيتك | بيت القهوة | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | الرئيسية | إرسال | الطلبات | حسابي
 == consumer: home-scrolled
-   saved consumer-02-home-scrolled.png (1497 kB)
-   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | سوق النخيل الطازج | بيت القهوة | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | بقالة  ·  ٢٥ د  ·  الحد الأدنى ٢٫٠٠٠ ر.ع. | الرئيسية | إرسال | الطلبات | حسابي
+   saved consumer-02-home-scrolled.png (1416 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | سوق النخيل الطازج | مقاضي البيت إلى باب بيتك | بيت القهوة | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | بقالة  ·  ٢٥ د  ·  الحد الأدنى ٢٫٠٠٠ ر.ع. | الرئيسية | إرسال | الطلبات | حسابي
 == consumer: storefront
    saved consumer-03-storefront.png (1592 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | بيت القهوة | مفتوح | قهوة عمانية وكرك وتمور | ١٠ د | Qahwa House, Qurum, Muscat | مشروبات ساخنة | حلويات | كرك الجمعة | شاي كرك | شاي أسود مغلي مع الحليب والهيل. | ٠٫٣٠٠ ر.ع. | أضف شاي كرك إلى السلة | دلة قهوة عمانية | رجوع
@@ -24,7 +24,7 @@ Success
    saved consumer-07-sign-in-phone.png (130 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | قبناه | مرحباً بك في قبناه | تصفّح المتاجر لا يحتاج إلى حساب. سجّل الدخول برقم هاتفك لتطلب وترسل الطرود وتتابع طلباتك. | أدخل رقم هاتفك | سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية. | رقم الهاتف | إرسال الرمز | بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية. | رجوع | إتمام الطلب
 == consumer: signed-in
-   dev code on screen: 014120
+   dev code on screen: 820372
    saved consumer-08-signed-in.png (210 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | ١ | بيت القهوة | شاي كرك | صغير · عادي | ٠٫٣٠٠ ر.ع. | إنقاص الكمية | زيادة الكمية | ٢ | التوصيل إلى | home | Qurum, Near the PDO roundabout, white villa | أضف عنواناً على الخريطة | ٣ | الدفع | الدفع الإلكتروني (بطاقة) | الدفع عند الاستلام | ملاحظة للمتجر (اختياري) | ٤ | الملخص | المجموع الفرعي | رجوع | إتمام الطلب | تأكيد الطلب | ١٫١٠٠ ر.ع.
 == consumer: checkout
@@ -34,49 +34,47 @@ Success
    saved consumer-10-home-signed-in.png (1183 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الموقع متوقف | ماذا تطلب اليوم؟ | ابحث عن متجر | سوق النخيل الطازج | مقاضي البيت إلى باب بيتك | بيت القهوة | الكل | مطاعم | مقاهي | بقالة | صيدليات | مفتوح | عرض السلة (١) · ٠٫٣٠٠ ر.ع. | الرئيسية | إرسال | الطلبات | حسابي
 == consumer: orders
-   saved consumer-11-orders.png (85 kB)
-   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الطلبات | الحالية | السابقة | مشويات الزعفران | #QB١٠٠٠٢٩  ·  17‏/11‏/2026 11:12 ص | تم الطلب | ١٠٫١٩٠ ر.ع. | الرئيسية | إرسال | حسابي
+   saved consumer-11-orders.png (86 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الطلبات | الحالية | السابقة | مشويات الزعفران | #QB100029  ·  ١٧‏/١١‏/٢٠٢٦ ١١:٢٨ ص | تم الطلب | ١٫٧٩٠ ر.ع. | الرئيسية | إرسال | حسابي
 == consumer: send-parcel
    saved consumer-12-send-parcel.png (168 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | إرسال طرد | يستلمه كابتن ويوصله إلى أي مكان ضمن منطقة الخدمة. | الخطوة ١ من ٣  ·  الاستلام والتسليم | الاستلام | حدد الموقع على الخريطة | تفاصيل العنوان (المبنى، معلم قريب) | Maryam Al Lawati | اسم جهة الاتصال | 90000001 | رقم جهة الاتصال | +968 | ملاحظات للكابتن | التسليم | متابعة | الرئيسية | إرسال | الطلبات | حسابي
 == consumer: account
    saved consumer-13-account.png (162 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | حسابي | Maryam Al Lawati | +96890000001 | تعديل الاسم | العناوين المحفوظة | ٤٢ | الإشعارات | الدعم | العربية | اللغة | الخصوصية | تنزيل بياناتي | احفظ نسخة من ملفك الشخصي وعناوينك وطلباتك وتذاكر الدعم (ملف JSON). | حذف الحساب | حذف حسابك وبياناتك الشخصية نهائيًا. | تسجيل الخروج | الإصدار ١.٠.٠ | الرئيسية | إرسال | الطلبات
-   logcat (om.qabnah.consumer, pid 8283): 6 warning/error lines
-     11-17 07:19:47.437  8283  8283 W qabnah.consumer: Unexpected CPU variant for x86: x86_64.
-     11-17 07:19:47.437  8283  8283 W qabnah.consumer: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
-     11-17 07:19:47.827  8283  8283 W ziparchive: Unable to open '/data/app/~~KYIukwjhM8X8TwmeVJqRbw==/om.qabnah.consumer-NAnrfBICIv54i9DdXnrY3Q==/base.dm': No such file or directory
-     11-17 07:19:47.828  8283  8283 W ziparchive: Unable to open '/data/app/~~KYIukwjhM8X8TwmeVJqRbw==/om.qabnah.consumer-NAnrfBICIv54i9DdXnrY3Q==/base.dm': No such file or directory
-     11-17 07:19:48.250  8283  8283 W FirebaseApp: Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
-     11-17 07:19:48.432  8283  8283 W qabnah.consumer: Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
+   logcat (om.qabnah.consumer, pid 8974): 6 warning/error lines
+     11-17 07:36:45.391  8974  8974 W qabnah.consumer: Unexpected CPU variant for x86: x86_64.
+     11-17 07:36:45.391  8974  8974 W qabnah.consumer: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+     11-17 07:36:45.788  8974  8974 W ziparchive: Unable to open '/data/app/~~a4tyf6FGhXuE9yOeFSRmyA==/om.qabnah.consumer-We2swRF4nEmY1OYMQuLejg==/base.dm': No such file or directory
+     11-17 07:36:45.792  8974  8974 W ziparchive: Unable to open '/data/app/~~a4tyf6FGhXuE9yOeFSRmyA==/om.qabnah.consumer-We2swRF4nEmY1OYMQuLejg==/base.dm': No such file or directory
+     11-17 07:36:46.234  8974  8974 W FirebaseApp: Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
+     11-17 07:36:46.426  8974  8974 W qabnah.consumer: Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
 Performing Streamed Install
 Success
 == captain: welcome
-   saved captain-01-welcome.png (88 kB)
+   saved captain-01-welcome.png (85 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | كابتن قبناه | مرحباً بك في كابتن قبناه | أدخل رقم هاتفك | سنرسل لك رمزاً من ٦ أرقام عبر رسالة نصية. | رقم الهاتف | إرسال الرمز | بالمتابعة فإنك توافق على شروط قبناه وسياسة الخصوصية.
 == captain: signed-in-home
-   dev code on screen: 371267
-   saved captain-02-signed-in-home.png (540 kB)
+   dev code on screen: 560396
+   saved captain-02-signed-in-home.png (536 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | مرحباً Salim | أنت متصل | ستظهر هنا العروض القريبة منك. | قطع الاتصال | اليوم | الأرباح | ٠٫٨٧٢ ر.ع. | التوصيلات | ١ | التوصيلات الحالية | بانتظار العروض… | الرئيسية | الملف
 == captain: deliveries
-   saved captain-03-deliveries.png (70 kB)
+   saved captain-03-deliveries.png (65 kB)
    on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | التوصيلات | الحالية | السجل | لا توجد توصيلات حالية | الرئيسية | الأرباح | الملف
 == captain: earnings
-   saved captain-04-earnings.png (138 kB)
-   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الأرباح | اليوم | هذا الأسبوع | هذا الشهر | ٠٫٨٧٢ ر.ع. | مخطط الأرباح. إجمالي الأرباح: ٠٫٨٧٢ ر.ع. | ٠٠ | ٠٤ | ٠٨ | ١٢ | ١٦ | ٢٠ | التوصيلات | ١ | النقد المحصّل (مستحق لقبناه) | ٦٫٢٩٠ ر.ع. | مستحق عليك لقبناه | ٥٦٫٤٦٢ ر.ع. | بحوزتك نقد من طلبات الدفع عند الاستلام أكثر من أرباحك. قم بتوريده لتسوية رصيدك. | الدفعات | الرئيسية | الملف
+   saved captain-04-earnings.png (135 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الأرباح | اليوم | هذا الأسبوع | هذا الشهر | ٠٫٨٧٢ ر.ع. | مخطط الأرباح. إجمالي الأرباح: ٠٫٨٧٢ ر.ع. | ٠٠ | ٠٤ | ٠٨ | ١٢ | ١٦ | ٢٠ | التوصيلات | ١ | النقد المحصّل (مستحق لقبناه) | ١٠٫٤٩٠ ر.ع. | مستحق عليك لقبناه | ٧٧٫٤٦٢ ر.ع. | بحوزتك نقد من طلبات الدفع عند الاستلام أكثر من أرباحك. قم بتوريده لتسوية رصيدك. | الدفعات | الرئيسية | الملف
 == captain: profile
-   saved captain-05-profile.png (149 kB)
-   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الملف الشخصي | Salim Al Harthy | +96890001001 | نشط | التقييم | ٤.٦ | نسبة القبول ٦٠% | سيارة  ·  Nissan  ·  Sunny  ·  White  ·  12345 A | المستندات | مناطق الخدمة | التوفر الأسبوعي | بيانات المركبة والدفع | الأذونات | الإشعارات | الدعم | العربية | اللغة | الرئيسية | التوصيلات | الأرباح | الملف
-   logcat (om.qabnah.captain, pid 8653): 10 warning/error lines
-     11-17 07:20:37.654  8653  8653 W .qabnah.captain: Unexpected CPU variant for x86: x86_64.
-     11-17 07:20:37.654  8653  8653 W .qabnah.captain: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
-     11-17 07:20:37.790  8653  8653 W ziparchive: Unable to open '/data/app/~~ra0-I2eLmYO79az0NFdrrw==/om.qabnah.captain-jdKUZOvqpISmm0QH0XPXRA==/base.dm': No such file or directory
-     11-17 07:20:37.812  8653  8653 W ziparchive: Unable to open '/data/app/~~ra0-I2eLmYO79az0NFdrrw==/om.qabnah.captain-jdKUZOvqpISmm0QH0XPXRA==/base.dm': No such file or directory
-     11-17 07:20:38.225  8653  8653 W FirebaseApp: Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
-     11-17 07:20:38.401  8653  8653 W .qabnah.captain: Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
-     11-17 07:20:39.076  8653  8653 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.app.Activity$$ExternalSyntheticLambda0@7202bd5
-     11-17 07:20:49.108  8653  8661 W .qabnah.captain: Cleared Reference was only reachable from finalizer (only reported once)
-     11-17 07:20:54.020  8653  8653 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@40107294 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@147d187
-     11-17 07:21:03.956  8653  8653 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@40107294 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@16d2b61
+   saved captain-05-profile.png (146 kB)
+   on screen: نسخة تطوير · الخادم http://10.0.2.2:4000/v1 | الملف الشخصي | Salim Al Harthy | +96890001001 | نشط | التقييم | ٤.٨ | نسبة القبول ٥٧% | سيارة  ·  Nissan  ·  Sunny  ·  White  ·  12345 A | المستندات | مناطق الخدمة | التوفر الأسبوعي | بيانات المركبة والدفع | الأذونات | الإشعارات | الدعم | العربية | اللغة | الرئيسية | التوصيلات | الأرباح | الملف
+   logcat (om.qabnah.captain, pid 9325): 8 warning/error lines
+     11-17 07:37:34.553  9325  9325 W ziparchive: Unable to open '/data/app/~~bETQl_4Xij_F25FgXnRhFg==/om.qabnah.captain-Ct_TPfY6eUdP-8F90kCPdg==/base.dm': No such file or directory
+     11-17 07:37:34.553  9325  9325 W ziparchive: Unable to open '/data/app/~~bETQl_4Xij_F25FgXnRhFg==/om.qabnah.captain-Ct_TPfY6eUdP-8F90kCPdg==/base.dm': No such file or directory
+     11-17 07:37:35.079  9325  9325 W FirebaseApp: Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
+     11-17 07:37:35.258  9325  9325 W .qabnah.captain: Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (unsupported, reflection, allowed)
+     11-17 07:37:35.960  9325  9325 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.app.Activity$$ExternalSyntheticLambda0@9862670
+     11-17 07:37:44.860  9325  9333 W .qabnah.captain: Cleared Reference was only reachable from finalizer (only reported once)
+     11-17 07:37:51.024  9325  9325 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@216068420 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@c05c7c4
+     11-17 07:38:00.914  9325  9325 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@216068420 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@cea8b16
 consumer: 13 screenshots, failed steps: none
 captain: 5 screenshots, failed steps: none
