@@ -268,7 +268,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
   const bump = kraftBump();
   const parcel = buildParcel(bump); parcel.rotation.y = -0.38; scene.add(parcel);
   const pin = buildPin(); scene.add(pin);
-  const bag = buildBag(bump); bag.position.set(1.2, 0, -1.3); bag.rotation.y = 0.42; scene.add(bag);
+  const bag = buildBag(bump); bag.position.set(-0.55, 0, -1.8); bag.rotation.y = -0.3; scene.add(bag);
   const phone = buildPhone(); phone.position.set(-1.6, 0.86, 0.45); phone.rotation.set(-0.14, 0.4, 0.02); scene.add(phone);
   const map = buildMap(); map.position.set(0.4, 0, 3.9); map.rotation.y = -0.06; scene.add(map);
 

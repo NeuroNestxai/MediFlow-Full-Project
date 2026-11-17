@@ -1,0 +1,90 @@
+name: Qabnah mobile screenshots
+
+# Runs the Android apps on an emulator against the real backend and commits screenshots to the branch.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'qabnah/mobile/screens/**'
+      - '.github/workflows/qabnah-mobile-screens.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: qabnah-mobile-screens-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 30 }
+
+      - name: Start backend stack (PostGIS, API, worker, merchant web for product photos)
+        working-directory: qabnah/infra
+        run: |
+          cp .env.example .env
+          sed -i 's#^MERCHANT_WEB_URL=.*#MERCHANT_WEB_URL=http://10.0.2.2:5173#' .env
+          docker compose up -d --build db migrate seed api worker merchant-web
+          for i in $(seq 1 60); do curl -fsS localhost:4000/v1/health/ready && break; sleep 3; done
+          curl -fsS localhost:4000/v1/stores | head -c 400
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APKs
+        working-directory: qabnah/mobile/android
+        run: ./gradlew :consumer:assembleDebug :captain:assembleDebug --no-daemon
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run apps on the emulator and take screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python3 qabnah/mobile/screens/android_screens.py "$RUNNER_TEMP/shots" qabnah/mobile/android/consumer/build/outputs/apk/debug/consumer-debug.apk qabnah/mobile/android/captain/build/outputs/apk/debug/captain-debug.apk
+
+      - name: Backend logs (for debugging failed steps)
+        if: always()
+        working-directory: qabnah/infra
+        run: docker compose logs --tail 60 api | tail -80
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: android-screenshots, path: '${{ runner.temp }}/shots', if-no-files-found: warn }
+
+      - name: Publish screenshots to the branch
+        if: always()
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import os, pathlib
+          from PIL import Image
+          src = pathlib.Path(os.environ["RUNNER_TEMP"]) / "shots"
+          dst = pathlib.Path("qabnah/docs/screenshots/mobile/android")
+          dst.mkdir(parents=True, exist_ok=True)
+          for old in dst.glob("*.jpg"): old.unlink()
+          for png in sorted(src.glob("*.png")):
+              im = Image.open(png).convert("RGB")
+              im = im.resize((720, round(im.height * 720 / im.width)), Image.LANCZOS)
+              im.save(dst / (png.stem + ".jpg"), quality=86)
+          print(len(list(dst.glob("*.jpg"))), "screenshots")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A qabnah/docs/screenshots/mobile/android
+          git diff --cached --quiet && { echo "nothing to publish"; exit 0; }
+          git commit -m "Android emulator screenshots (run ${{ github.run_number }}) [skip ci]"
+          for i in 1 2 3; do git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && break; sleep 5; done
