@@ -93,6 +93,7 @@ class HomeViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                android.util.Log.w("QabnahHome", "Loading stores failed", e)
                 _ui.update { it.copy(stores = it.stores.copy(loading = false, refreshing = false, error = e)) }
             }
         }

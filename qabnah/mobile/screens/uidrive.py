@@ -48,15 +48,18 @@ def labels(root: ET.Element | None = None) -> list[str]:
     return seen
 
 
-def find(pattern: str, root: ET.Element | None = None) -> ET.Element | None:
+def find_all(pattern: str, root: ET.Element | None = None) -> list[ET.Element]:
     root = root if root is not None else dump()
     rx = re.compile(pattern)
-    for n in root.iter("node"):
-        for key in ("text", "content-desc"):
-            v = n.get(key) or ""
-            if v and rx.search(v):
-                return n
-    return None
+    return [n for n in root.iter("node") if any((n.get(key) or "") and rx.search(n.get(key) or "") for key in ("text", "content-desc"))]
+
+
+def find(pattern: str, root: ET.Element | None = None, lowest: bool = False) -> ET.Element | None:
+    """First match in reading order, or with lowest=True the match nearest the bottom of the screen (tab bars)."""
+    nodes = find_all(pattern, root)
+    if not nodes:
+        return None
+    return max(nodes, key=lambda n: center(n)[1]) if lowest else nodes[0]
 
 
 def center(node: ET.Element) -> tuple[int, int]:
@@ -64,10 +67,10 @@ def center(node: ET.Element) -> tuple[int, int]:
     return (x1 + x2) // 2, (y1 + y2) // 2
 
 
-def wait_for(pattern: str, timeout: float = 25) -> ET.Element:
+def wait_for(pattern: str, timeout: float = 25, lowest: bool = False) -> ET.Element:
     end = time.time() + timeout
     while True:
-        node = find(pattern)
+        node = find(pattern, lowest=lowest)
         if node is not None:
             return node
         if time.time() > end:
@@ -75,8 +78,8 @@ def wait_for(pattern: str, timeout: float = 25) -> ET.Element:
         time.sleep(1)
 
 
-def tap(pattern: str, timeout: float = 25) -> None:
-    x, y = center(wait_for(pattern, timeout))
+def tap(pattern: str, timeout: float = 25, lowest: bool = False) -> None:
+    x, y = center(wait_for(pattern, timeout, lowest))
     shell(f"input tap {x} {y}")
     time.sleep(1.2)
 

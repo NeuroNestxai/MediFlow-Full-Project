@@ -71,6 +71,43 @@ def launch(package: str) -> None:
     time.sleep(6)
 
 
+def wait_for_network() -> None:
+    """After the framework restart the emulator needs a moment before it can reach the host again."""
+    for _ in range(40):
+        if "1 received" in ui.shell("ping -c 1 -W 2 10.0.2.2") or "bytes from" in ui.shell("ping -c 1 -W 2 10.0.2.2"):
+            print("   network: host reachable")
+            return
+        time.sleep(3)
+    print("   !! network: host 10.0.2.2 not reachable by ping (continuing)")
+
+
+def app_log(package: str) -> None:
+    """Errors the app logged, to explain a failed screen."""
+    pid = ui.shell(f"pidof {package}").strip()
+    out = ui.adb("logcat", "-d", "-t", "1500", timeout=60).stdout.decode(errors="replace")
+    lines = [ln for ln in out.splitlines() if (pid and f" {pid} " in ln) and re.search(r" [EW] |Exception|exception|Caused by", ln)]
+    print(f"   logcat ({package}, pid {pid or '?'}): {len(lines)} warning/error lines")
+    for ln in lines[-40:]:
+        print("     " + ln[:260])
+
+
+def open_home(first_store: str, retry: str) -> None:
+    """Wait for the store list; if the first load failed, use the screen's own retry button."""
+    for attempt in range(4):
+        try:
+            ui.wait_for(first_store, 25)
+            return
+        except TimeoutError:
+            if ui.find(retry) is not None:
+                print(f"   home showed an error, tapping retry (attempt {attempt + 1})")
+                ui.tap(retry)
+    ui.wait_for(first_store, 10)
+
+
+def tab(label: str) -> None:
+    ui.tap(label, lowest=True)
+
+
 def sign_in(phone: str) -> None:
     ui.tap(rx(COMMON, "auth_phone_label"))
     ui.type_text(phone)
@@ -92,7 +129,9 @@ def consumer(out: str, apk: str) -> ui.Session:
     s = ui.Session(out, "consumer")
     prepare(pkg, apk)
     launch(pkg)
-    s.step("home", lambda: ui.wait_for("بيت القهوة|مشويات الزعفران|Qahwa House", 40), settle=4)
+    ok = s.step("home", lambda: open_home("بيت القهوة|مشويات الزعفران|Qahwa House", rx(COMMON, "common_retry")), settle=4)
+    if not ok:
+        app_log(pkg)
     s.step("home-scrolled", lambda: ui.swipe_up(0.45))
     s.step("storefront", lambda: ui.tap("بيت القهوة|Qahwa House"), settle=5)
     s.step("product", lambda: ui.tap("شاي كرك|Karak Tea"), settle=3)
@@ -102,9 +141,11 @@ def consumer(out: str, apk: str) -> ui.Session:
     s.step("signed-in", lambda: sign_in("90000001"), settle=5)
     s.step("checkout", lambda: ui.wait_for(rx(S, "checkout_title"), 15), settle=3)
     launch(pkg)
-    s.step("orders", lambda: ui.tap(rx(S, "tab_orders")), settle=4)
-    s.step("send-parcel", lambda: ui.tap(rx(S, "tab_send")), settle=4)
-    s.step("account", lambda: ui.tap(rx(S, "tab_account")), settle=4)
+    s.step("home-signed-in", lambda: open_home("بيت القهوة|مشويات الزعفران|Qahwa House", rx(COMMON, "common_retry")), settle=3)
+    s.step("orders", lambda: tab(rx(S, "tab_orders")), settle=4)
+    s.step("send-parcel", lambda: tab(rx(S, "tab_send")), settle=4)
+    s.step("account", lambda: tab(rx(S, "tab_account")), settle=4)
+    app_log(pkg)
     return s
 
 
@@ -115,10 +156,12 @@ def captain(out: str, apk: str) -> ui.Session:
     launch(pkg)
     s.step("welcome", lambda: ui.wait_for(rx(COMMON, "auth_phone_label"), 40))
     s.step("signed-in-home", lambda: sign_in("90001001"), settle=6)
-    s.step("go-online", lambda: ui.tap(f"{rx(S, 'home_go_online')}|{rx(S, 'home_offline')}"), settle=8)
-    s.step("deliveries", lambda: ui.tap(rx(S, "tab_deliveries")), settle=4)
-    s.step("earnings", lambda: ui.tap(rx(S, "tab_earnings")), settle=4)
-    s.step("profile", lambda: ui.tap(rx(S, "tab_profile")), settle=4)
+    if ui.find(rx(S, "home_go_online")) is not None:  # the seeded captain is usually online already
+        s.step("go-online", lambda: ui.tap(rx(S, "home_go_online")), settle=8)
+    s.step("deliveries", lambda: tab(rx(S, "tab_deliveries")), settle=4)
+    s.step("earnings", lambda: tab(rx(S, "tab_earnings")), settle=4)
+    s.step("profile", lambda: tab(rx(S, "tab_profile")), settle=4)
+    app_log(pkg)
     return s
 
 
@@ -128,6 +171,7 @@ def main() -> int:
     set_system_locale()
     ui.shell("settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0")
     ui.adb("emu", "geo", "fix", "58.4059", "23.5880")  # Muscat (lng lat)
+    wait_for_network()
     sessions = [consumer(out, consumer_apk), captain(out, captain_apk)]
     for s in sessions:
         print(f"{s.prefix}: {s.n} screenshots, failed steps: {', '.join(s.failed) or 'none'}")
