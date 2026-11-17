@@ -42,6 +42,8 @@ class PushManager(
         if (!enabled || !apiClient.signedIn.value) return
         val token = try {
             provider.token()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Push token unavailable", e)
             null
@@ -66,8 +68,10 @@ class PushManager(
         Fcm.deleteToken() // the next account on this device gets a fresh token
     }
 
-    fun forget() {
+    /** Drops the stored token without calling the server; [rotateToken] also deletes it at FCM (e.g. account deleted). */
+    fun forget(rotateToken: Boolean = false) {
         prefs.edit().remove(KEY_TOKEN).apply()
+        if (rotateToken && enabled) scope.launch { Fcm.deleteToken() }
     }
 
     private suspend fun register(token: String) {

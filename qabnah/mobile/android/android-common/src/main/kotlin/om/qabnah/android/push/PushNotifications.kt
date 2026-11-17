@@ -80,3 +80,23 @@ object PushNotifications {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 }
+
+/**
+ * Android 13+: asks for POST_NOTIFICATIONS once (per install) when [enabled], e.g. right after sign-in with FCM
+ * configured. Declining is respected; the user can enable notifications later in system settings.
+ */
+@androidx.compose.runtime.Composable
+fun RequestNotificationPermissionOnce(enabled: Boolean) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { }
+    androidx.compose.runtime.LaunchedEffect(enabled) {
+        if (!enabled || PushNotifications.canPost(context)) return@LaunchedEffect
+        val prefs = context.getSharedPreferences("qabnah_push", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("asked_post_notifications", false)) return@LaunchedEffect
+        prefs.edit().putBoolean("asked_post_notifications", true).apply()
+        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+}

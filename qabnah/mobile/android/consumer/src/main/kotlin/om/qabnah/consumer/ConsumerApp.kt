@@ -62,7 +62,7 @@ class ConsumerContainer(app: Application) {
 
     /** Local clean-up after `POST /me/delete` succeeded (the session is already cleared). */
     fun onAccountDeleted() {
-        push.forget()
+        push.forget(rotateToken = true)
         realtime.disconnect()
         cart.clear()
     }

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { config } from '../../config.js';
 import { pool, one, q, tx } from '../../db/pool.js';
 import { invalidateAuthCache, requireAuth } from '../../lib/auth.js';
 import { conflict, notFound } from '../../lib/errors.js';
@@ -49,7 +50,7 @@ export function addressText(a: any) {
     .join(', ');
 }
 
-export async function buildMe(userId: string) {
+export async function buildMe(userId: string, session: { mfa?: boolean } = {}) {
   invalidateAuthCache(userId);
   const user = await one(pool, `SELECT * FROM users WHERE id = $1`, [userId]);
   const roles = await q(pool, `SELECT r.key, ur.merchant_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`, [userId]);
@@ -79,11 +80,17 @@ export async function buildMe(userId: string) {
       permissions: perms.filter((p) => p.merchant_id === m.id).map((p) => p.permission_key).sort(),
     })),
     captain: captain ? await getCaptainProfile(pool, captain.id) : null,
+    security: {
+      mfaEnabled: !!user.totp_enabled_at,
+      sessionMfa: !!session.mfa,
+      // Platform permissions above are only usable when this is false (REQUIRE_ADMIN_MFA).
+      adminMfaRequired: config.REQUIRE_ADMIN_MFA && roles.some((r) => !r.merchant_id && !['consumer', 'captain'].includes(r.key)) && !session.mfa,
+    },
   };
 }
 
 export default async function userRoutes(app: FastifyInstance) {
-  app.get('/me', async (req) => buildMe(requireAuth(req).userId));
+  app.get('/me', async (req) => { const a = requireAuth(req); return buildMe(a.userId, { mfa: a.mfa }); });
 
   app.patch('/me', async (req) => {
     const auth = requireAuth(req);
@@ -92,7 +99,7 @@ export default async function userRoutes(app: FastifyInstance) {
     await q(pool, `UPDATE users SET full_name = COALESCE($2, full_name), locale = COALESCE($3, locale), email = COALESCE($4, email), updated_at = now() WHERE id = $1`, [
       auth.userId, body.fullName ?? null, body.locale ?? null, body.email ?? null,
     ]);
-    return buildMe(auth.userId);
+    return buildMe(auth.userId, { mfa: auth.mfa });
   });
 
   app.get('/me/addresses', async (req) => {

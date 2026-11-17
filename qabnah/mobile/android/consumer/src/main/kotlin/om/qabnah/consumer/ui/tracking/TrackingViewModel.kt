@@ -70,7 +70,7 @@ class TrackingViewModel(
     }
 
     /** Suspends until cancelled (screen no longer STARTED). */
-    suspend fun observeWhileVisible() = coroutineScope {
+    suspend fun observeWhileVisible(): Unit = coroutineScope {
         launch {
             while (isActive) {
                 fetch()

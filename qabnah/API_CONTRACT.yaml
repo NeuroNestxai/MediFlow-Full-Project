@@ -1483,6 +1483,12 @@ components:
               logoUrl: { type: [string, 'null'] }
               permissions: { type: array, items: { type: string } }
         captain: { oneOf: [{ $ref: '#/components/schemas/CaptainProfile' }, { type: 'null' }] }
+        security:
+          type: object
+          properties:
+            mfaEnabled: { type: boolean }
+            sessionMfa: { type: boolean, description: This access token was issued after a second factor }
+            adminMfaRequired: { type: boolean, description: 'True when platform permissions are blocked until the user enrols in / signs in with 2FA' }
     AddressInput:
       type: object
       required: [location]

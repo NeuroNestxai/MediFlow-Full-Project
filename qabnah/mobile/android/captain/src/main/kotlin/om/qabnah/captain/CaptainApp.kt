@@ -69,6 +69,6 @@ class CaptainContainer(app: Application) {
         online.stopTracking()
         realtime.disconnect()
         captain.clear()
-        push.forget()
+        push.forget(rotateToken = true)
     }
 }

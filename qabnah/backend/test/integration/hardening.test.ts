@@ -84,6 +84,7 @@ describe('admin multi-factor authentication', () => {
       const r = await api('GET', '/admin/operations/live', { token: s.token });
       expect(r.status).toBe(403);
       expect(r.body.error.code).toBe('mfa_enrollment_required');
+      expect((await api('GET', '/me', { token: s.token })).body.security).toEqual({ mfaEnabled: false, sessionMfa: false, adminMfaRequired: true });
       const login = await api('POST', '/auth/login', { body: { email: s.email, password: 'Test-Password-123' } });
       expect(login.body.mfaEnrollmentRequired).toBe(true);
       const setup = await api('POST', '/auth/mfa/setup', { token: s.token });

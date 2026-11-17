@@ -39,6 +39,7 @@ import androidx.navigation.navArgument
 import om.qabnah.android.auth.AuthScreen
 import om.qabnah.android.auth.CompleteProfileGate
 import om.qabnah.android.links.HandleDeepLinks
+import om.qabnah.android.push.RequestNotificationPermissionOnce
 import om.qabnah.android.support.NewTicketScreen
 import om.qabnah.android.support.NotificationsScreen
 import om.qabnah.android.support.TicketDetailScreen
@@ -133,6 +134,7 @@ fun ConsumerRoot(container: ConsumerContainer) {
             if (BuildConfig.DEBUG) DevBanner(stringResource(om.qabnah.android.R.string.common_dev_banner, BuildConfig.API_BASE_URL))
             Box(Modifier.weight(1f)) {
                 if (signedIn) CompleteProfileGate(container.api)
+                RequestNotificationPermissionOnce(enabled = signedIn && container.push.enabled)
                 MainScaffold(container, snackbar)
             }
         }

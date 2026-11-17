@@ -26,8 +26,8 @@ object DeepLinkIntents {
         intent.data?.let { uri ->
             if (uri.scheme.equals(DeepLinks.SCHEME, ignoreCase = true)) return DeepLinks.parse(uri.toString())
         }
-        val extras = intent.extras ?: return null
-        val map = extras.keySet().associateWith { key -> extras.getString(key) }
+        val extras = runCatching { intent.extras }.getOrNull() ?: return null
+        val map = runCatching { extras.keySet().associateWith { key -> extras.getString(key) } }.getOrNull() ?: return null
         val payload = PushPayload.from(map)
         return if (payload.isQabnahPush) PushRouting.deepLink(payload, app) else null
     }

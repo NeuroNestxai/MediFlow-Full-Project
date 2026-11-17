@@ -63,7 +63,7 @@ class DeliveryViewModel(
      * Socket subscription, 20 s polling fallback and location updates. The screen runs this under
      * `repeatOnLifecycle(STARTED)`, so nothing polls while the screen is hidden or the app is in the background.
      */
-    suspend fun observeWhileVisible() = coroutineScope {
+    suspend fun observeWhileVisible(): Unit = coroutineScope {
         launch { realtime.channel(Channels.delivery(id)).collect { load(refresh = true) } }
         launch {
             reporter.last.collect { fix ->
