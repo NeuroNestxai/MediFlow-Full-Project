@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: qabnah-mobile-screens-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   android:
@@ -76,8 +76,10 @@ jobs:
           src = pathlib.Path(os.environ["RUNNER_TEMP"]) / "shots"
           dst = pathlib.Path("qabnah/docs/screenshots/mobile/android")
           dst.mkdir(parents=True, exist_ok=True)
-          for old in dst.glob("*.jpg"): old.unlink()
-          for png in sorted(src.glob("*.png")):
+          pngs = sorted(src.glob("*.png"))
+          if pngs:  # a cancelled or failed run must not wipe the previous pictures
+              for old in dst.glob("*.jpg"): old.unlink()
+          for png in pngs:
               im = Image.open(png).convert("RGB")
               im = im.resize((720, round(im.height * 720 / im.width)), Image.LANCZOS)
               im.save(dst / (png.stem + ".jpg"), quality=86)
