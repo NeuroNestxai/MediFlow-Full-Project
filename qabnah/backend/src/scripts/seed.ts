@@ -112,6 +112,16 @@ const MERCHANTS = [
   },
 ];
 
+/** Sample photos served by the merchant web app (apps/merchant/public/sample). Illustrative, AI-generated — see its README. */
+const PRODUCT_IMAGES: Record<string, string> = {
+  'Chicken Shawarma': 'shawarma', 'Beef Shawarma': 'beef-shawarma', 'Mixed Grill Platter': 'grill', 'Shish Tawook': 'tawook', Laban: 'laban',
+  'Fresh Lemon Mint': 'lemon-mint', 'Karak Tea': 'karak', 'Omani Qahwa Dallah': 'qahwa', Luqaimat: 'luqaimat', 'Date Cake': 'date-cake',
+  'Omani Bananas (1kg)': 'groceries', 'Tomatoes (1kg)': 'groceries', 'Basmati Rice (5kg)': 'groceries', 'Fresh Milk (2L)': 'groceries',
+  'Red Roses Bouquet': 'roses', 'Seasonal Mix': 'seasonal-bouquet',
+};
+const COVER_IMAGES: Record<string, string> = { 'saffron-grill': 'grill', 'qahwa-house': 'qahwa', 'nakheel-market': 'groceries', 'ward-flowers': 'roses' };
+const sampleUrl = (name: string) => `${config.MERCHANT_WEB_URL}/sample/${name}.jpg`;
+
 const CAPTAINS = [
   { phone: '+96890001001', name: 'Salim Al Harthy', vehicle: 'car', plate: '12345 A', nat: 'Omani', model: 'independent', zones: ['MCT-KHUWAIR', 'MCT-MSQ', 'MCT-QURUM', 'MCT-GHUBRAH'], lat: 23.590, lng: 58.430 },
   { phone: '+96890001002', name: 'Ahmed Al Balushi', vehicle: 'car', plate: '23456 B', nat: 'Omani', model: 'independent', zones: ['MCT-QURUM', 'MCT-RUWI', 'MCT-KHUWAIR'], lat: 23.612, lng: 58.478 },
@@ -166,10 +176,10 @@ async function seedPeople() {
     const row = await one(
       pool,
       `INSERT INTO merchants (slug, name_en, name_ar, category, status, location, address_text, zone_id, plan_id, brand_color, accent_color, tagline_en, tagline_ar, prep_time_minutes,
-         opening_hours, contact_phone, contact_email, whatsapp_phone, cr_number, legal_name, approved_at, min_order_baisa)
-       VALUES ($1,$2,$3,$4,'active', ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, $7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$16,$18,$19, now() - interval '30 days', $20) RETURNING id`,
+         opening_hours, contact_phone, contact_email, whatsapp_phone, cr_number, legal_name, approved_at, min_order_baisa, cover_url)
+       VALUES ($1,$2,$3,$4,'active', ST_SetSRID(ST_MakePoint($5,$6),4326)::geography, $7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$16,$18,$19, now() - interval '30 days', $20, $21) RETURNING id`,
       [m.slug, m.en, m.ar, m.category, m.lng, m.lat, `${m.en}, ${ZONES.find((z) => z.code === m.zone)!.en}, Muscat`, zone.id, plan.id, m.brand, m.accent, m.tagEn, m.tagAr, m.prep,
-        JSON.stringify(m.hours), `+9689100${String(MERCHANTS.indexOf(m) + 1).padStart(4, '0')}`, m.owner, `SAMPLE-CR-${MERCHANTS.indexOf(m) + 1}`, `${m.en} (sample data)`, m.category === 'grocery' ? 2000 : 0],
+        JSON.stringify(m.hours), `+9689100${String(MERCHANTS.indexOf(m) + 1).padStart(4, '0')}`, m.owner, `SAMPLE-CR-${MERCHANTS.indexOf(m) + 1}`, `${m.en} (sample data)`, m.category === 'grocery' ? 2000 : 0, sampleUrl(COVER_IMAGES[m.slug])],
     );
     merchantIds[m.slug] = row.id;
     await grant(owner.id, 'merchant_owner', row.id);
@@ -181,8 +191,9 @@ async function seedPeople() {
     for (const [ci, [cen, car, products]] of (m.cats as any[]).entries()) {
       const cat = await one(pool, `INSERT INTO categories (merchant_id, name_en, name_ar, sort_order) VALUES ($1,$2,$3,$4) RETURNING id`, [row.id, cen, car, ci]);
       for (const [pi, [pen, par, price, groups, stock]] of (products as any[]).entries()) {
-        const p = await one(pool, `INSERT INTO products (merchant_id, category_id, name_en, name_ar, base_price_baisa, sort_order, track_stock, stock_qty, description_en, description_ar)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, [row.id, cat.id, pen, par, price, pi, stock != null, stock ?? 0, `${pen} — sample product`, `${par} — منتج تجريبي`]);
+        const p = await one(pool, `INSERT INTO products (merchant_id, category_id, name_en, name_ar, base_price_baisa, sort_order, track_stock, stock_qty, description_en, description_ar, image_url)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, [row.id, cat.id, pen, par, price, pi, stock != null, stock ?? 0, `${pen} — sample product`, `${par} — منتج تجريبي`,
+          PRODUCT_IMAGES[pen] ? sampleUrl(PRODUCT_IMAGES[pen]) : null]);
         for (const [gi, g] of (groups as any[]).entries()) {
           const grp = await one(pool, `INSERT INTO product_option_groups (product_id, kind, name_en, name_ar, min_select, max_select, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`, [p.id, g.kind, g.en, g.ar, g.min, g.max, gi]);
           for (const [oi, [oen, oar, delta]] of g.options.entries())
