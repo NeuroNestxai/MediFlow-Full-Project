@@ -1,4 +1,5 @@
-// Regenerates docs/screenshots/*.png from a running, freshly seeded stack.
+// Regenerates docs/screenshots/*.png from a running, freshly seeded stack (run right after `seed.ts`:
+// the seeded "placed" order auto-cancels after ~10 minutes, and /auth/* is limited to 10 requests a minute).
 //   QABNAH_API_URL=http://localhost:4100/v1 QABNAH_MERCHANT_URL=http://localhost:5273 QABNAH_ADMIN_URL=http://localhost:5274 \
 //   node apps/e2e/scripts/doc-screenshots.mjs [outDir]
 import { chromium } from '@playwright/test';
@@ -150,6 +151,9 @@ await call('POST', `/merchants/${smid}/payment-links`, saffron, { title: 'طلب
   if (pending) { await page.goto(`${A}/captains/${pending.id}`); await shot(page, '22-admin-captain-review.png', { wait: 1800, full: true, tall: true }); }
   await page.goto(`${A}/merchants`); await page.waitForSelector('tbody tr'); await shot(page, '23-admin-merchants.png', { wait: 1000 });
   await page.goto(`${A}/orders`); await page.waitForSelector('tbody tr'); await shot(page, '24-admin-orders.png', { wait: 1000 });
+  // Tax invoice (rendered by the API) of a delivered order.
+  const delivered = (await call('GET', '/admin/orders?status=delivered&limit=1', admin)).items?.[0];
+  if (delivered?.invoiceUrl) { await page.goto(delivered.invoiceUrl); await shot(page, '06-invoice.png', { wait: 1000 }); }
   await page.goto(`${A}/config/pricing`); await shot(page, '25-admin-pricing.png', { wait: 1500 });
   await page.goto(`${A}/config/dispatch`); await shot(page, '26-admin-dispatch-rules.png', { wait: 1500 });
   await page.goto(`${A}/finance`); await page.getByRole('tab', { name: 'Balances' }).click().catch(() => undefined); await shot(page, '27-admin-finance.png', { wait: 1500 });
