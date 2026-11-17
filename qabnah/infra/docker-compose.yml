@@ -13,7 +13,7 @@ x-api-env: &api-env
   PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
   MERCHANT_WEB_URL: ${MERCHANT_WEB_URL:-http://localhost:5173}
   ADMIN_WEB_URL: ${ADMIN_WEB_URL:-http://localhost:5174}
-  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:5175}
   STORAGE_DIR: /app/storage
   LOG_LEVEL: info
   PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
@@ -111,6 +111,18 @@ services:
       context: ../apps
       args: { APP: admin, VITE_API_URL: "${PUBLIC_API_URL:-http://localhost:4000}/v1" }
     ports: ["5174:80"]
+    depends_on: [api]
+
+  # Marketing website (3D hero, live store list)
+  site-web:
+    image: qabnah/site-web:dev
+    build:
+      context: ../apps
+      args:
+        APP: site
+        VITE_API_URL: "${PUBLIC_API_URL:-http://localhost:4000}/v1"
+        VITE_MERCHANT_URL: "${MERCHANT_WEB_URL:-http://localhost:5173}"
+    ports: ["5175:80"]
     depends_on: [api]
 
 volumes:

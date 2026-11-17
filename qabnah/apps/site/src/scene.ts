@@ -13,6 +13,8 @@ const SAFFRON = 0xf4a300;
 
 export interface SceneHandle {
   setProgress(p: number): void;
+  /** Shift the picture inside the frame, as a fraction of its size (x > 0 moves the subject left, y > 0 moves it up). */
+  setShift(x: number, y: number): void;
   resize(): void;
   render(): void;
   start(): void;
@@ -22,10 +24,10 @@ export interface SceneHandle {
 
 /** Camera stations: position + look-at per chapter (0 hero, 1 customers, 2 merchants, 3 captains). */
 const STATIONS = [
-  { pos: [3.7, 2.2, 6.1], look: [0.0, 1.0, 0], fov: 30 },
-  { pos: [-0.5, 1.3, 3.9], look: [-1.5, 0.95, 0.5], fov: 28 },
-  { pos: [2.5, 2.7, 3.1], look: [0.5, 0.6, -0.1], fov: 28 },
-  { pos: [0.4, 3.3, 8.6], look: [0.4, 0.25, 3.8], fov: 30 },
+  { pos: [3.7, 2.2, 6.1], look: [0.0, 1.0, 0], fov: 30, aside: 1 },
+  { pos: [-0.5, 1.3, 3.9], look: [-1.5, 0.95, 0.5], fov: 28, aside: 1 },
+  { pos: [2.5, 2.7, 3.1], look: [0.5, 0.6, -0.1], fov: 28, aside: 1.1 },
+  { pos: [0.4, 3.3, 8.6], look: [0.4, 0.25, 3.8], fov: 30, aside: 1.7 },
 ] as const;
 
 function canvasTexture(w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) {
@@ -139,7 +141,7 @@ function buildPin() {
   body.castShadow = true; g.add(body);
   const core = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.14, 48), new THREE.MeshPhysicalMaterial({ color: GREEN, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 }));
   core.rotation.x = Math.PI / 2; core.position.set(0, 0.04, 0); g.add(core);
-  const dotMat = new THREE.MeshPhysicalMaterial({ color: SAFFRON, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.04, emissive: SAFFRON, emissiveIntensity: 0.12 });
+  const dotMat = new THREE.MeshPhysicalMaterial({ color: SAFFRON, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.04, emissive: SAFFRON, emissiveIntensity: 0.42 });
   for (const x of [-0.27, 0.27]) { const dd = new THREE.Mesh(new THREE.SphereGeometry(0.16, 48, 32), dotMat); dd.position.set(x, 0.98, 0); dd.castShadow = true; g.add(dd); }
   return g;
 }
@@ -242,7 +244,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
 
   // lights: warm key with a soft shadow, cool fill from the opposite side, saffron rim from behind
-  const key = new THREE.DirectionalLight(0xfff4e4, 3.0);
+  const key = new THREE.DirectionalLight(0xfff8f0, 2.9);
   key.position.set(5, 7.5, 4.5);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -251,10 +253,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
   key.shadow.radius = 7; key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02;
   scene.add(key);
   const fill = new THREE.DirectionalLight(0x8fd0c2, 0.55); fill.position.set(-5, 3, 5); scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffb52e, 0.55); rim.position.set(-3.5, 2.2, -6); scene.add(rim);
+  const rim = new THREE.DirectionalLight(0xffb52e, 0.4); rim.position.set(-3.5, 3.4, -6); scene.add(rim);
 
   // studio floor: deep green satin that catches the soft shadow
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(40, 96), new THREE.MeshStandardMaterial({ color: 0x0a2823, roughness: 0.7, metalness: 0.02, envMapIntensity: 0.18 }));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(40, 96), new THREE.MeshStandardMaterial({ color: 0x07342d, roughness: 0.96, metalness: 0, envMapIntensity: 0.05, emissive: 0x031a16, emissiveIntensity: 0.55 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
   // a soft pool of light on the backdrop, for depth
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(26, 12), new THREE.MeshBasicMaterial({
@@ -266,7 +268,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
   const bump = kraftBump();
   const parcel = buildParcel(bump); parcel.rotation.y = -0.38; scene.add(parcel);
   const pin = buildPin(); scene.add(pin);
-  const bag = buildBag(bump); bag.position.set(1.6, 0, -0.8); bag.rotation.y = 0.5; scene.add(bag);
+  const bag = buildBag(bump); bag.position.set(1.2, 0, -1.3); bag.rotation.y = 0.42; scene.add(bag);
   const phone = buildPhone(); phone.position.set(-1.6, 0.86, 0.45); phone.rotation.set(-0.14, 0.4, 0.02); scene.add(phone);
   const map = buildMap(); map.position.set(0.4, 0, 3.9); map.rotation.y = -0.06; scene.add(map);
 
@@ -282,7 +284,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
     }, undefined, () => { ready = true; opts.onReady?.(); });
   }
 
-  let progress = 0, shown = 0, raf = 0, running = false;
+  let progress = 0, shown = 0, raf = 0, running = false, lastT = 0;
+  let shiftX = 0, shiftY = 0, vw = 1, vh = 1, aside = 1;
   const clock = new THREE.Clock();
   const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), look = new THREE.Vector3();
   const ease = (x: number) => x * x * (3 - 2 * x);
@@ -292,7 +295,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
     const i = Math.min(STATIONS.length - 2, Math.max(0, Math.floor(p)));
     const f = ease(Math.min(1, Math.max(0, p - i)));
     const a = STATIONS[i], b = STATIONS[i + 1];
-    const narrow = camera.aspect < 0.8 ? 1.5 : camera.aspect < 1.2 ? 1.2 : 1;
+    // pull back on narrow screens, and a little when the picture is shifted aside to make room for copy
+    const narrow = (camera.aspect < 0.62 ? 1.62 : camera.aspect < 0.8 ? 1.5 : camera.aspect < 1.2 ? 1.2 : 1) * (1 + Math.abs(shiftX) * 0.9);
     tmpA.set(a.pos[0], a.pos[1], a.pos[2]); tmpB.set(b.pos[0], b.pos[1], b.pos[2]);
     camera.position.lerpVectors(tmpA, tmpB, f);
     tmpA.set(a.look[0], a.look[1], a.look[2]); tmpB.set(b.look[0], b.look[1], b.look[2]);
@@ -300,13 +304,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
     // on narrow screens pull the camera back along its view direction so the subject stays in frame
     camera.position.sub(look).multiplyScalar(narrow).add(look);
     camera.fov = a.fov + (b.fov - a.fov) * f;
+    aside = a.aside + (b.aside - a.aside) * f; // some chapters need the subject pushed further away from the copy
+    applyShift();
     camera.updateProjectionMatrix();
     camera.lookAt(look);
   }
 
   function render() {
     const t = clock.getElapsedTime();
-    shown += (progress - shown) * 0.09;
+    const dt = Math.min(0.25, t - lastT); lastT = t;
+    shown += (progress - shown) * (1 - Math.exp(-dt * 5.5)); // time-based easing: same feel at any frame rate
     if (Math.abs(progress - shown) < 0.0005) shown = progress;
     applyCamera(shown);
     // the pin hovers over the parcel, then travels to the customer's end of the route in the last chapter
@@ -321,11 +328,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
     renderer.render(scene, camera);
   }
   function loop() { if (!running) return; render(); raf = requestAnimationFrame(loop); }
+  function applyShift() {
+    if (shiftX || shiftY) camera.setViewOffset(vw, vh, vw * shiftX * aside, vh * shiftY, vw, vh); else camera.clearViewOffset();
+  }
   function resize() {
-    const w = canvas.clientWidth || canvas.parentElement?.clientWidth || window.innerWidth;
-    const h = canvas.clientHeight || canvas.parentElement?.clientHeight || window.innerHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h; camera.updateProjectionMatrix();
+    vw = canvas.clientWidth || canvas.parentElement?.clientWidth || window.innerWidth;
+    vh = canvas.clientHeight || canvas.parentElement?.clientHeight || window.innerHeight;
+    renderer.setSize(vw, vh, false);
+    camera.aspect = vw / vh; applyShift(); camera.updateProjectionMatrix();
   }
   resize();
   applyCamera(0);
@@ -333,6 +343,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: { screenUrl?: strin
 
   return {
     setProgress(p) { progress = Math.min(STATIONS.length - 1, Math.max(0, p)); },
+    setShift(x, y) { shiftX = x; shiftY = y; applyShift(); camera.updateProjectionMatrix(); },
     resize,
     render() { shown = progress; render(); },
     start() { if (running) return; running = true; clock.start(); loop(); },

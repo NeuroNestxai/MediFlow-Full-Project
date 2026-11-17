@@ -19,6 +19,14 @@
 	reverse_proxy api:4000
 }
 
+# Marketing website
+{$SITE_DOMAIN} {
+	import security_headers
+	encode gzip
+	reverse_proxy site-web:80
+}
+
+# Merchant portal, storefronts and pay pages
 {$WEB_DOMAIN} {
 	import security_headers
 	encode gzip

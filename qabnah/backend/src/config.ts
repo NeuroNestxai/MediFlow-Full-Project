@@ -12,7 +12,7 @@ const schema = z.object({
   PUBLIC_API_URL: z.string().default('http://localhost:4000'),
   MERCHANT_WEB_URL: z.string().default('http://localhost:5173'),
   ADMIN_WEB_URL: z.string().default('http://localhost:5174'),
-  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:5174'),
+  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:5174,http://localhost:5175'),
   JWT_SECRET: z.string().min(32).default('dev-only-insecure-jwt-secret-change-me-0123456789'),
   ACCESS_TOKEN_TTL_S: z.coerce.number().default(900),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),

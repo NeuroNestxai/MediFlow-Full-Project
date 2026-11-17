@@ -1,5 +1,293 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>scene test</title>
-<style>html,body{margin:0;height:100%;background:#061a16}canvas{width:100vw;height:100vh;display:block}</style></head>
-<body><canvas id="stage"></canvas><script type="module" src="/src/test.ts"></script></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061A16">
+  <title data-i18n="meta.title"></title>
+  <meta name="description" content="قبناه منصة توصيل وتسوّق في مسقط: اطلب من المتاجر القريبة، أرسل طرداً داخل المدينة، وتابع الكابتن على الخريطة حتى الباب.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/stills/desk-0.jpg">
+  <link rel="icon" type="image/svg+xml" href="/mark.svg">
+  <link rel="apple-touch-icon" href="/mark-192.png">
+  <link rel="preload" as="image" href="/stills/phone-0.jpg" media="(max-width: 820px)">
+  <script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+  <header class="site-header" id="header">
+    <div class="wrap header-row">
+      <a class="brand" href="#top" aria-label="Qabnah">
+        <img src="/mark.svg" alt="" width="36" height="36">
+        <span data-i18n="brand.name"></span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#services" data-i18n="nav.services"></a>
+        <a href="#how" data-i18n="nav.how"></a>
+        <a href="#stores" data-i18n="nav.stores"></a>
+        <a href="#merchants" data-i18n="nav.merchants"></a>
+        <a href="#captains" data-i18n="nav.captains"></a>
+      </nav>
+      <div class="header-actions">
+        <button class="lang" id="lang" type="button" data-i18n="nav.lang"></button>
+        <a class="btn btn-saffron btn-sm" data-link="stores" data-i18n="cta.browse"></a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- 3D stage: four chapters driven by scroll -->
+    <section class="stage" id="stage" aria-label="Qabnah">
+      <div class="stage-pin">
+        <div class="stage-media" aria-hidden="true">
+          <div class="stage-stills" id="stills"></div>
+          <canvas id="scene"></canvas>
+          <div class="stage-scrim"></div>
+        </div>
+
+        <div class="wrap stage-copy">
+          <article class="chapter chapter-hero is-on" data-chapter="0">
+            <p class="eyebrow" data-i18n="hero.eyebrow"></p>
+            <h1 data-i18n="hero.title"></h1>
+            <p class="lede" data-i18n="hero.sub"></p>
+            <div class="actions">
+              <a class="btn btn-saffron" data-link="stores" data-i18n="cta.browse"></a>
+              <a class="btn btn-ghost" data-link="register" data-i18n="cta.register"></a>
+            </div>
+          </article>
+
+          <article class="chapter" data-chapter="1">
+            <p class="eyebrow" data-i18n="c1.eyebrow"></p>
+            <h2 data-i18n="c1.title"></h2>
+            <p class="lede" data-i18n="c1.sub"></p>
+            <ul class="ticks">
+              <li data-i18n="c1.p1"></li>
+              <li data-i18n="c1.p2"></li>
+              <li data-i18n="c1.p3"></li>
+            </ul>
+          </article>
+
+          <article class="chapter" data-chapter="2">
+            <p class="eyebrow" data-i18n="c2.eyebrow"></p>
+            <h2 data-i18n="c2.title"></h2>
+            <p class="lede" data-i18n="c2.sub"></p>
+            <div class="actions">
+              <a class="btn btn-saffron" data-link="register" data-i18n="cta.register"></a>
+            </div>
+          </article>
+
+          <article class="chapter" data-chapter="3">
+            <p class="eyebrow" data-i18n="c3.eyebrow"></p>
+            <h2 data-i18n="c3.title"></h2>
+            <p class="lede" data-i18n="c3.sub"></p>
+          </article>
+        </div>
+
+        <ol class="rail" id="rail" aria-hidden="true"><li class="is-on"></li><li></li><li></li><li></li></ol>
+        <div class="scroll-hint" id="hint" aria-hidden="true"><span data-i18n="hero.scroll"></span><i></i></div>
+      </div>
+    </section>
+
+    <section class="band band-sand" id="services">
+      <div class="wrap">
+        <header class="head reveal">
+          <p class="eyebrow" data-i18n="services.eyebrow"></p>
+          <h2 data-i18n="services.title"></h2>
+        </header>
+        <div class="services">
+          <article class="service reveal">
+            <figure><img src="/img/shawarma.jpg" alt="" loading="lazy" width="600" height="450"></figure>
+            <h3 data-i18n="services.s1.title"></h3>
+            <p data-i18n="services.s1.text"></p>
+          </article>
+          <article class="service reveal">
+            <figure><img src="/img/merchant-handover.jpg" alt="" loading="lazy" width="600" height="450"></figure>
+            <h3 data-i18n="services.s2.title"></h3>
+            <p data-i18n="services.s2.text"></p>
+          </article>
+          <article class="service reveal">
+            <figure><img src="/img/rider-muscat.jpg" alt="" loading="lazy" width="600" height="450"></figure>
+            <h3 data-i18n="services.s3.title"></h3>
+            <p data-i18n="services.s3.text"></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-white" id="how">
+      <div class="wrap">
+        <header class="head reveal">
+          <p class="eyebrow" data-i18n="how.eyebrow"></p>
+          <h2 data-i18n="how.title"></h2>
+        </header>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-n" data-num="1"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+            <h3 data-i18n="how.s1.title"></h3>
+            <p data-i18n="how.s1.text"></p>
+          </li>
+          <li class="step reveal">
+            <span class="step-n" data-num="2"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8v-17Z"/><path d="M9 8h6M9 12h6"/></svg>
+            <h3 data-i18n="how.s2.title"></h3>
+            <p data-i18n="how.s2.text"></p>
+          </li>
+          <li class="step reveal">
+            <span class="step-n" data-num="3"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.3"/></svg>
+            <h3 data-i18n="how.s3.title"></h3>
+            <p data-i18n="how.s3.text"></p>
+          </li>
+          <li class="step reveal">
+            <span class="step-n" data-num="4"></span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="17" height="10" rx="2.5"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+            <h3 data-i18n="how.s4.title"></h3>
+            <p data-i18n="how.s4.text"></p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="band band-sand" id="stores" hidden>
+      <div class="wrap">
+        <header class="head head-row reveal">
+          <div>
+            <p class="eyebrow" data-i18n="stores.eyebrow"></p>
+            <h2 data-i18n="stores.title"></h2>
+            <p class="sub" data-i18n="stores.sub"></p>
+          </div>
+          <a class="btn btn-outline" data-link="stores" data-i18n="cta.allStores"></a>
+        </header>
+        <div class="stores" id="store-list"></div>
+      </div>
+    </section>
+
+    <section class="band band-night" id="merchants">
+      <div class="wrap split">
+        <div class="split-copy reveal">
+          <p class="eyebrow" data-i18n="merchants.eyebrow"></p>
+          <h2 data-i18n="merchants.title"></h2>
+          <p class="sub" data-i18n="merchants.sub"></p>
+          <ul class="features">
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.500a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 12v8h13v-8"/></svg>
+              <div><h3 data-i18n="merchants.f1.title"></h3><p data-i18n="merchants.f1.text"></p></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></svg>
+              <div><h3 data-i18n="merchants.f2.title"></h3><p data-i18n="merchants.f2.text"></p></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="10" rx="1.5"/><rect x="15.5" y="4" width="5" height="13" rx="1.5"/></svg>
+              <div><h3 data-i18n="merchants.f3.title"></h3><p data-i18n="merchants.f3.text"></p></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.700l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.700l1-1"/></svg>
+              <div><h3 data-i18n="merchants.f4.title"></h3><p data-i18n="merchants.f4.text"></p></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5 5.3 15A8 8 0 1 1 9 18.700L4 19.500Z"/><path d="M9 10.500h6M9 13.500h4"/></svg>
+              <div><h3 data-i18n="merchants.f5.title"></h3><p data-i18n="merchants.f5.text"></p></div>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><path d="m7.5 15 3.5-4 3 2.500L19 8"/></svg>
+              <div><h3 data-i18n="merchants.f6.title"></h3><p data-i18n="merchants.f6.text"></p></div>
+            </li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-saffron" data-link="register" data-i18n="cta.register"></a>
+            <a class="btn btn-ghost" data-link="login" data-i18n="cta.login"></a>
+          </div>
+        </div>
+        <div class="split-media reveal">
+          <div class="browser">
+            <div class="browser-bar"><i></i><i></i><i></i></div>
+            <img src="/img/portal-orders.png" alt="" loading="lazy" width="1440" height="900">
+          </div>
+          <div class="phone-shot"><img src="/img/phone-storefront.png" alt="" loading="lazy" width="390" height="844"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-sand" id="captains">
+      <div class="wrap split split-flip">
+        <div class="split-media reveal">
+          <figure class="photo-tall"><img src="/img/rider-muscat.jpg" alt="" loading="lazy" width="600" height="450"></figure>
+        </div>
+        <div class="split-copy reveal">
+          <p class="eyebrow" data-i18n="captains.eyebrow"></p>
+          <h2 data-i18n="captains.title"></h2>
+          <p class="sub" data-i18n="captains.sub"></p>
+          <ul class="ticks ticks-ink">
+            <li data-i18n="captains.f1"></li>
+            <li data-i18n="captains.f2"></li>
+            <li data-i18n="captains.f3"></li>
+            <li data-i18n="captains.f4"></li>
+          </ul>
+          <p class="note" data-i18n="captains.soon"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="band band-map" id="coverage" hidden>
+      <div class="wrap">
+        <header class="head reveal">
+          <p class="eyebrow" data-i18n="coverage.eyebrow"></p>
+          <h2 data-i18n="coverage.title"></h2>
+          <p class="sub" data-i18n="coverage.sub"></p>
+        </header>
+        <ul class="zones reveal" id="zone-list"></ul>
+      </div>
+    </section>
+
+    <section class="band band-white" id="apps">
+      <div class="wrap apps reveal">
+        <div>
+          <p class="eyebrow" data-i18n="apps.eyebrow"></p>
+          <h2 data-i18n="apps.title"></h2>
+          <p class="sub" data-i18n="apps.sub"></p>
+        </div>
+        <div class="apps-actions">
+          <div class="badges">
+            <span class="badge-store" aria-disabled="true"><small data-i18n="apps.soon"></small><b data-i18n="apps.ios"></b></span>
+            <span class="badge-store" aria-disabled="true"><small data-i18n="apps.soon"></small><b data-i18n="apps.android"></b></span>
+          </div>
+          <a class="btn btn-primary" data-link="stores" data-i18n="cta.browse"></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="#top" aria-label="Qabnah">
+          <img src="/mark.svg" alt="" width="40" height="40">
+          <span data-i18n="brand.name"></span>
+        </a>
+        <p data-i18n="footer.tagline"></p>
+      </div>
+      <nav aria-label="Platform">
+        <h4 data-i18n="footer.platform"></h4>
+        <a href="#services" data-i18n="nav.services"></a>
+        <a href="#how" data-i18n="nav.how"></a>
+        <a data-link="stores" data-i18n="nav.stores"></a>
+      </nav>
+      <nav aria-label="Partners">
+        <h4 data-i18n="footer.partners"></h4>
+        <a data-link="register" data-i18n="cta.register"></a>
+        <a data-link="login" data-i18n="cta.login"></a>
+        <a href="#captains" data-i18n="nav.captains"></a>
+      </nav>
+      <div class="footer-contact" id="contact" hidden>
+        <h4 data-i18n="footer.contact"></h4>
+        <a id="contact-mail"></a>
+      </div>
+    </div>
+    <div class="wrap footer-base">
+      <span><span id="year"></span> © <span data-i18n="brand.name"></span> · <span data-i18n="footer.place"></span></span>
+      <span data-i18n="footer.rights"></span>
+    </div>
+  </footer>
+</body>
+</html>

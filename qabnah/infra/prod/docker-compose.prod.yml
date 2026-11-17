@@ -84,6 +84,11 @@ services:
     build: { context: ../../apps, args: { APP: merchant, VITE_API_URL: "${PUBLIC_API_URL}/v1" } }
     restart: unless-stopped
 
+  site-web:
+    image: qabnah/site-web:prod
+    build: { context: ../../apps, args: { APP: site, VITE_API_URL: "${PUBLIC_API_URL}/v1", VITE_MERCHANT_URL: "${MERCHANT_WEB_URL}", VITE_CONTACT_EMAIL: "${CONTACT_EMAIL:-}" } }
+    restart: unless-stopped
+
   admin-web:
     image: qabnah/admin-web:prod
     build: { context: ../../apps, args: { APP: admin, VITE_API_URL: "${PUBLIC_API_URL}/v1" } }
@@ -101,12 +106,13 @@ services:
     ports: ["80:80", "443:443"]
     environment:
       API_DOMAIN: ${API_DOMAIN}
+      SITE_DOMAIN: ${SITE_DOMAIN}
       WEB_DOMAIN: ${WEB_DOMAIN}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN}
       ADMIN_ALLOWED_IPS: ${ADMIN_ALLOWED_IPS}
       ACME_EMAIL: ${ACME_EMAIL}
     volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy-data:/data, caddy-config:/config]
-    depends_on: [api, merchant-web, admin-web]
+    depends_on: [api, merchant-web, admin-web, site-web]
     restart: unless-stopped
 
 volumes:
