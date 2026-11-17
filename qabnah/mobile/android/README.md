@@ -8,6 +8,8 @@ Two native apps in Kotlin + Jetpack Compose (Material 3), Arabic (RTL) by defaul
 | **Qabnah Captain** (courier) | `om.qabnah.captain` | Home · Deliveries · Earnings · Profile |
 
 The API contract (`../../API_CONTRACT.yaml`) is the source of truth for endpoints, field names and the WebSocket protocol.
+The UI follows **Design System v2 "Night & Sand"** (`../../docs/DESIGN_SYSTEM.md`): the consumer app is the light
+"sand" palette and photo-first, the captain app is the dark "night" palette. See [Design](#design).
 
 ## Modules
 
@@ -29,7 +31,11 @@ mobile/android/
     util/                  Omani phone normalisation, wa.me links, geo/ETA, brand colours, availability validation, date presets,
                            MapRoute (next stop, dashed remaining leg, breadcrumbs)
     src/test/              JUnit tests (fixtures shaped like the contract, MockWebServer for HTTP + WebSocket)
-  android-common/          shared Android library: theme (brand tokens), EncryptedSharedPreferences TokenStore, OTP sign-in,
+  android-common/          shared Android library: Design System v2 theme (sand + night colour schemes, bundled IBM Plex
+                           Sans Arabic / IBM Plex Sans in res/font, shapes 10/16/24) and components (ui/components/Design.kt:
+                           QButton / QSecondaryButton / QTextButton, QPhoto, QStoreLogo, QPrice, StatusPill, skeletons,
+                           QBottomSheet / QDockedSheet / QNightBar, QNavigationBar, QSegmentedControl, QStepProgress…),
+                           EncryptedSharedPreferences TokenStore, OTP sign-in,
                            osmdroid map (markers, solid + dashed polylines) + pin picker, location, intents (dial/WhatsApp/
                            navigation/Custom Tabs), uploads, support tickets + notifications screens, FCM push (manual
                            Firebase init, base FirebaseMessagingService, notifications), deep-link intent parsing,
@@ -41,6 +47,54 @@ mobile/android/
 
 Each app has: ViewModels exposing `StateFlow`, repositories over `:core`'s `QabnahApi` (no networking in composables),
 loading / empty / error states with pull-to-refresh, and content descriptions on actionable icons.
+
+## Design
+
+Design System v2 "Night & Sand" (`docs/DESIGN_SYSTEM.md`) is implemented in `:android-common` and used by every screen.
+
+- **Palettes** (`ui/theme/Theme.kt`): `QabnahTheme(QabnahPalette.SAND)` for the consumer app (sand page, white cards,
+  green primary) and `QabnahTheme(QabnahPalette.NIGHT)` for the captain app (night background, night-2 surfaces,
+  hairlines instead of shadows). The palette is fixed per app, not tied to the system dark mode; the activities set
+  the system-bar icon colours to match. Only brand colours and their tints are used; status colours only for status.
+- **Type**: IBM Plex Sans Arabic (Arabic UI) and IBM Plex Sans (English UI), weights 400/500/600/700, bundled as
+  `android-common/src/main/res/font/ibm_plex_sans*_*.ttf` (SIL OFL 1.1, licence in `android-common/licenses/`).
+  Scale: display 44/52 · h1 30/38 · h2 22/30 · h3 17/26 · body 15/24 · small 13/20 · micro 11/16; Arabic gets taller
+  lines and no letter-spacing. Prices use `QPrice`: tabular numerals, weight 700, currency label at 0.75×.
+- **Shape / elevation**: radius 10 (inputs, chips) · 16 (cards, photos) · 24 (sheets, hero media) · 12 (buttons);
+  two soft ink-tinted shadow levels on sand (`Modifier.qElevation`), hairlines on night.
+- **Photo-first**: `QPhoto` (Coil) shimmers while loading and falls back to the branded placeholder (night-2 →
+  primary-deep gradient, outlined glyph at 40% white, tinted with the merchant's brand colour on storefronts) — never a
+  grey box or a letter. `QStoreLogo` is the only allowed letter avatar (merchant initial on their brand colour).
+- **Buttons**: primary = brand fill on sand, **saffron fill with ink text on night** (`QButton`); secondary = surface
+  with hairline; tertiary = text. One saffron element per view (cart bar CTA, go online, accept, the primary delivery
+  action).
+- **Loading / empty / error**: skeleton shimmer for full pages (no spinners), one line of text plus the fixing action
+  for empty states, no illustrations.
+- **No invented content**: ratings appear only when the API reports rating counts; the home hero carousel and the
+  category-chip photos use covers of real stores from `GET /stores`; there are no fake banners, badges or counters.
+- **Language separation**: every label comes from `values/` (en) or `values-ar/` (ar); currency labels, digits, week-day
+  names and package sizes follow the UI language. PINs are always shown left-to-right in Latin digits (the captain types
+  them as shown).
+
+Consumer screens: Home (location pill, large title, search, hero carousel of open stores, category chips with photos,
+store cards with 16:9 cover + logo chip + open pill + meta row), Storefront (full-bleed cover with scrim, top bar that
+turns solid on scroll, category tabs that pin under it, product rows with a leading 4:3 photo and a circular add button
+in the store's brand colour), product bottom sheet (16:10 photo, option rows, stepper, sticky add bar with the live
+price), floating night cart bar with the saffron CTA, checkout in four numbered steps, order detail (status + one
+primary action, PIN card with four boxes, captain card, vertical timeline), live tracking (full-screen map + docked
+sheet), Send-a-parcel three-step wizard, Account (profile card, grouped rows). Bottom bar: white, active tab in the
+brand colour with a saffron dot.
+
+Captain screens: map-first Home (dark map, docked sheet with the giant online/offline control, today's earnings strip,
+onboarding checklist, current deliveries), offer as a full-height sheet (saffron countdown ring, big earning figure,
+pickup → drop-off rows, saffron Accept / secondary Decline), active delivery (map, four-step progress, next stop first
+with large Navigate / Call / WhatsApp buttons, one saffron primary action in a sticky bar, fail / release as text
+actions), completion (four large PIN boxes, cash collected, photo), Earnings (period selector, Canvas bar chart per
+4-hour block today / per day for week and month, balance, ledger), onboarding (checklist + document cards with status
+pills), Profile.
+
+Maps: OSM raster tiles with a colour filter per palette (muted light for the consumer, dark for the captain), route =
+4 dp saffron line with a casing, pickup = green pin, drop-off = saffron dot, captain = white dot with a heading wedge.
 
 ## Build and run
 
@@ -214,13 +268,21 @@ reconnect with backoff and re-subscribe, location frames), `GET /me/export` (+ p
 `/me/devices/unregister` bodies, the DELETE confirmation rule, deep-link parsing/formatting (contract links, unsafe ids
 rejected, round-trip), push payload decoding (data map and launch extras), push → channel / deep link / notification id
 for both apps (fixtures `push_*.json`), cart persistence (round-trip, corrupt/future data, invalid lines, expiry,
-unknown fields) and map routing (next stop, dashed leg, breadcrumbs). 65 tests.
+unknown fields), map routing (next stop, dashed leg, breadcrumbs) and the earnings chart buckets (per day / per
+4-hour block in Muscat time, earnings types only). 67 tests.
 
 ## What was verified (and what was not)
 
 **Update — verified on GitHub Actions (ubuntu-latest with the Android SDK, runs 43973156920 and 43973216012, 2026-11-16):** `./gradlew :core:test` passed and **`:consumer:assembleDebug :captain:assembleDebug` built both
 debug APKs successfully** (AGP configuration, resource linking and manifest merging included). The APKs are uploaded
 as the `qabnah-android-debug-apks` workflow artifact. Not yet done: lint, R8 release build, device/emulator runs.
+
+**Update 2026-11-17 (Design System v2 redesign of both apps):** written in the same SDK-less container.
+`./gradlew :core:test` (67 tests) and `tools/typecheck/run.sh` pass (new stubs: `Font(resId)`, `SystemBarStyle`,
+Coil's `AsyncImage` state callbacks; the generated `R` now includes `R.font` from `res/font` and rejects invalid
+resource file names). **Not verified yet:** the AGP build with the new `res/font` files and theme parents, and how the
+screens actually look on a device (no screenshots could be taken here): spacing, the storefront's pinned tabs, the
+dark tile filter, Plex rendering and RTL mirroring need a visual pass on an emulator.
 
 **Update 2026-11-17 (FCM, deep links, guest browsing, map polylines, privacy, cart persistence):** written in the same
 SDK-less container. `./gradlew :core:test` (65 tests) and `tools/typecheck/run.sh` pass here (Firebase Messaging,
@@ -247,7 +309,11 @@ there) is blocked, so neither the Android SDK nor AGP/AndroidX could be download
 ## Known gaps / TODO
 
 - No offline cache: screens need the network (only the cart is persisted).
-- Fonts: system fonts are used; the brand fonts (Noto Kufi Arabic / Inter) are not bundled yet.
+- The redesign has not been seen on a device yet (see "What was verified"); expect a round of visual fixes.
+- Map tiles are still the public OSM raster tiles with a colour filter; a production provider with proper muted-light
+  and dark styles is needed before release.
+- The API has no category images, banners for the home page, product photos per order item or captain photos; the app
+  uses store covers for category chips / the hero carousel and glyph avatars elsewhere.
 - FCM has not been tested against a real Firebase project or device yet (see "What was verified"); without FCM_* values
   push is off and in-app notifications use `GET /me/notifications`.
 - The data export is held in memory while the save picker is open; if the process is killed meanwhile, tap

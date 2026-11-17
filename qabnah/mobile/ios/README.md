@@ -18,6 +18,8 @@ mobile/ios/
   SharedUI/                   shared SwiftUI sources (added to both targets)
   QabnahConsumer/             Sources/, Resources/{Assets.xcassets, en.lproj, ar.lproj}, Info.plist, entitlements
   QabnahCaptain/              same layout
+  Fonts/                      IBM Plex Sans Arabic + IBM Plex Sans (.ttf, OFL) — resources of both apps, listed in UIAppFonts
+  QabnahScreens/              XCUITest screenshot tests (target + scheme `QabnahScreens`)
   scripts/gen_strings.py      generates Localizable.strings / InfoPlist.strings (en + ar) and checks key coverage
 ```
 
@@ -60,6 +62,69 @@ When the backend runs with `OTP_DEV_ECHO=true` (development only — the server 
 production) the response contains `devCode`; the apps then show the code in a small yellow
 "Dev server code" banner on the OTP screen so you don't need a real SMS.
 Omani mobiles only: 8 digits starting with 9 or 7 (the `+968` prefix is added for you).
+
+## Design System v2 — "Night & Sand"
+
+Both apps follow `qabnah/docs/DESIGN_SYSTEM.md`. The foundation lives in `SharedUI/`:
+
+* **`Theme.swift`** — `QTheme` tokens. Fixed brand colours (night, night-2, primary, saffron, sand…) and
+  semantic colours that resolve per colour scheme: `background` (sand / night), `surface` (white / night-2),
+  `ink`, `muted`, `line`, `tint` and `cta` (primary / saffron), status colours. The **consumer app runs in the
+  light scheme, the captain app in the dark scheme** (`UIUserInterfaceStyle` + `preferredColorScheme`), so shared
+  screens need no branching. Radii 10/12/16/24, the 4-pt spacing grid, `qElevation1()` / `qElevation2()`,
+  `card()`, and the button styles: `PrimaryButtonStyle` (primary fill; saffron with ink text on night; optional
+  merchant brand colour), `SaffronButtonStyle`, `SecondaryButtonStyle`, `DestructiveButtonStyle`,
+  `TertiaryButtonStyle`.
+* **`Typography.swift`** — `qFont(.display/.h1/.h2/.h3/.body/.small/.micro)` picks IBM Plex Sans Arabic or
+  IBM Plex Sans from the view's locale, scaled with Dynamic Type; `tabular:` for prices and timers. The fonts
+  are bundled from `Fonts/` (downloaded from the IBM Plex repository, SIL OFL 1.1, licence in `Fonts/OFL.txt`),
+  registered through `UIAppFonts`, and registered again at run time if that failed; when a face is missing the
+  system font is used. `QAppearance` styles navigation bars, tab bars (saffron dot on the selected consumer
+  tab), segmented controls and page dots.
+* **`QPhoto.swift`** — `QPhoto` / `QPhotoBox` (AsyncImage with shimmer skeleton and cross-fade),
+  `QPhotoPlaceholder` (the branded night-2 → primary-deep gradient with an outlined glyph, tinted with the
+  merchant's colour on storefronts), `QCoverScrim`, `QLogoChip`.
+* **`Components.swift`** — `QPrice` (bold tabular amount, smaller muted currency), `StatusPill` (with dot),
+  skeletons (`QShimmer`, `QSkeleton`, `LoadingView`), text-only empty states with an action, `QStepProgress`,
+  `QStepper`, `QChoiceRow`, `QIconAction`, `QNightBar` (sticky night CTA bar), `QForm` / `QList`, `qField()`,
+  `qSheet()`.
+* **`MapViews.swift`** — muted tiles (dark in the captain app), route = 4 pt saffron line with white casing,
+  pickup = green pin, drop-off = saffron dot, captain = white dot with a heading wedge.
+
+Screens:
+
+* **Consumer** — Home (greeting + location pill, search, featured-stores carousel, category chips with
+  photos, store cards with 16:9 cover / logo chip / open pill / meta row, floating night cart bar with the
+  saffron CTA), Storefront (full-bleed cover with scrim; the header turns solid with sticky category tabs once
+  the cover has scrolled away; product rows with a leading photo and a round add button in the store's brand
+  colour), product sheet (16:10 photo, option rows, stepper, sticky add bar with the live price), cart,
+  checkout in three steps, orders, order detail (status, PIN on a night card, captain card, vertical timeline),
+  live tracking (map on top, bottom panel with status / ETA / captain), Send a parcel as a three-step wizard,
+  Account.
+* **Captain** (night) — map-first Home with the giant online control, today's earnings strip, active jobs and
+  offers; offer as a full-height sheet with a saffron countdown ring and the earning as the big figure; active
+  delivery with step progress, large navigate / call / WhatsApp buttons and one primary action; completion with
+  four PIN boxes; earnings with a period selector and a Swift Charts bar chart; onboarding checklist and
+  document cards.
+
+Content rules kept: no invented content (the Home carousel and the category photos are real stores' covers;
+ratings show only when the API returns a count), no emoji or illustrations, one language per label, digits in
+the reader's language.
+
+## Screenshot UI tests (`QabnahScreens`)
+
+`QabnahScreens/QabnahScreensTests.swift` launches both apps by bundle id in Arabic on a simulator, walks the
+main flows against the local backend (seeded data, `OTP_DEV_ECHO=true`) and writes a PNG per screen:
+
+```bash
+xcodegen generate
+TEST_RUNNER_QABNAH_SHOTS_DIR=/tmp/shots xcodebuild test -project Qabnah.xcodeproj -scheme QabnahScreens \
+  -destination "platform=iOS Simulator,name=iPhone 16" CODE_SIGNING_ALLOWED=NO
+```
+
+Files are named `consumer-01-home.png` … `captain-08-profile.png` and also attached to the test report. Every
+step is best effort (a missing control is logged as `missing: <id>` and the flow continues). The accessibility
+identifiers the tests rely on are listed at the top of the test file.
 
 ## QabnahKit
 
@@ -121,7 +186,7 @@ QABNAH_WS_TEST_URL=ws://127.0.0.1:8765/v1/realtime swift test --filter RealtimeI
   looked up from the selected `.lproj` at runtime and the layout direction flips immediately.
   After changing copy, edit `scripts/gen_strings.py` and run
   `python3 scripts/gen_strings.py .` (fails if a key used in code is missing).
-  Fonts are the system fonts (SF Arabic / SF Pro); the brand fonts (Noto Kufi Arabic, Inter) are not bundled.
+  Fonts are the bundled IBM Plex Sans Arabic / IBM Plex Sans (see "Design System v2").
 * **Consumer payments:** `POST /orders` (or `/shipments`) → for online payment `POST /orders/{id}/checkout`
   with `returnUrl = qabnah://payment-return?orderId=…` → `SFSafariViewController` → on close the app
   polls `GET /orders/{id}` (2 s, up to 60 s) until `paymentStatus` changes. The result is never
@@ -187,7 +252,17 @@ QabnahKit was built and tested on Linux again (Swift 6.0.3): `swift build` has n
 test skipped). The app sources were only syntax-checked with `swift-frontend -parse`; the macOS CI build of
 both schemes has to confirm they type-check.
 
+**Update 2026-11-17 (Design System v2 redesign + screenshot UI tests):** QabnahKit on Linux: `swift build`
+clean, `swift test` 74 tests, 0 failures (1 skipped). The redesigned app sources and the UI tests were only
+syntax-checked with `swift-frontend -parse` here; the macOS CI build has to confirm they type-check, and nothing
+was looked at on a simulator from this machine — spacing and scroll behaviour need a visual pass on the
+CI screenshots.
+
 ## Known gaps / TODO
+
+* The redesign has not been seen running: review the CI screenshots (both languages, Dynamic Type sizes).
+* Storefront: the selected category tab follows taps, not the scroll position.
+* Map tiles are Apple Maps with the muted style; the design system asks for a production tile provider.
 
 * Run on the simulator / a device against the real backend; UI tests. Push delivery was not tested
   end-to-end (needs a signed build with the push capability and the backend's APNs credentials).

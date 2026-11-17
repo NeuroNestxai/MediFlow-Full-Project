@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -109,7 +110,7 @@ fun HomeScreen(
         val here = position
         // Centre on the first fix only; later fixes move the marker but leave the camera where the captain panned it.
         var firstFix by remember { mutableStateOf<LatLng?>(null) }
-        if (firstFix == null && here != null) firstFix = here
+        LaunchedEffect(here) { if (firstFix == null && here != null) firstFix = here }
         OsmMap(
             modifier = Modifier.fillMaxSize(),
             markers = if (here != null) {

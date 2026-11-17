@@ -74,6 +74,22 @@ targets:
         INFOPLIST_FILE: QabnahCaptain/Info.plist
         CODE_SIGN_ENTITLEMENTS: QabnahCaptain/QabnahCaptain.entitlements
 
+  # Screenshot UI tests: launch both apps by bundle id on a simulator (see QabnahScreens/).
+  QabnahScreens:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: QabnahScreens
+    dependencies:
+      - target: QabnahConsumer
+      - target: QabnahCaptain
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: om.qabnah.screens
+        PRODUCT_NAME: QabnahScreens
+        TEST_TARGET_NAME: QabnahConsumer
+
 schemes:
   QabnahConsumer:
     build:
@@ -93,3 +109,15 @@ schemes:
       config: Debug
     archive:
       config: Release
+  QabnahScreens:
+    build:
+      targets:
+        QabnahConsumer: all
+        QabnahCaptain: all
+        QabnahScreens: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - QabnahScreens
