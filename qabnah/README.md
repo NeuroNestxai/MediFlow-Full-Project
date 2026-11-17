@@ -129,10 +129,13 @@ stores" and "register your store" go), optional `VITE_CONTACT_EMAIL`. Design rul
 | iOS | `swift test` QabnahKit (74 tests) | Linux sandbox + macOS 15 GitHub runner | ✅ |
 | iOS | `xcodegen` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
 | Android | `./gradlew :core:test` (67 tests) | sandbox + GitHub Actions | ✅ |
-| Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions (runs 16–17) | ✅ both build (APK artifact) |
+| Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions | ✅ both build (APK artifact) |
+| Android | both apps on an API 34 emulator against the Docker stack: browse, storefront, product, cart, OTP sign-in, checkout review, parcel wizard, account; captain sign-in, home, deliveries, earnings, profile (`mobile/screens/android_screens.py`) | GitHub Actions (`Qabnah mobile screenshots`) | ✅ runs; screenshots in `docs/screenshots/mobile/android` |
+| iOS | both apps on an iPhone simulator against a backend on the runner, driven by XCUITest (`QabnahScreens`) | GitHub Actions (`Qabnah mobile screenshots`) | ✅ runs; screenshots in `docs/screenshots/mobile/ios` |
 
 **Not verified / needs people or accounts:**
-- Mobile apps have not run on a device or simulator. There are no UI tests, no signing and no store submission.
+- Mobile apps have run on an emulator and a simulator only, never on a physical device. The simulator/emulator flows take
+  screenshots and stop at the checkout review; they are not assertions-based UI tests. No signing, no store submission.
 - No live Thawani, WhatsApp, SMS, FCM or APNs traffic (no credentials). The adapters and their signing are unit-tested only.
 - No penetration test. Load tested on a single sandbox host only.
 - Map tiles are blocked in the sandbox. Production needs a tile provider that permits app traffic.
