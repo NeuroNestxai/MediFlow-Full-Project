@@ -107,7 +107,7 @@ Set `VITE_API_URL` (default `http://localhost:4000/v1`) for other environments.
 | iOS | `swift test` QabnahKit (70 tests) | Linux sandbox + macOS 15 GitHub runner | ✅ |
 | iOS | `xcodegen` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
 | Android | `./gradlew :core:test` (65 tests) | sandbox + GitHub Actions | ✅ |
-| Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions | see latest CI run |
+| Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions (runs 16–17) | ✅ both build (APK artifact) |
 
 **Not verified / needs people or accounts:**
 - Mobile apps have not run on a device or simulator. There are no UI tests, no signing and no store submission.
