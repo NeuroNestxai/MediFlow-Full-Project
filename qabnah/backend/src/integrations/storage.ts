@@ -25,7 +25,41 @@ export class LocalStorage implements Storage {
   async remove(key: string) { await fs.rm(this.p(key), { force: true }); }
 }
 
-export const storage: Storage = new LocalStorage();
+/**
+ * S3-compatible object storage (AWS S3, MinIO, Cloudflare R2, regional providers). Bucket stays private:
+ * files are always streamed through the API, which enforces ownership/role checks or signed URLs.
+ */
+export class S3Storage implements Storage {
+  private client: import('@aws-sdk/client-s3').S3Client | null = null;
+  constructor(private bucket = config.S3_BUCKET ?? '') {}
+  private async c() {
+    if (!this.client) {
+      const { S3Client } = await import('@aws-sdk/client-s3');
+      this.client = new S3Client({
+        region: config.S3_REGION,
+        endpoint: config.S3_ENDPOINT || undefined,
+        forcePathStyle: config.S3_FORCE_PATH_STYLE,
+        credentials: { accessKeyId: config.S3_ACCESS_KEY_ID ?? '', secretAccessKey: config.S3_SECRET_ACCESS_KEY ?? '' },
+      });
+    }
+    return this.client;
+  }
+  async put(key: string, data: Buffer) {
+    const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+    await (await this.c()).send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: data, ServerSideEncryption: config.S3_ENDPOINT ? undefined : 'AES256' }));
+  }
+  async get(key: string) {
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const r = await (await this.c()).send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    return Buffer.from(await r.Body!.transformToByteArray());
+  }
+  async remove(key: string) {
+    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+    await (await this.c()).send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+  }
+}
+
+export const storage: Storage = config.STORAGE_DRIVER === 's3' ? new S3Storage() : new LocalStorage();
 
 export function signFileUrl(fileId: string, ttlS = 300): string {
   const exp = Math.floor(Date.now() / 1000) + ttlS;

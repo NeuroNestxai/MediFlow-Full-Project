@@ -23,6 +23,8 @@ import paymentRoutes from './modules/payments/routes.js';
 import supportRoutes from './modules/support/routes.js';
 import userRoutes from './modules/users/routes.js';
 import whatsappWebhookRoutes from './modules/webhooks/whatsapp.js';
+import invoiceRoutes from './modules/orders/invoice.js';
+import privacyRoutes from './modules/users/privacy.js';
 import realtimeRoutes from './realtime/hub.js';
 
 export async function buildApp(opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
@@ -87,7 +89,7 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
       items: (await q(pool, `SELECT id, code, name_en, name_ar, is_active, ST_AsGeoJSON(boundary)::json AS boundary FROM zones WHERE is_active ORDER BY name_en`)).map(zoneDto),
     }));
     for (const r of [authRoutes, userRoutes, fileRoutes, storefrontRoutes, merchantRoutes, catalogRoutes, orderRoutes, paymentRoutes, captainRoutes,
-      financeRoutes, supportRoutes, analyticsRoutes, adminRoutes, whatsappWebhookRoutes, realtimeRoutes]) await v1.register(r);
+      financeRoutes, supportRoutes, analyticsRoutes, adminRoutes, whatsappWebhookRoutes, invoiceRoutes, privacyRoutes, realtimeRoutes]) await v1.register(r);
   }, { prefix: '/v1' });
 
   return app;

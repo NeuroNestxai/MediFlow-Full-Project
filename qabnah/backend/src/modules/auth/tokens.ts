@@ -5,17 +5,18 @@ import { signAccessToken } from '../../lib/auth.js';
 import { randomToken, sha256 } from '../../lib/crypto.js';
 import { unauthorized } from '../../lib/errors.js';
 
-export async function issueTokens(db: Queryable, userId: string, userAgent?: string, familyId: string = crypto.randomUUID()) {
+export async function issueTokens(db: Queryable, userId: string, userAgent?: string, familyId: string = crypto.randomUUID(), mfa = false) {
   const refreshToken = randomToken(48);
-  await q(db, `INSERT INTO refresh_tokens (user_id, family_id, token_hash, expires_at, user_agent) VALUES ($1,$2,$3, now() + ($4 || ' days')::interval, $5)`, [
+  await q(db, `INSERT INTO refresh_tokens (user_id, family_id, token_hash, expires_at, user_agent, mfa) VALUES ($1,$2,$3, now() + ($4 || ' days')::interval, $5, $6)`, [
     userId,
     familyId,
     sha256(refreshToken),
     String(config.REFRESH_TOKEN_TTL_DAYS),
     userAgent?.slice(0, 200) ?? null,
+    mfa,
   ]);
   await q(db, `UPDATE users SET last_login_at = now() WHERE id = $1`, [userId]);
-  return { accessToken: await signAccessToken(userId), refreshToken, expiresIn: config.ACCESS_TOKEN_TTL_S };
+  return { accessToken: await signAccessToken(userId, { mfa }), refreshToken, expiresIn: config.ACCESS_TOKEN_TTL_S };
 }
 
 export async function rotateRefreshToken(db: Queryable, token: string, userAgent?: string) {
@@ -29,7 +30,7 @@ export async function rotateRefreshToken(db: Queryable, token: string, userAgent
   }
   if (new Date(row.expires_at) < new Date()) throw unauthorized('Refresh token expired');
   if (row.user_status !== 'active') throw unauthorized('Account is not active');
-  const tokens = await issueTokens(db, row.user_id, userAgent, row.family_id);
+  const tokens = await issueTokens(db, row.user_id, userAgent, row.family_id, row.mfa);
   const created = await one(db, `SELECT id FROM refresh_tokens WHERE token_hash = $1`, [sha256(tokens.refreshToken)]);
   await q(db, `UPDATE refresh_tokens SET revoked_at = now(), replaced_by = $2 WHERE id = $1`, [row.id, created!.id]);
   return { tokens };

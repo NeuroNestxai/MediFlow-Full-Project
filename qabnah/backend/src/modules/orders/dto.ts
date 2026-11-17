@@ -3,6 +3,7 @@ import { notFound } from '../../lib/errors.js';
 import { latLngCols, rowPoint } from '../../lib/geo.js';
 import { maskPhone } from '../../lib/phone.js';
 import { ACTIVE_DELIVERY_STATUSES } from '../core/state.js';
+import { invoiceAvailable, invoiceUrl } from './invoice.js';
 
 export type Viewer = 'customer' | 'merchant' | 'captain' | 'ops';
 
@@ -109,6 +110,7 @@ export async function orderDto(db: Queryable, o: any, viewer: Viewer, opts: { wi
     delivery: delivery ? deliveryDto(delivery, viewer) : null,
     timeline: timeline.map((t) => ({ status: t.to_status, at: t.created_at, note: t.note })),
     rated: !!rated,
+    invoiceUrl: viewer !== 'captain' && invoiceAvailable(o) ? invoiceUrl(o.id) : null,
   };
 }
 

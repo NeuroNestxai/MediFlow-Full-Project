@@ -4,8 +4,10 @@ import { z } from 'zod';
 import { config } from '../../config.js';
 import { pool, one, q, tx } from '../../db/pool.js';
 import { sendSms } from '../../integrations/sms.js';
-import { randomDigits, safeEqual, sha256 } from '../../lib/crypto.js';
-import { AppError, conflict, forbidden, unauthorized } from '../../lib/errors.js';
+import { randomDigits, safeEqual, sha256, shortCode } from '../../lib/crypto.js';
+import { audit, invalidateAuthCache, requireAuth, signMfaChallenge, verifyMfaChallenge } from '../../lib/auth.js';
+import { decryptSecret, encryptSecret, newTotpSecret, otpauthUrl, verifyTotp } from '../../lib/totp.js';
+import { AppError, badRequest, conflict, forbidden, unauthorized } from '../../lib/errors.js';
 import { normalizeOmanPhone } from '../../lib/phone.js';
 import { parse, zLatLng } from '../../lib/validate.js';
 import { zoneForPoint } from '../core/zones.js';
@@ -76,8 +78,89 @@ export default async function authRoutes(app: FastifyInstance) {
     const ok = !!user?.password_hash && (await bcrypt.compare(body.password, user.password_hash));
     if (!ok) throw unauthorized('Email or password is incorrect');
     if (user.status !== 'active') throw forbidden('This account is suspended. Contact support.');
+    if (user.totp_enabled_at) {
+      // Second step required: no tokens until /auth/mfa/verify succeeds.
+      return { mfaRequired: true, mfaToken: await signMfaChallenge(user.id) };
+    }
     const tokens = await issueTokens(pool, user.id, req.headers['user-agent']);
-    return { ...tokens, user: userDto(user), isNewUser: false };
+    const staff = await one(pool, `SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.scope = 'platform' LIMIT 1`, [user.id]);
+    return { ...tokens, user: userDto(user), isNewUser: false, mfaEnrollmentRequired: !!staff && config.REQUIRE_ADMIN_MFA };
+  });
+
+  // ── Multi-factor authentication (TOTP, RFC 6238) ──
+  app.post('/auth/mfa/verify', strict, async (req) => {
+    const b = parse(z.object({ mfaToken: z.string(), code: z.string().optional(), recoveryCode: z.string().optional() }).refine((x) => x.code || x.recoveryCode, { message: 'code or recoveryCode is required' }), req.body);
+    const userId = await verifyMfaChallenge(b.mfaToken);
+    const result = await tx(async (c) => {
+      const u = await one(c, `SELECT * FROM users WHERE id = $1 FOR UPDATE`, [userId]);
+      if (!u || u.status !== 'active' || !u.totp_enabled_at) return { error: unauthorized('Two-factor authentication is not available for this account') };
+      if (b.code) {
+        const step = verifyTotp(decryptSecret(u.totp_secret_enc, config.MFA_ENCRYPTION_KEY), b.code, { lastUsedStep: u.totp_last_step });
+        if (step == null) return { error: new AppError(401, 'invalid_code', 'The authenticator code is incorrect') };
+        await q(c, `UPDATE users SET totp_last_step = $2 WHERE id = $1`, [userId, step]);
+      } else {
+        const hash = sha256(`${config.MFA_ENCRYPTION_KEY}:${b.recoveryCode!.replace(/[\s-]/g, '').toUpperCase()}`);
+        const rc = await q(c, `UPDATE mfa_recovery_codes SET used_at = now() WHERE user_id = $1 AND code_hash = $2 AND used_at IS NULL RETURNING id`, [userId, hash]);
+        if (!rc.length) return { error: new AppError(401, 'invalid_code', 'The recovery code is invalid or already used') };
+      }
+      await audit(c, null, b.code ? 'auth.mfa_verified' : 'auth.mfa_recovery_code_used', 'user', userId);
+      return { ok: { ...(await issueTokens(c, userId, req.headers['user-agent'], undefined, true)), user: userDto(u), isNewUser: false } };
+    });
+    if ('error' in result) throw result.error;
+    return result.ok;
+  });
+
+  app.post('/auth/mfa/setup', async (req) => {
+    const auth = requireAuth(req);
+    const u = await one(pool, `SELECT email, password_hash, totp_enabled_at FROM users WHERE id = $1`, [auth.userId]);
+    if (!u.password_hash) throw forbidden('Two-factor authentication is for e-mail/password accounts');
+    if (u.totp_enabled_at) throw conflict('Two-factor authentication is already enabled', 'mfa_already_enabled');
+    const secret = newTotpSecret();
+    await q(pool, `UPDATE users SET totp_secret_enc = $2 WHERE id = $1`, [auth.userId, encryptSecret(secret, config.MFA_ENCRYPTION_KEY)]);
+    return { secret, otpauthUrl: otpauthUrl(secret, u.email) };
+  });
+
+  app.post('/auth/mfa/enable', strict, async (req) => {
+    const auth = requireAuth(req);
+    const b = parse(z.object({ code: z.string() }), req.body);
+    const out = await tx(async (c) => {
+      const u = await one(c, `SELECT * FROM users WHERE id = $1 FOR UPDATE`, [auth.userId]);
+      if (u.totp_enabled_at) return { error: conflict('Two-factor authentication is already enabled', 'mfa_already_enabled') };
+      if (!u.totp_secret_enc) return { error: badRequest('Call /auth/mfa/setup first') };
+      const step = verifyTotp(decryptSecret(u.totp_secret_enc, config.MFA_ENCRYPTION_KEY), b.code);
+      if (step == null) return { error: new AppError(401, 'invalid_code', 'The authenticator code is incorrect') };
+      await q(c, `UPDATE users SET totp_enabled_at = now(), totp_last_step = $2 WHERE id = $1`, [auth.userId, step]);
+      await q(c, `DELETE FROM mfa_recovery_codes WHERE user_id = $1`, [auth.userId]);
+      const codes = Array.from({ length: 10 }, () => shortCode(10));
+      for (const rc of codes) await q(c, `INSERT INTO mfa_recovery_codes (user_id, code_hash) VALUES ($1,$2)`, [auth.userId, sha256(`${config.MFA_ENCRYPTION_KEY}:${rc}`)]);
+      // Other sessions were opened without a second factor: revoke them.
+      await q(c, `UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [auth.userId]);
+      await audit(c, req, 'auth.mfa_enabled', 'user', auth.userId);
+      return { ok: { recoveryCodes: codes.map((x) => `${x.slice(0, 5)}-${x.slice(5)}`), ...(await issueTokens(c, auth.userId, req.headers['user-agent'], undefined, true)) } };
+    });
+    invalidateAuthCache(auth.userId);
+    if ('error' in out) throw out.error;
+    return out.ok;
+  });
+
+  app.post('/auth/mfa/disable', strict, async (req) => {
+    const auth = requireAuth(req);
+    const b = parse(z.object({ code: z.string() }), req.body);
+    if (config.REQUIRE_ADMIN_MFA && auth.roles.some((r) => !r.merchantId && !['consumer', 'captain'].includes(r.key)))
+      throw conflict('Platform staff must keep two-factor authentication enabled', 'mfa_required_for_staff');
+    const out = await tx(async (c) => {
+      const u = await one(c, `SELECT * FROM users WHERE id = $1 FOR UPDATE`, [auth.userId]);
+      if (!u.totp_enabled_at) return { error: conflict('Two-factor authentication is not enabled', 'mfa_not_enabled') };
+      if (verifyTotp(decryptSecret(u.totp_secret_enc, config.MFA_ENCRYPTION_KEY), b.code, { lastUsedStep: u.totp_last_step }) == null)
+        return { error: new AppError(401, 'invalid_code', 'The authenticator code is incorrect') };
+      await q(c, `UPDATE users SET totp_enabled_at = NULL, totp_secret_enc = NULL, totp_last_step = NULL WHERE id = $1`, [auth.userId]);
+      await q(c, `DELETE FROM mfa_recovery_codes WHERE user_id = $1`, [auth.userId]);
+      await audit(c, req, 'auth.mfa_disabled', 'user', auth.userId);
+      return { ok: true };
+    });
+    invalidateAuthCache(auth.userId);
+    if ('error' in out) throw out.error;
+    return { mfaEnabled: false };
   });
 
   // Refresh is called by every open tab/app; give it a looser limit than sign-in.

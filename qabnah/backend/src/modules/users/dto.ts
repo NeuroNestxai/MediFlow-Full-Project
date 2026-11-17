@@ -5,4 +5,5 @@ export const userDto = (u: any) => ({
   fullName: u.full_name,
   locale: u.locale,
   status: u.status,
+  mfaEnabled: !!u.totp_enabled_at,
 });

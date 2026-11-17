@@ -11,6 +11,8 @@ info:
     - Locations are `{lat, lng}` (WGS-84).
     - Auth: `Authorization: Bearer <accessToken>` (JWT, 15 min). Refresh with `/auth/refresh`.
     - Errors: `{ "error": { "code": "string", "message": "string", "details": {} } }` with HTTP 400/401/403/404/409/422/429/500.
+    - Admin MFA: when the server runs with REQUIRE_ADMIN_MFA=true (mandatory in production), every platform-permission
+      endpoint returns 403 `mfa_enrollment_required` (no TOTP yet) or `mfa_required` (signed in without the second factor).
       Common codes: `validation_error`, `unauthorized`, `forbidden`, `not_found`, `conflict`,
       `invalid_transition`, `out_of_service_area`, `merchant_closed`, `rate_limited`.
     - Lists: `?limit=` (default 20, max 100) and `?offset=`; response `{items, total, limit, offset}`.
@@ -37,6 +39,13 @@ info:
       `offer.created` = the `Offer` schema; `offer.expired` / `offer.cancelled` {offerId, deliveryId};
       `notification.created` {id, type, title, body, data, createdAt};
       `captain.location` {captainId, lat, lng, activeDeliveries}.
+
+    Push notifications (APNs for iOS, FCM for Android) carry: title, body and a data map
+      {type, orderId?, deliveryId?, offerId?, ticketId?, number?}. `type` matches in-app notification types:
+      order.placed.merchant, order.accepted, order.rejected, order.cancelled, delivery.assigned, delivery.picked_up,
+      delivery.delivered, delivery.failed, offer.created, captain.approved, captain.rejected, captain.document_rejected,
+      captain.document_expiring, merchant.approved, merchant.rejected, support.reply, payment_link.paid.
+      Deep links: qabnah://order/<orderId>, qabnah://offer/<offerId>, qabnah://delivery/<deliveryId>, qabnah://ticket/<ticketId>.
 
     Specific error codes clients should handle
     - `wrong_pin`, `proof_required`, `cod_mismatch` (422, delivery completion); `offer_taken` vs `offer_expired` (409, offer accept);
@@ -142,6 +151,38 @@ paths:
       responses:
         '200': { description: Signed in, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResult' } } } }
         '401': { $ref: '#/components/responses/Error' }
+  /auth/mfa/verify:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Second sign-in step. /auth/login returns {mfaRequired:true, mfaToken} (valid 5 min) for accounts with TOTP; exchange it here with a 6-digit authenticator code or a one-time recovery code.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [mfaToken], properties: { mfaToken: { type: string }, code: { type: string }, recoveryCode: { type: string } } } } }
+      responses:
+        '200': { description: Signed in (tokens carry the MFA claim, kept across refreshes), content: { application/json: { schema: { $ref: '#/components/schemas/AuthResult' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/mfa/setup:
+    post:
+      tags: [Auth]
+      summary: Start TOTP enrolment (e-mail/password accounts). Returns the base32 secret and an otpauth:// URL for a QR code.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { secret: { type: string }, otpauthUrl: { type: string } } } } } }
+        '409': { $ref: '#/components/responses/Error' }
+  /auth/mfa/enable:
+    post:
+      tags: [Auth]
+      summary: Confirm enrolment with a current code. Returns 10 one-time recovery codes (shown once) and fresh MFA tokens; other sessions are revoked.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [code], properties: { code: { type: string } } } } } }
+      responses:
+        '200': { description: Enabled, content: { application/json: { schema: { allOf: [{ $ref: '#/components/schemas/Tokens' }, { type: object, properties: { recoveryCodes: { type: array, items: { type: string } } } }] } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/mfa/disable:
+    post:
+      tags: [Auth]
+      summary: Turn TOTP off (requires a current code). Refused for platform staff when REQUIRE_ADMIN_MFA is on (409 mfa_required_for_staff).
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [code], properties: { code: { type: string } } } } } }
+      responses: { '200': { description: Disabled }, '409': { $ref: '#/components/responses/Error' } }
   /auth/refresh:
     post:
       tags: [Auth]
@@ -208,6 +249,22 @@ paths:
         content: { application/json: { schema: { type: object, properties: { fullName: { type: string }, locale: { type: string, enum: [ar, en] }, email: { type: string } } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+  /me/export:
+    get:
+      tags: [Me]
+      summary: 'Personal data export (PDPL access right): profile, addresses, orders, tickets, notifications, captain profile and documents metadata. JSON download.'
+      responses:
+        '200': { description: JSON export, content: { application/json: { schema: { type: object } } } }
+  /me/delete:
+    post:
+      tags: [Me]
+      summary: 'Delete my account (PDPL erasure). Refused with 409 while orders/deliveries are active or a balance is unsettled. Personal data is anonymised; financial/tax records keep only non-identifying data.'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [confirm], properties: { confirm: { type: string, enum: [DELETE] } } } } }
+      responses:
+        '204': { description: Account deleted and all sessions revoked }
+        '409': { $ref: '#/components/responses/Error' }
   /me/addresses:
     get:
       tags: [Me]
@@ -261,6 +318,12 @@ paths:
                 app: { type: string, enum: [consumer, captain, merchant, admin] }
                 token: { type: string }
       responses: { '204': { description: Registered } }
+  /me/devices/unregister:
+    post:
+      tags: [Me]
+      summary: Remove a push token (call on sign-out)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } } }
+      responses: { '204': { description: Removed } }
   /files:
     post:
       tags: [Me]
@@ -370,6 +433,14 @@ paths:
                 dropoff: { $ref: '#/components/schemas/PlaceInput' }
       responses:
         '200': { description: Checkout created, content: { application/json: { schema: { $ref: '#/components/schemas/Checkout' } } } }
+  /invoices/{orderId}:
+    parameters: [{ name: orderId, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      tags: [Public]
+      security: []
+      summary: Bilingual (Arabic/English) receipt / simplified tax invoice page. Requires the signed exp/sig query from Order.invoiceUrl.
+      parameters: [{ name: exp, in: query, required: true, schema: { type: integer } }, { name: sig, in: query, required: true, schema: { type: string } }]
+      responses: { '200': { description: HTML page }, '403': { description: Link expired or invalid } }
   /mock-pay/{paymentId}:
     parameters: [{ name: paymentId, in: path, required: true, schema: { type: string } }]
     get:
@@ -1246,6 +1317,12 @@ paths:
       summary: Suspend / reactivate a user (users:manage)
       requestBody: { required: true, content: { application/json: { schema: { type: object, required: [status], properties: { status: { type: string, enum: [active, suspended] } } } } } }
       responses: { '200': { description: OK } }
+  /admin/users/{id}/mfa-reset:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [Admin]
+      summary: Reset another user's two-factor authentication (staff:manage; audited; revokes their sessions)
+      responses: { '200': { description: OK } }
   /admin/roles:
     get:
       tags: [Admin]
@@ -1802,6 +1879,7 @@ components:
         delivery: { oneOf: [{ $ref: '#/components/schemas/Delivery' }, { type: 'null' }] }
         timeline: { type: array, items: { type: object, properties: { status: { type: string }, at: { type: string, format: date-time }, note: { type: [string, 'null'] } } } }
         rated: { type: boolean }
+        invoiceUrl: { type: [string, 'null'], description: 'Signed link (valid 30 min) to the bilingual Arabic/English tax invoice page; present once the order is paid or delivered. Open in a browser/web view, no auth header needed.' }
     OrderPage:
       type: object
       properties:

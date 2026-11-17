@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Qabnah API \u2014 delivery & e-commerce platform backend (Fastify + PostgreSQL/PostGIS)",
+  "description": "Qabnah API — delivery & e-commerce platform backend (Fastify + PostgreSQL/PostGIS)",
   "engines": {
     "node": ">=20"
   },
@@ -20,6 +20,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1170.0",
     "@fastify/cors": "^11.4.3",
     "@fastify/helmet": "^13.2.0",
     "@fastify/multipart": "^10.1.9",
@@ -38,6 +39,7 @@
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.2",
+    "s3rver": "^3.7.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0",

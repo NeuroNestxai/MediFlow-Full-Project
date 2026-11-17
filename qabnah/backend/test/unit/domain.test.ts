@@ -192,7 +192,7 @@ describe('configuration safety', () => {
   it('accepts a complete production configuration', () => {
     expect(() => loadConfig({
       NODE_ENV: 'production', PAYMENT_PROVIDER: 'thawani', THAWANI_SECRET_KEY: 'x', THAWANI_PUBLISHABLE_KEY: 'y', SMS_PROVIDER: 'http',
-      JWT_SECRET: 'a'.repeat(40), OTP_PEPPER: 'p', FILE_SIGNING_SECRET: 'f',
+      JWT_SECRET: 'a'.repeat(40), OTP_PEPPER: 'p', FILE_SIGNING_SECRET: 'f', REQUIRE_ADMIN_MFA: 'true', MFA_ENCRYPTION_KEY: 'k',
     } as any)).not.toThrow();
   });
 });

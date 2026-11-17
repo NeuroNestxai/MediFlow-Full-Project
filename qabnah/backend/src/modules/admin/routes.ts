@@ -480,6 +480,8 @@ export default async function adminRoutes(app: FastifyInstance) {
       codMaxBaisa: z.number().int().min(0).optional(), captainCashLimitBaisa: z.number().int().min(0).optional(), merchantAcceptTimeoutMinutes: z.number().int().min(1).max(120).optional(),
       pendingPaymentTimeoutMinutes: z.number().int().min(5).max(240).optional(), requireFleetForNonOmani: z.boolean().optional(),
       requiredCaptainDocuments: z.array(z.string()).optional(), supportPhone: z.string().optional(),
+      platformLegalName: z.string().max(200).optional(), platformCrNumber: z.string().max(40).optional(), platformVatNumber: z.string().max(40).optional(),
+      platformAddress: z.string().max(300).optional(), captainDocumentExpiryNoticeDays: z.number().int().min(1).max(90).optional(),
     }).strict(), req.body);
     const s = await updateSettings(pool, b as Partial<typeof DEFAULT_SETTINGS>, auth.userId);
     await audit(pool, req, 'settings.update', 'platform_settings', null, b);
@@ -539,6 +541,21 @@ export default async function adminRoutes(app: FastifyInstance) {
     invalidateAuthCache(id);
     return { id, status: b.status };
   });
+  app.post('/admin/users/:id/mfa-reset', async (req) => {
+    const auth = requirePerm(req, 'staff:manage');
+    const { id } = parse(z.object({ id: zUuid }), req.params);
+    if (id === auth.userId) throw forbidden('Ask another administrator to reset your two-factor authentication');
+    await tx(async (c) => {
+      const r = await q(c, `UPDATE users SET totp_enabled_at = NULL, totp_secret_enc = NULL, totp_last_step = NULL WHERE id = $1 RETURNING id`, [id]);
+      if (!r.length) throw notFound('User');
+      await q(c, `DELETE FROM mfa_recovery_codes WHERE user_id = $1`, [id]);
+      await q(c, `UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [id]);
+      await audit(c, req, 'user.mfa_reset', 'user', id);
+    });
+    invalidateAuthCache(id);
+    return { id, mfaEnabled: false };
+  });
+
   app.get('/admin/roles', async (req) => {
     requirePerm(req, 'staff:manage', 'users:read');
     const rows = await q(pool, `SELECT r.key, r.name, r.scope, COALESCE(array_agg(rp.permission_key ORDER BY rp.permission_key) FILTER (WHERE rp.permission_key IS NOT NULL), '{}') AS permissions

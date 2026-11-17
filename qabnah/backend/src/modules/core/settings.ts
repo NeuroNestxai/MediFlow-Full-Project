@@ -11,6 +11,12 @@ export const DEFAULT_SETTINGS = {
   requireFleetForNonOmani: true,   // DECISIONS D-013
   requiredCaptainDocuments: ['national_id', 'driving_license', 'vehicle_registration', 'profile_photo'] as string[],
   supportPhone: '+96800000000',
+  // Shown on invoices. Placeholders until the company is registered — never invent real identifiers.
+  platformLegalName: 'Qabnah (company registration pending)',
+  platformCrNumber: '',
+  platformVatNumber: '',
+  platformAddress: 'Muscat, Sultanate of Oman',
+  captainDocumentExpiryNoticeDays: 14,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 

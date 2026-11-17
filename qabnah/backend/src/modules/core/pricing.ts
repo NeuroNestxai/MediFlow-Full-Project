@@ -1,6 +1,7 @@
 import { one, type Queryable } from '../../db/pool.js';
 import { unprocessable } from '../../lib/errors.js';
-import { estimateRoute, type LatLng } from '../../lib/geo.js';
+import { type LatLng } from '../../lib/geo.js';
+import { route as roadRoute } from '../../integrations/routing.js';
 import { applyBps, roundBaisa } from '../../lib/money.js';
 import { zoneForPoint } from './zones.js';
 
@@ -63,7 +64,7 @@ export async function quoteDelivery(db: Queryable, input: { type: DeliveryType; 
   const vehicle = input.vehicleType ?? null;
   const rule = await resolveRule(db, pz.id, input.type, vehicle);
   if (!rule) throw unprocessable('no_pricing_rule', 'Delivery is not available for this route yet');
-  const route = estimateRoute(input.pickup, input.dropoff, vehicle);
+  const route = await roadRoute(input.pickup, input.dropoff, vehicle);
   if (route.distanceM / 1000 > Number(rule.max_distance_km)) throw unprocessable('out_of_service_area', 'Distance exceeds the maximum delivery distance');
   const { feeBaisa, captainEarningBaisa } = computeFee(rule, route.distanceM);
   return { feeBaisa, captainEarningBaisa, distanceM: route.distanceM, estimatedDurationS: route.durationS, zoneId: pz.id, vehicleType: vehicle, currency: 'OMR' };

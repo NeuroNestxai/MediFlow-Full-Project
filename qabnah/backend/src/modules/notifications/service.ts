@@ -1,5 +1,5 @@
 import { one, q, type Queryable } from '../../db/pool.js';
-import { sendPush } from '../../integrations/push.js';
+import { sendPush, toPushData } from '../../integrations/push.js';
 import { sendWhatsAppTemplate, WA_TEMPLATES } from '../../integrations/whatsapp.js';
 import { publish } from '../../realtime/bus.js';
 
@@ -16,6 +16,7 @@ const T: Record<string, (d: any) => Tpl> = {
   'offer.created': (d) => ({ en: ['New delivery offer', `Earn ${d.earning} — accept within ${d.seconds}s`], ar: ['طلب توصيل جديد', `اربح ${d.earning} — اقبل خلال ${d.seconds} ثانية`] }),
   'captain.approved': () => ({ en: ['You are approved', 'You can now go online and receive offers'], ar: ['تم اعتمادك', 'يمكنك الآن الاتصال واستقبال الطلبات'] }),
   'captain.rejected': (d) => ({ en: ['Application update', d.reason ?? 'Your application needs changes'], ar: ['تحديث الطلب', d.reason ?? 'طلبك يحتاج إلى تعديلات'] }),
+  'captain.document_expiring': (d) => ({ en: ['Document expiring soon', `Your ${d.docType} expires on ${d.expiresAt}. Upload a renewed copy to keep receiving offers.`], ar: ['مستند على وشك الانتهاء', `ينتهي ${d.docType} بتاريخ ${d.expiresAt}. ارفع نسخة مجددة لتستمر في استلام الطلبات.`] }),
   'captain.document_rejected': (d) => ({ en: ['Document rejected', `${d.docType}: ${d.reason ?? ''}`], ar: ['تم رفض مستند', `${d.docType}: ${d.reason ?? ''}`] }),
   'merchant.approved': (d) => ({ en: ['Store approved', `${d.name} is live on Qabnah`], ar: ['تم اعتماد المتجر', `${d.name} متاح الآن على قبناه`] }),
   'merchant.rejected': (d) => ({ en: ['Store application', d.reason ?? 'Your application needs changes'], ar: ['طلب المتجر', d.reason ?? 'طلبك يحتاج إلى تعديلات'] }),
@@ -30,7 +31,7 @@ export async function notify(db: Queryable, userId: string, type: string, data: 
   const [title, body] = tpl[(u?.locale as 'ar' | 'en') ?? 'ar'];
   const n = await one(db, `INSERT INTO notifications (user_id, type, title, body, data) VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at`, [userId, type, title, body, JSON.stringify(data)]);
   await publish(db, [`user:${userId}`], 'notification.created', { id: n.id, type, title, body, data, createdAt: n.created_at });
-  sendPush(userId, title, body, data).catch(() => {});
+  sendPush(userId, title, body, toPushData(type, data)).catch(() => {});
 }
 
 export async function notifyMany(db: Queryable, userIds: string[], type: string, data: Record<string, unknown> = {}) {

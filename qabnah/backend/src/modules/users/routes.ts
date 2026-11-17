@@ -171,6 +171,13 @@ export default async function userRoutes(app: FastifyInstance) {
     reply.code(204);
   });
 
+  app.post('/me/devices/unregister', async (req, reply) => {
+    const auth = requireAuth(req);
+    const b = parse(z.object({ token: z.string().min(10).max(4096) }), req.body);
+    await q(pool, `DELETE FROM device_tokens WHERE token = $1 AND user_id = $2`, [b.token, auth.userId]);
+    reply.code(204);
+  });
+
   app.post('/me/devices', async (req, reply) => {
     const auth = requireAuth(req);
     const b = parse(z.object({ platform: z.enum(['ios', 'android', 'web']), app: z.enum(['consumer', 'captain', 'merchant', 'admin']), token: z.string().min(10).max(4096) }), req.body);

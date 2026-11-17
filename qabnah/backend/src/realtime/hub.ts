@@ -3,7 +3,7 @@ import pg from 'pg';
 import type { WebSocket } from 'ws';
 import { config } from '../config.js';
 import { pool, one, tx } from '../db/pool.js';
-import { hasMerchantPerm, hasPerm, loadAuthContext, verifyAccessToken, type AuthContext } from '../lib/auth.js';
+import { hasMerchantPerm, hasPerm, loadAuthContext, verifyAccessTokenClaims, type AuthContext } from '../lib/auth.js';
 import { recordLocation } from '../modules/deliveries/service.js';
 import { CHANNEL } from './bus.js';
 
@@ -81,8 +81,8 @@ export default async function realtimeRoutes(app: FastifyInstance) {
   app.get('/realtime', { websocket: true }, async (socket: WebSocket, req) => {
     let client: Client | null = null;
     const authenticate = async (token: string) => {
-      const userId = await verifyAccessToken(token);
-      client = { ws: socket, auth: await loadAuthContext(userId), channels: new Set(), lastLocationAt: 0 };
+      const { userId, mfa } = await verifyAccessTokenClaims(token);
+      client = { ws: socket, auth: await loadAuthContext(userId, pool, mfa), channels: new Set(), lastLocationAt: 0 };
       send(socket, { type: 'ready', userId });
     };
     const token = (req.query as any)?.token;
