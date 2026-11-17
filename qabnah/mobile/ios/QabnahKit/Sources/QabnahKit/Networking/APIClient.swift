@@ -134,6 +134,20 @@ public final class APIClient: @unchecked Sendable {
         return try decode(R.self, from: data)
     }
 
+    /// Performs the request and returns the raw 2xx body without decoding (e.g. the
+    /// `GET /me/export` JSON download). Same auth/refresh/error handling as `send`.
+    public func data<R>(for endpoint: Endpoint<R>) async throws -> Data {
+        try await perform(endpoint: endpoint) { token in
+            try self.makeRequest(endpoint, accessToken: token)
+        }
+    }
+
+    /// Drops the local session without calling `/auth/logout` (e.g. after `POST /me/delete`,
+    /// which already revoked every session server-side).
+    public func clearSession() {
+        tokenStore.clear()
+    }
+
     /// `POST /files` multipart upload (`file` + `purpose`).
     public func uploadFile(data: Data, fileName: String, mimeType: String, purpose: FilePurpose) async throws -> FileRef {
         var form = MultipartFormData()

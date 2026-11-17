@@ -50,6 +50,8 @@ fun AuthScreen(
     appName: String,
     @DrawableRes logo: Int,
     modifier: Modifier = Modifier,
+    /** Shown under the welcome line when sign-in interrupts something (checkout, Orders tab, a deep link). */
+    reason: String? = null,
 ) {
     val vm: AuthViewModel = viewModel { AuthViewModel(api) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -71,6 +73,9 @@ fun AuthScreen(
                 modifier = Modifier.size(88.dp).clip(RoundedCornerShape(20.dp)),
             )
             Text(stringResource(R.string.auth_welcome, appName), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            reason?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            }
             Spacer(Modifier.height(8.dp))
             when (state.step) {
                 AuthUiState.Step.PHONE -> PhoneStep(state, vm)

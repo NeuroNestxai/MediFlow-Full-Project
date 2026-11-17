@@ -95,10 +95,13 @@ struct AuthFlowView: View {
     @EnvironmentObject var session: SessionStore
     @StateObject private var vm: AuthViewModel
     let subtitleKey: String
+    /// When set (sign-in presented as a sheet, e.g. at checkout), shows a Cancel button.
+    var onCancel: (() -> Void)?
 
-    init(api: APIClient, subtitleKey: String) {
+    init(api: APIClient, subtitleKey: String, onCancel: (() -> Void)? = nil) {
         _vm = StateObject(wrappedValue: AuthViewModel(api: api))
         self.subtitleKey = subtitleKey
+        self.onCancel = onCancel
     }
 
     var body: some View {
@@ -118,6 +121,13 @@ struct AuthFlowView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .toolbar {
+                if let onCancel {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(lang.t("common.cancel"), action: onCancel)
+                    }
+                }
+            }
         }
     }
 
@@ -231,5 +241,40 @@ struct AuthFlowView: View {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(vm.fullName.trimmingCharacters(in: .whitespaces).isEmpty || vm.isBusy)
         }
+    }
+}
+
+/// Presents the OTP sign-in as a sheet (guest browsing → checkout / orders / account) and calls
+/// `onSignedIn` once the sheet has closed with a signed-in session, so the caller can continue
+/// where the user was going.
+struct SignInSheetModifier: ViewModifier {
+    @EnvironmentObject var lang: LanguageSettings
+    @EnvironmentObject var session: SessionStore
+    @Binding var isPresented: Bool
+    let subtitleKey: String
+    let onSignedIn: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: $isPresented, onDismiss: dismissed) {
+                AuthFlowView(api: session.api, subtitleKey: subtitleKey, onCancel: { isPresented = false })
+                    .environmentObject(lang)
+                    .environmentObject(session)
+                    .qabnahLocalized(lang)
+            }
+            .onChange(of: session.isSignedIn) { signedIn in
+                if signedIn && isPresented { isPresented = false }
+            }
+    }
+
+    private func dismissed() {
+        if session.isSignedIn { onSignedIn() }
+    }
+}
+
+extension View {
+    func signInSheet(isPresented: Binding<Bool>, subtitleKey: String,
+                     onSignedIn: @escaping () -> Void = {}) -> some View {
+        modifier(SignInSheetModifier(isPresented: isPresented, subtitleKey: subtitleKey, onSignedIn: onSignedIn))
     }
 }

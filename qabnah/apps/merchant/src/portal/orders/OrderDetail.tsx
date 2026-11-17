@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
-  Badge, Button, Drawer, ErrorState, Icon, Loading, StatusBadge, FINAL_ORDER_STATUSES, merchantActionsFor, useI18n, useRealtimeChannel,
+  Badge, Button, Drawer, ErrorState, Icon, LinkButton, Loading, StatusBadge, FINAL_ORDER_STATUSES, merchantActionsFor, useI18n, useRealtimeChannel,
   type LatLng, type Order,
 } from '@qabnah/shared';
 import { DROPOFF_COLOR, FitBounds, MapView, Marker, PICKUP_COLOR, Tooltip, captainIcon, pinIcon } from '@qabnah/shared/map';
@@ -155,14 +155,20 @@ export function OrderDetailBody({ order, showMap }: { order: Order; showMap?: bo
   );
 }
 
+export function InvoiceButton({ order }: { order: Order }) {
+  const { t } = useI18n();
+  if (!order.invoiceUrl) return null;
+  return <LinkButton href={order.invoiceUrl} external icon="file" aria-label={t('invoice.openLabel')}>{t('invoice.open')}</LinkButton>;
+}
+
 export function OrderActionsBar({ order }: { order: Order }) {
   const { t } = useI18n();
   const { perms } = useSession();
   const { run, dialogs, busy } = useOrderActions();
   const actions = merchantActionsFor(order, perms);
-  if (!actions.length) return dialogs;
   return (
     <>
+      <InvoiceButton order={order} />
       {actions.map((a) => <Button key={a} variant={ACTION_VARIANT[a]} disabled={busy} onClick={() => run(order, a)}>{t(`orders.action.${a}`)}</Button>)}
       {dialogs}
     </>

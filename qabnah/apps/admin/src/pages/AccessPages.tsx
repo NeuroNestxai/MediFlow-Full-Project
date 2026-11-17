@@ -87,6 +87,11 @@ export function StaffPage() {
   const [created, setCreated] = useState<{ email: string; temporaryPassword: string } | null>(null);
   const [editing, setEditing] = useState<PlatformStaff | null>(null);
   const [editRoles, setEditRoles] = useState<string[]>([]);
+  const [resetTarget, setResetTarget] = useState<PlatformStaff | null>(null);
+  const resetMfa = useMutation({
+    mutationFn: (s: PlatformStaff) => api.post(`/admin/users/${s.userId}/mfa-reset`),
+    onSuccess: () => { setResetTarget(null); void qc.invalidateQueries({ queryKey: ['a', 'staff'] }); toast.push(t('staff.mfaResetDone')); },
+  });
   const create = useMutation({
     mutationFn: () => api.post<{ userId: string; temporaryPassword: string }>('/admin/staff', { email: f.email.trim(), fullName: f.fullName.trim(), roleKeys: f.roleKeys }),
     onSuccess: (r) => { setCreating(false); setCreated({ email: f.email.trim(), temporaryPassword: r.temporaryPassword }); setF({ email: '', fullName: '', roleKeys: [] }); void qc.invalidateQueries({ queryKey: ['a', 'staff'] }); },
@@ -118,7 +123,10 @@ export function StaffPage() {
                   <td className="ltr">{s.email}</td>
                   <td>{s.roles.map((r) => <Badge key={r} tone={r === 'super_admin' ? 'accent' : 'neutral'}>{t(`role.${r}`)}</Badge>)}</td>
                   <td className="nowrap">{dateTime(s.lastLoginAt)}</td>
-                  <td><Button size="sm" onClick={() => { saveRoles.reset(); setEditRoles(s.roles); setEditing(s); }}>{t('staff.editRoles')}</Button></td>
+                  <td><div className="row row-nowrap">
+                    <Button size="sm" onClick={() => { saveRoles.reset(); setEditRoles(s.roles); setEditing(s); }}>{t('staff.editRoles')}</Button>
+                    {s.userId !== me.user.id ? <Button size="sm" variant="danger-outline" icon="key" onClick={() => { resetMfa.reset(); setResetTarget(s); }}>{t('staff.resetMfa')}</Button> : null}
+                  </div></td>
                 </tr>
               ))}</tbody>
             </table></div>
@@ -126,6 +134,9 @@ export function StaffPage() {
         </Card>
       ) : <Alert tone="info">{t('staff.readOnly')}</Alert>}
       {roles.isLoading ? <Loading /> : roles.isError ? <ErrorState error={roles.error} onRetry={() => roles.refetch()} /> : roles.data ? <RoleMatrix data={roles.data} /> : null}
+      <ConfirmDialog open={!!resetTarget} tone="danger" title={t('staff.resetMfaTitle')} message={resetTarget ? t('staff.resetMfaBody', { name: resetTarget.fullName }) : ''}
+        confirmLabel={t('staff.resetMfa')} loading={resetMfa.isPending} error={resetMfa.isError ? errorMessage(resetMfa.error, t) : null}
+        onClose={() => setResetTarget(null)} onConfirm={() => resetTarget && resetMfa.mutate(resetTarget)} />
       <Modal open={creating} onClose={() => setCreating(false)} title={t('staff.new')}
         footer={<><Button onClick={() => setCreating(false)}>{t('common.cancel')}</Button><Button variant="primary" loading={create.isPending} disabled={!f.email || f.fullName.trim().length < 2 || !f.roleKeys.length} onClick={() => create.mutate()}>{t('common.create')}</Button></>}>
         <div className="stack">

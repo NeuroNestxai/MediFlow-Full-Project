@@ -403,3 +403,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .topbar .btn--sm { padding-inline: 8px; }
   .page-header h1 { font-size: 1.35rem; }
 }
+
+/* MFA */
+.otp-input { font-size: 1.5rem; letter-spacing: 0.4em; text-align: center; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.mfa-qr { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.mfa-qr img { border: 1px solid var(--q-border); border-radius: var(--q-radius-md); padding: 6px; background: #fff; }
+.mfa-steps { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 4px; color: var(--q-muted); }
+.recovery-codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 24px; margin: 0; padding: 14px 14px 14px 36px; background: var(--q-sand); border: 1px dashed var(--q-border-strong); border-radius: var(--q-radius-md); font-size: 1rem; }

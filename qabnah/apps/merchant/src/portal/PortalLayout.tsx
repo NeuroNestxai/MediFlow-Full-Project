@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Icon, LiveIndicator, Select, Switch, errorMessage, useI18n, useRealtimeStatus, useToast, type MerchantDetail } from '@qabnah/shared';
+import { Alert, Badge, Button, Icon, LiveIndicator, Loading, Select, Switch, errorMessage, useI18n, useRealtimeStatus, useToast, type MerchantDetail } from '@qabnah/shared';
 import { merchantApi, merchantRealtime } from '../api';
 import { merchantKey, useSession } from './session';
 
@@ -94,6 +94,7 @@ export function PortalLayout() {
             <div className="strong truncate">{s.me.user.fullName}</div>
             <div className="text-xs muted truncate ltr">{s.me.user.email}</div>
           </div>
+          <NavLink to="/security" className="nav-link"><Icon name="key" /><span>{t('nav.security')}</span>{s.me.user.mfaEnabled ? <span className="badge badge--success">{t('mfa.on')}</span> : null}</NavLink>
           <Button variant="ghost" icon="logout" onClick={async () => { await s.signOut(); nav('/login'); }}>{t('common.signOut')}</Button>
         </div>
       </aside>
@@ -113,7 +114,7 @@ export function PortalLayout() {
               {detail?.rejectionReason ? <div className="text-sm">{t('portal.reason')}: {detail.rejectionReason}</div> : null}
             </Alert>
           ) : null}
-          <Outlet />
+          <Suspense fallback={<Loading />}><Outlet /></Suspense>
         </main>
       </div>
     </div>

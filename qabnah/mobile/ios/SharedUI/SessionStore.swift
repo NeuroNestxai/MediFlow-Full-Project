@@ -63,6 +63,7 @@ final class SessionStore: ObservableObject {
     /// Called on launch / foreground.
     func resume() {
         guard isSignedIn else { return }
+        PushRegistrar.shared.refreshRegistrationIfAuthorized()
         Task {
             await realtime.start()
             if me == nil { await loadMe() }
@@ -72,7 +73,19 @@ final class SessionStore: ObservableObject {
     func signOut() async {
         onSignOut.values.forEach { $0() }
         await realtime.reset()
+        // Needs the session, so before /auth/logout.
+        await PushRegistrar.shared.unregisterFromServer()
         await api.signOut()
+        me = nil
+        isSignedIn = false
+    }
+
+    /// After `POST /me/delete` succeeded: the server already revoked every session and token.
+    func accountDeleted() async {
+        onSignOut.values.forEach { $0() }
+        await realtime.reset()
+        PushRegistrar.shared.forgetToken()
+        api.clearSession()
         me = nil
         isSignedIn = false
     }
@@ -86,60 +99,3 @@ final class SessionStore: ObservableObject {
     }
 }
 
-/// APNs registration. Registration failures (simulator, missing entitlement, no network)
-/// are logged and otherwise ignored — push is a nice-to-have on top of realtime + polling.
-@MainActor
-final class PushRegistrar {
-    static let shared = PushRegistrar()
-    private var api: APIClient?
-    private var app: ClientApp = .consumer
-    private var lastToken: String?
-
-    func configure(api: APIClient, app: ClientApp) {
-        self.api = api
-        self.app = app
-    }
-
-    func requestAuthorizationAndRegister() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if let error { print("[push] authorization error: \(error.localizedDescription)") }
-            guard granted else { return }
-            DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
-        }
-    }
-
-    func didRegister(deviceToken: Data) {
-        let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        lastToken = token
-        upload(token)
-    }
-
-    func didFailToRegister(_ error: Error) {
-        print("[push] APNs registration failed (ignored): \(error.localizedDescription)")
-    }
-
-    private func upload(_ token: String) {
-        guard let api, api.isSignedIn else { return }
-        let app = self.app
-        Task {
-            do {
-                _ = try await api.send(Endpoints.registerDevice(DeviceRegistrationInput(app: app, token: token)))
-            } catch {
-                print("[push] POST /me/devices failed (ignored): \(error.localizedDescription)")
-            }
-        }
-    }
-}
-
-/// Shared UIApplicationDelegate for APNs callbacks.
-final class QabnahAppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication,
-                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        Task { @MainActor in PushRegistrar.shared.didRegister(deviceToken: deviceToken) }
-    }
-
-    func application(_ application: UIApplication,
-                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        Task { @MainActor in PushRegistrar.shared.didFailToRegister(error) }
-    }
-}

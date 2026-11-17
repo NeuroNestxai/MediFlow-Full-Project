@@ -4,7 +4,10 @@ import QabnahKit
 struct CartView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var cart: CartStore
+    @EnvironmentObject var session: SessionStore
     @Environment(\.dismiss) var dismiss
+    @State private var showCheckout = false
+    @State private var showSignIn = false
     let api: APIClient
 
     var body: some View {
@@ -39,17 +42,16 @@ struct CartView: View {
                         }
                     }
                     .safeAreaInset(edge: .bottom) {
-                        NavigationLink {
-                            CheckoutView(api: api, cart: cart, onClose: { dismiss() })
-                        } label: {
-                            Text(lang.t("cart.checkout"))
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .disabled(!cart.cart.meetsMinimumOrder)
-                        .padding()
-                        .background(.bar)
+                        checkoutButton
                     }
                 }
+            }
+            .navigationDestination(isPresented: $showCheckout) {
+                CheckoutView(api: api, cart: cart, onClose: { dismiss() })
+            }
+            // Guests sign in here (OTP sheet) and go straight on to checkout.
+            .signInSheet(isPresented: $showSignIn, subtitleKey: "auth.subtitle_checkout") {
+                showCheckout = true
             }
             .navigationTitle(lang.t("cart.title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -64,6 +66,25 @@ struct CartView: View {
                 }
             }
         }
+    }
+}
+
+private extension CartView {
+    var checkoutButton: some View {
+        VStack(spacing: 6) {
+            Button {
+                if session.isSignedIn { showCheckout = true } else { showSignIn = true }
+            } label: {
+                Text(lang.t("cart.checkout"))
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!cart.cart.meetsMinimumOrder)
+            if !session.isSignedIn {
+                Text(lang.t("cart.sign_in_to_checkout")).font(.footnote).foregroundColor(.secondary)
+            }
+        }
+        .padding()
+        .background(.bar)
     }
 }
 

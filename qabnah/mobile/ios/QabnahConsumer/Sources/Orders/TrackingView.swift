@@ -93,6 +93,29 @@ final class TrackingViewModel: ObservableObject {
         }
         return out
     }
+
+    private var captainIsActive: Bool { tracking?.deliveryStatus?.hasActiveCaptain ?? false }
+
+    /// Breadcrumbs from `GET /orders/{id}/tracking`, extended with the latest live position.
+    var pathCoordinates: [CLLocationCoordinate2D] {
+        var coords = (tracking?.path ?? []).map { CLLocationCoordinate2D($0) }
+        if captainIsActive, let c = captainLocation, c != tracking?.path.last {
+            coords.append(CLLocationCoordinate2D(c))
+        }
+        return coords
+    }
+
+    var captainCoordinate: CLLocationCoordinate2D? {
+        guard captainIsActive, let c = captainLocation else { return nil }
+        return CLLocationCoordinate2D(c)
+    }
+
+    /// Pickup until the parcel is collected, then the dropoff.
+    var nextStop: CLLocationCoordinate2D? {
+        guard let t = tracking, let status = t.deliveryStatus, status.hasActiveCaptain else { return nil }
+        let stop = status.isBeforePickup ? t.pickup : t.dropoff
+        return stop.map { CLLocationCoordinate2D($0) }
+    }
 }
 
 struct TrackingView: View {
@@ -112,7 +135,8 @@ struct TrackingView: View {
                     LoadingView()
                 }
             } else {
-                PlacesMap(points: localizedPoints)
+                RouteMapView(points: localizedPoints, path: vm.pathCoordinates,
+                             dashedFrom: vm.captainCoordinate, dashedTo: vm.nextStop)
                 infoCard
             }
         }

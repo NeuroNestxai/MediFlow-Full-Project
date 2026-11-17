@@ -13,11 +13,11 @@ and what has and has **not** been verified.
 | Cash on delivery | Built in | Built in | Implemented + tested (captain cash ledger, remittance) |
 | SMS OTP | `console` (logs the code; dev can echo it) | `http` generic gateway | Provider not chosen; payload must be adapted |
 | WhatsApp | `console` (logs + `outbound_messages` row) | `cloud` (Meta Cloud API) | Webhook signature/challenge tested locally; **no live sends** |
-| Push notifications | `console` | — | In-app notifications + realtime work; FCM/APNs not wired |
-| Maps / routing | Haversine × road factor | `RoutingProvider` interface (planned OSRM/Google) | Approximate ETAs, labelled as such |
+| Push notifications | `console` | `live`: FCM HTTP v1 (Android) + APNs token auth (iOS) | Implemented; signing and invalid-token cleanup unit-tested; **no live sends** (no Firebase/Apple keys) |
+| Maps / routing | Haversine × road factor | `osrm` (self-hosted OSRM, Oman extract) with automatic fallback | Implemented and tested against a mock OSRM server; Oman data build (`infra/osrm/prepare.sh`) not run here |
 | Map tiles (web/Android) | OpenStreetMap tiles via Leaflet / osmdroid | Same (check OSM tile usage policy; use a commercial tile provider at scale) | — |
 | Map (iOS) | Apple MapKit | Same | — |
-| File storage | Local disk (`STORAGE_DIR`) | S3-compatible (interface ready) | S3 adapter not implemented |
+| File storage | Local disk (`STORAGE_DIR`) | `s3` (AWS S3 / MinIO / R2 / regional S3-compatible) | Implemented; put/get/delete tested against the s3rver emulator |
 
 ---
 
@@ -84,10 +84,25 @@ and what has and has **not** been verified.
   behalf of merchants. Whether merchants need their own numbers is a product decision.
 
 ## 4. Push notifications
-- Device tokens are registered with `POST /v1/me/devices`. Notifications are written to the in-app inbox and pushed
-  over WebSocket (`user:me` → `notification.created`).
-- `integrations/push.ts` is a console stub. To do: an FCM HTTP v1 adapter (Android and iOS via FCM) or APNs
-  directly, plus credentials (service account / APNs key) stored as secrets.
+- Devices register with `POST /v1/me/devices` and unregister on sign-out with `POST /v1/me/devices/unregister`.
+  Every notification also goes to the in-app inbox and the WebSocket (`user:me` → `notification.created`).
+- `PUSH_PROVIDER=live` sends one message per device:
+  - **Android → FCM HTTP v1.** `FCM_SERVICE_ACCOUNT_JSON_B64` holds the base64 service-account JSON. The server mints
+    RS256 JWT-bearer OAuth tokens (cached about 1 h) and sends to `projects/{id}/messages:send` with Android channel
+    `offers` for captain offers, `support` for support updates, and `orders` for everything else.
+  - **iOS → APNs over HTTP/2.** Uses `APNS_KEY_P8_B64`, `APNS_KEY_ID` and `APNS_TEAM_ID`. It builds an ES256 provider
+    token (refreshed every 50 min). The topic is `APNS_BUNDLE_ID_CONSUMER` or `APNS_BUNDLE_ID_CAPTAIN`, depending on
+    the device's app. Set `APNS_PRODUCTION=true` for App Store builds. Offers are sent with time-sensitive interruption.
+  - Tokens reported invalid (FCM `UNREGISTERED`/404, APNs 410/`BadDeviceToken`) are deleted.
+  - Each attempt is logged in `outbound_messages` (channel `push`).
+- Payload data is `{type, orderId?, deliveryId?, offerId?, ticketId?, number?}`, with deep links `qabnah://…` (see API_CONTRACT).
+- **To go live:**
+  1. Create the Firebase project and the APNs key.
+  2. Add the Firebase options to the Android build (`FCM_*` Gradle properties).
+  3. Enable Push Notifications on both iOS bundle ids.
+  4. Send a test to a real device.
+
+  None of this has been done yet.
 
 ## 5. Realtime
 - WebSocket `GET /v1/realtime?token=…`, fanned out through PostgreSQL `LISTEN/NOTIFY` (see ARCHITECTURE §4.7).
@@ -96,13 +111,21 @@ and what has and has **not** been verified.
 ## 6. Maps, geocoding and routing
 - Locations are pins (lat/lng) plus landmark text. There is no geocoding provider yet, because Muscat addresses
   are pin-first (research §2).
-- Fees and ETAs use straight-line distance × road factor (1.35 car, 1.5 bike). To improve: implement
-  `RoutingProvider` with OSRM (self-hosted, Oman OSM extract) or the Google Routes API.
+- `ROUTING_PROVIDER=haversine` (default): straight-line distance × road factor (1.35 car, 1.5 bike).
+- `ROUTING_PROVIDER=osrm` + `OSRM_URL`: real road distance and duration from OSRM, used for fees and quotes.
+  - Timeout is 800 ms; on timeout or error it falls back to haversine, so quoting never fails because routing is down.
+  - Bikes keep the haversine bike distance as a floor, because of the reported main-road restriction for delivery
+    motorcycles.
+  - Build the Oman data with `infra/osrm/prepare.sh` (Geofabrik GCC extract clipped to Oman), then start the `osrm`
+    profile of the production compose file.
+- Live ETA updates on every location ping deliberately stay on the cheap haversine estimate.
 - Service-zone polygons in the seed are **approximate boxes** and must be redrawn by ops (Admin → Zones).
 
 ## 7. File storage
 - `LocalStorage` writes to `STORAGE_DIR` (Docker volume `storage`). Private files (ID documents, proofs) are served
   only to the owner and reviewers, or through HMAC-signed URLs that expire after 5 minutes. Images are
   content-sniffed (magic bytes), 10 MB max.
-- To do for production: an S3-compatible adapter (bucket in the approved hosting region — DECISIONS D-012),
-  antivirus scanning and image resizing.
+- `STORAGE_DRIVER=s3` stores objects in a **private** bucket: `S3_BUCKET`, `S3_REGION`, keys, and `S3_ENDPOINT` for
+  non-AWS providers. Files are still served only through the API's permission checks or signed URLs; with AWS the
+  server sets SSE-S3 encryption. Choose the bucket region per DECISIONS D-012.
+- Still to do: antivirus scanning of uploads, and image resizing/thumbnails.

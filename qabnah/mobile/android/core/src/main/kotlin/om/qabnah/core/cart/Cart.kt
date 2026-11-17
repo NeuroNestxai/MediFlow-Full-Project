@@ -1,5 +1,7 @@
 package om.qabnah.core.cart
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import om.qabnah.core.model.LatLng
 import om.qabnah.core.model.OptionGroup
 import om.qabnah.core.model.OptionGroupKind
@@ -94,6 +96,7 @@ object OptionRules {
 }
 
 /** The subset of the storefront merchant the cart and checkout need. */
+@Serializable
 data class CartMerchant(
     val id: String,
     val slug: String,
@@ -113,6 +116,7 @@ data class CartMerchant(
     }
 }
 
+@Serializable
 data class CartLine(
     val productId: String,
     val nameEn: String,
@@ -168,6 +172,7 @@ data class CartLine(
 }
 
 /** Single-merchant cart. Immutable; every operation returns a new cart. */
+@Serializable
 data class Cart(val merchant: CartMerchant? = null, val lines: List<CartLine> = emptyList()) {
     val isEmpty: Boolean get() = lines.isEmpty()
     val itemCount: Int get() = lines.sumOf { it.quantity }
@@ -206,4 +211,42 @@ data class Cart(val merchant: CartMerchant? = null, val lines: List<CartLine> = 
 
     fun toOrderItems(): List<OrderItemInput> =
         lines.map { OrderItemInput(it.productId, it.quantity, it.optionIds, it.notes) }
+}
+
+/**
+ * Persists the cart as JSON (SharedPreferences/DataStore on Android) so it survives process death.
+ * Decoding is forgiving: unreadable or future-version data yields an empty cart, and invalid lines are dropped.
+ * Prices are a snapshot; checkout re-quotes with `POST /orders/quote`, so a stale price is never charged.
+ */
+object CartCodec {
+    const val VERSION = 1
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        explicitNulls = false
+    }
+
+    @Serializable
+    private data class Stored(val version: Int = VERSION, val savedAtMs: Long = 0, val cart: Cart = Cart())
+
+    fun encode(cart: Cart, nowMs: Long = System.currentTimeMillis()): String =
+        json.encodeToString(Stored.serializer(), Stored(VERSION, nowMs, cart))
+
+    /** [maxAgeMs]: carts older than this are discarded (menus and prices change); null keeps them forever. */
+    fun decode(text: String?, nowMs: Long = System.currentTimeMillis(), maxAgeMs: Long? = null): Cart {
+        if (text.isNullOrBlank()) return Cart()
+        val stored = try {
+            json.decodeFromString(Stored.serializer(), text)
+        } catch (e: Exception) {
+            return Cart()
+        }
+        if (stored.version != VERSION) return Cart()
+        if (maxAgeMs != null && nowMs - stored.savedAtMs > maxAgeMs) return Cart()
+        val lines = stored.cart.lines
+            .filter { it.productId.isNotBlank() && it.quantity > 0 && it.unitPriceBaisa >= 0 }
+            .map { it.copy(quantity = it.quantity.coerceAtMost(CartLine.MAX_QUANTITY)) }
+        val merchant = stored.cart.merchant
+        return if (merchant == null || lines.isEmpty()) Cart() else Cart(merchant, lines)
+    }
 }

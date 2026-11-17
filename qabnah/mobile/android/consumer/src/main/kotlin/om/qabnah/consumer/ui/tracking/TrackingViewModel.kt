@@ -3,6 +3,7 @@ package om.qabnah.consumer.ui.tracking
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,16 +21,23 @@ import om.qabnah.core.realtime.RealtimeClient
 import om.qabnah.core.realtime.RealtimeEvents
 import om.qabnah.core.realtime.deliveryLocation
 import om.qabnah.core.util.Eta
+import om.qabnah.core.util.MapRoute
 
 data class TrackingUi(
     val tracking: Tracking? = null,
     val loading: Boolean = true,
     val error: Throwable? = null,
     val live: Boolean = false,
-    /** Bumped when markers first become available so the map fits them once. */
+    /** Bumped when the map should re-fit: first data, captain first located, next stop changed. */
     val fitKey: Int = 0,
 ) {
     val captainPosition: LatLng? get() = tracking?.captain?.location?.let { LatLng(it.lat, it.lng) }
+
+    /** Pickup until the parcel is picked up, then the dropoff. */
+    val nextStop: LatLng? get() = tracking?.let { MapRoute.nextStop(it.deliveryStatus, it.pickup, it.dropoff) }
+
+    /** Dashed captain → next stop leg. */
+    val remainingLeg: List<LatLng> get() = MapRoute.remainingLeg(captainPosition, nextStop)
 
     /** Server ETA when present, else a rough distance-based estimate. */
     fun etaMinutes(nowMs: Long = System.currentTimeMillis()): Int? {
@@ -43,7 +51,9 @@ data class TrackingUi(
 
 /**
  * Live tracking: WebSocket `order:<id>` (`delivery.location`, `order.status_changed`, `delivery.status_changed`)
- * plus polling `GET /orders/{id}/tracking` every 10 s as a fallback.
+ * plus polling `GET /orders/{id}/tracking` every 10 s as a fallback. Both run only inside [observeWhileVisible], which the
+ * screen calls under `repeatOnLifecycle(STARTED)`, so nothing polls while the screen is hidden or the app is in the
+ * background.
  */
 class TrackingViewModel(
     private val repo: OrderRepository,
@@ -55,6 +65,13 @@ class TrackingViewModel(
 
     init {
         viewModelScope.launch {
+            realtime.state.collect { st -> _ui.update { it.copy(live = st == ConnectionState.Connected) } }
+        }
+    }
+
+    /** Suspends until cancelled (screen no longer STARTED). */
+    suspend fun observeWhileVisible() = coroutineScope {
+        launch {
             while (isActive) {
                 fetch()
                 val status = _ui.value.tracking?.orderStatus
@@ -62,28 +79,27 @@ class TrackingViewModel(
                 delay(POLL_MS)
             }
         }
-        viewModelScope.launch {
+        launch {
             realtime.channel(Channels.order(orderId)).collect { ev ->
                 when (ev.event) {
                     RealtimeEvents.DELIVERY_LOCATION -> ev.deliveryLocation()?.let { loc ->
                         _ui.update { s ->
                             val t = s.tracking ?: return@update s
                             val captain = t.captain ?: return@update s
+                            val firstFix = captain.location == null
                             s.copy(
                                 tracking = t.copy(
                                     captain = captain.copy(location = CaptainLocation(loc.lat, loc.lng, loc.heading, null)),
                                     etaDropoffAt = loc.etaDropoffAt ?: t.etaDropoffAt,
-                                    path = (t.path + LatLng(loc.lat, loc.lng)).takeLast(200),
+                                    path = MapRoute.appendBreadcrumb(t.path, LatLng(loc.lat, loc.lng)),
                                 ),
+                                fitKey = if (firstFix) s.fitKey + 1 else s.fitKey,
                             )
                         }
                     }
                     RealtimeEvents.ORDER_STATUS_CHANGED, RealtimeEvents.DELIVERY_STATUS_CHANGED, RealtimeEvents.DELIVERY_ASSIGNED -> fetch()
                 }
             }
-        }
-        viewModelScope.launch {
-            realtime.state.collect { st -> _ui.update { it.copy(live = st == ConnectionState.Connected) } }
         }
     }
 
@@ -93,8 +109,11 @@ class TrackingViewModel(
         try {
             val t = repo.tracking(orderId)
             _ui.update { s ->
-                val firstWithMarkers = s.tracking == null || (s.tracking.captain?.location == null && t.captain?.location != null)
-                s.copy(tracking = t, loading = false, error = null, fitKey = if (firstWithMarkers) s.fitKey + 1 else s.fitKey)
+                val old = s.tracking
+                val refit = old == null ||
+                    (old.captain?.location == null && t.captain?.location != null) ||
+                    old.deliveryStatus != t.deliveryStatus
+                s.copy(tracking = t, loading = false, error = null, fitKey = if (refit) s.fitKey + 1 else s.fitKey)
             }
         } catch (e: CancellationException) {
             throw e

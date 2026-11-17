@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, Loading, Modal, MoneyInput, PageHeader, Pagination, Select, StatusBadge, Textarea,
+  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, LinkButton, Loading, Modal, MoneyInput, PageHeader, Pagination, Select, StatusBadge, Textarea,
   errorMessage, useDebounced, useI18n, useToast, type Order, type OrderStatus, type Page,
 } from '@qabnah/shared';
 import { DROPOFF_COLOR, FitBounds, MapView, Marker, PICKUP_COLOR, captainIcon, pinIcon } from '@qabnah/shared/map';
@@ -90,6 +90,7 @@ export function OrderDetailPage() {
       <PageHeader title={<span className="ltr">#{o.number}</span>} description={`${t(`order.type.${o.type}`)} · ${dateTime(o.createdAt)}`}
         actions={<>
           <Link className="btn btn--ghost" to="/orders">{t('common.back')}</Link>
+          {o.invoiceUrl ? <LinkButton href={o.invoiceUrl} external icon="file" aria-label={t('invoice.openLabel')}>{t('invoice.open')}</LinkButton> : null}
           {can('orders:refund') && o.paymentMethod === 'online' && ['paid', 'partially_refunded'].includes(o.paymentStatus) ? <Button onClick={() => { refund.reset(); setRefundAmount(o.totalBaisa); setRefundReason(''); setRefundOpen(true); }}>{t('orders.refund')}</Button> : null}
           {can('orders:manage') && !final ? <Button variant="danger-outline" onClick={() => { cancel.reset(); setCancelOpen(true); }}>{t('orders.cancel')}</Button> : null}
         </>} />

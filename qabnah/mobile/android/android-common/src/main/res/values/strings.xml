@@ -131,4 +131,27 @@
     <string name="map_pickup">Pickup</string>
     <string name="map_dropoff">Drop-off</string>
     <string name="map_captain">Captain</string>
+
+    <!-- Push notification channels -->
+    <string name="channel_orders">Orders and deliveries</string>
+    <string name="channel_orders_desc">Status updates for your orders and deliveries</string>
+    <string name="channel_support">Support</string>
+    <string name="channel_support_desc">Replies from Qabnah support</string>
+
+    <!-- Sign-in required (guest browsing) -->
+    <string name="auth_required_title">Sign in to continue</string>
+    <string name="auth_required_body">Browsing stores needs no account. Sign in with your mobile number to order, send parcels and follow your orders.</string>
+
+    <!-- Privacy: data export and account deletion (PDPL) -->
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_export">Download my data</string>
+    <string name="privacy_export_desc">Save a copy of your profile, addresses, orders and support tickets (JSON file).</string>
+    <string name="privacy_export_saved">Your data was saved.</string>
+    <string name="privacy_export_write_failed">Could not save the file. Please try again.</string>
+    <string name="privacy_delete">Delete account</string>
+    <string name="privacy_delete_desc">Permanently delete your account and personal data.</string>
+    <string name="privacy_delete_body">You will be signed out on every device and your personal data will be anonymised. Tax and financial records keep only non-identifying details. This cannot be undone.</string>
+    <string name="privacy_delete_type">Type %1$s to confirm</string>
+    <string name="privacy_delete_confirm">Delete my account</string>
+    <string name="privacy_deleted">Your account was deleted.</string>
 </resources>

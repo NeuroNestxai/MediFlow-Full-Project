@@ -1,0 +1,4 @@
+{
+  "aps": { "alert": "New delivery offer near Al Khuwair" },
+  "data": { "type": "offer.created", "offerId": "of000000-0000-4000-8000-000000000001", "deliveryId": "d0000000-0000-4000-8000-000000000009" }
+}

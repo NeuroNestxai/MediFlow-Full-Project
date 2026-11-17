@@ -46,6 +46,26 @@ public struct DeviceRegistrationInput: Codable, Hashable, Sendable {
     }
 }
 
+/// Body of `POST /me/devices/unregister` (call on sign-out).
+public struct DeviceUnregisterInput: Codable, Hashable, Sendable {
+    public var token: String
+    public init(token: String) { self.token = token }
+}
+
+/// Body of `POST /me/delete` — `{"confirm": "DELETE"}` (PDPL erasure).
+public struct AccountDeletionInput: Codable, Hashable, Sendable {
+    /// The literal the contract requires.
+    public static let confirmationWord = "DELETE"
+    public var confirm: String
+    public init() { self.confirm = Self.confirmationWord }
+
+    /// Whether what the user typed in the confirmation field unlocks the delete button
+    /// (surrounding spaces ignored; Latin letters, any case).
+    public static func isConfirmed(_ typed: String) -> Bool {
+        typed.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == confirmationWord
+    }
+}
+
 /// `PlaceInput`.
 public struct PlaceInput: Codable, Hashable, Sendable {
     public var location: LatLng

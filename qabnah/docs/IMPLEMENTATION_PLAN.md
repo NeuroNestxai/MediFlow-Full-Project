@@ -19,7 +19,9 @@ and the full status table with what was verified is in the repository `README.md
 | M7 | Payments & finance | Payment provider interface, mock provider + hosted page, Thawani adapter, webhooks, refunds, ledger postings, settlements, COD remittance, payment links | Ledger posting tests per scenario; webhook idempotency; settlement four-eyes |
 | M8 | Engagement & support | Notifications (in-app + push/SMS/WhatsApp adapters), WhatsApp webhook + templates, support tickets, ratings, analytics | Tests for WhatsApp signature, tickets visibility, analytics sums |
 | M9 | Clients | Merchant portal + storefront + pay page; Admin panel; iOS Consumer & Captain; Android Consumer & Captain | Web: build + component tests + Playwright smoke against stack. Mobile: see README for what was compiled |
-| M10 | Launch readiness (NOT done in this build) | Admin TOTP MFA, Thawani UAT certification, WhatsApp template approval, SMS provider contract, PDPL DPIA, pen test, load test, store submissions, legal sign-off on DECISIONS checklist | Human owners; see DECISIONS compliance checklist |
+| M10 | Launch readiness | **Done in code:** admin TOTP MFA (enforced in production), FCM/APNs push senders, S3 storage, OSRM routing, invoices, PDPL export and erasure, subscription billing, document-expiry reminders, per-user rate limits, baseline load test, production compose + Caddy TLS. **Needs people/accounts:** Thawani UAT certification, WhatsApp Business verification and template approval, SMS provider and sender ID, Firebase/APNs keys, PDPL DPIA, penetration test, App Store / Play submissions, legal sign-off on the DECISIONS checklist | Code items have automated tests; external items listed in README |
+
+**Status (2026-11-17):** M0–M9 are complete, and the M10 code items are complete. See the README verification table.
 
 ## Work breakdown — backend modules
 

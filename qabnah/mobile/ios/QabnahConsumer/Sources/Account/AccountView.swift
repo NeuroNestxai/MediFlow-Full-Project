@@ -4,11 +4,12 @@ import QabnahKit
 struct AccountView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var session: SessionStore
+    @EnvironmentObject var router: ConsumerRouter
     @State private var confirmSignOut = false
     @State private var unread = 0
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $router.accountPath) {
             List {
                 Section {
                     NavigationLink {
@@ -56,6 +57,7 @@ struct AccountView: View {
                 Section(lang.t("account.language")) {
                     LanguagePicker()
                 }
+                AccountDataSection()
                 Section {
                     Button(role: .destructive) { confirmSignOut = true } label: {
                         Label(lang.t("account.sign_out"), systemImage: "rectangle.portrait.and.arrow.right")
@@ -69,6 +71,11 @@ struct AccountView: View {
                 }
             }
             .navigationTitle(lang.t("tab.account"))
+            .navigationDestination(for: AccountRoute.self) { route in
+                switch route {
+                case .ticket(let id): TicketDetailView(api: session.api, ticketId: id)
+                }
+            }
             .refreshable { await session.loadMe() }
             .confirmationDialog(lang.t("account.sign_out_confirm"), isPresented: $confirmSignOut, titleVisibility: .visible) {
                 Button(lang.t("account.sign_out"), role: .destructive) { Task { await session.signOut() } }
@@ -202,7 +209,9 @@ struct NotificationsView: View {
                     Button {
                         Task {
                             await vm.markRead(n)
-                            if let id = n.orderId { router.showOrder(id) }
+                            if let route = PushPayload(notification: n).route(for: .consumer) {
+                                router.open(route, signedIn: true)
+                            }
                         }
                     } label: {
                         HStack(alignment: .top, spacing: 10) {

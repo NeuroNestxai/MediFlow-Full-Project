@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { config } from '../../config.js';
 import { pool, one, q, tx } from '../../db/pool.js';
 import { invalidateAuthCache, requireAuth, requireCaptain } from '../../lib/auth.js';
 import { badRequest, conflict, forbidden } from '../../lib/errors.js';
@@ -144,7 +145,7 @@ export default async function captainRoutes(app: FastifyInstance) {
     return getCaptainProfile(pool, auth.captainId);
   });
 
-  app.post('/captain/location', { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.post('/captain/location', { config: { rateLimit: { max: config.LOCATION_RATE_LIMIT_PER_MINUTE, timeWindow: '1 minute' } } }, async (req, reply) => {
     const auth = requireCaptain(req, { active: true });
     const b = parse(zLatLng.extend({ heading: z.number().min(0).max(360).optional(), speed: z.number().min(0).max(100).optional(), accuracy: z.number().min(0).max(10000).optional() }), req.body);
     await tx((c) => recordLocation(c, auth.captainId, b));

@@ -13,7 +13,8 @@ for mod, pkg in mods.items():
     lines += ['    }', '}']
     if mod != 'android-common':
         lines += ['', 'object BuildConfig {', '    const val DEBUG = true', '    const val API_BASE_URL = "http://10.0.2.2:4000/v1"',
-                  '    const val VERSION_NAME = "1.0.0"', f'    const val APPLICATION_ID = "{pkg}"', '}']
+                  '    const val VERSION_NAME = "1.0.0"', f'    const val APPLICATION_ID = "{pkg}"',
+                  '    val FCM_PROJECT_ID = ""', '    val FCM_APP_ID = ""', '    val FCM_API_KEY = ""', '    val FCM_SENDER_ID = ""', '}']
     os.makedirs(out, exist_ok=True)
     open(f'{out}/{mod}_R.kt', 'w').write('\n'.join(lines) + '\n')
 print('generated')

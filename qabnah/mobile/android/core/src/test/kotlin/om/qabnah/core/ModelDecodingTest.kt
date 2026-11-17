@@ -42,6 +42,10 @@ class ModelDecodingTest {
     fun `decodes order with delivery, captain and timeline, ignoring unknown fields`() {
         val order = json.decodeFromString(Order.serializer(), Fixtures.read("order.json"))
         assertEquals("QB100001", order.number)
+        assertEquals(
+            "https://api.qabnah.om/v1/invoices/6f1c2a52-6a7e-4d61-9a63-3b1f7a2d9c01?sig=abc123&exp=1763290000",
+            order.invoiceUrl,
+        )
         assertEquals(OrderType.MARKETPLACE, order.type)
         assertEquals(OrderStatus.OUT_FOR_DELIVERY, order.status)
         assertEquals(PaymentMethod.COD, order.paymentMethod)

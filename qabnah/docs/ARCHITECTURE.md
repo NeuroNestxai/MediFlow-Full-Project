@@ -177,6 +177,9 @@ push / SMS / WhatsApp providers according to user and merchant preferences. Prov
   false in production; the config loader refuses to start with it enabled when `NODE_ENV=production`.
 - JWT access tokens (HS256, 15 min) + opaque rotating refresh tokens (30 days, SHA-256 hashed in DB,
   reuse detection revokes the family).
+- Admin MFA: TOTP second step (`/auth/mfa/*`). Access tokens carry an `amr: ["pwd","otp"]` claim, which platform
+  permissions require when `REQUIRE_ADMIN_MFA=true` (mandatory in production).
+- Rate limits are keyed per signed-in user, or per IP when anonymous (DECISIONS D-024).
 - RBAC: permissions are strings (`resource:action`); roles map to permissions; merchant-scoped roles
   carry `merchant_id`. See USER_ROLES_AND_PERMISSIONS.md.
 - Object-level authorization in every service (consumer can only read own orders, captain only

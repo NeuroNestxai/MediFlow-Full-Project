@@ -477,6 +477,11 @@ data class Order(
     val delivery: Delivery? = null,
     val timeline: List<TimelineEntry> = emptyList(),
     val rated: Boolean = false,
+    /**
+     * Signed link (valid ~30 min) to the bilingual tax invoice page, present once the order is paid or delivered.
+     * Open it in a Custom Tab; no auth header is needed.
+     */
+    val invoiceUrl: String? = null,
 ) {
     /** Client-side hint only; the server is authoritative and answers 409 when cancelling is not allowed. */
     val canProbablyCancel: Boolean
@@ -806,6 +811,21 @@ data class Settlement(
 
 @Serializable
 data class DeviceRegistration(val platform: String, val app: String, val token: String)
+
+/** `POST /me/devices/unregister` */
+@Serializable
+data class DeviceUnregistration(val token: String)
+
+/** `POST /me/delete` – the server only accepts the literal `DELETE`. */
+@Serializable
+data class DeleteAccountInput(val confirm: String = AccountDeletion.CONFIRM_WORD)
+
+object AccountDeletion {
+    const val CONFIRM_WORD = "DELETE"
+
+    /** The user must type DELETE (case-sensitive, surrounding spaces ignored) before the request is sent. */
+    fun isConfirmed(typed: String): Boolean = typed.trim() == CONFIRM_WORD
+}
 
 @Serializable
 data class ProfileUpdate(val fullName: String? = null, val locale: String? = null, val email: String? = null)

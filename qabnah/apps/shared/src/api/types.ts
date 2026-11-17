@@ -17,7 +17,7 @@ export interface Page<T> { items: T[]; total: number; limit: number; offset: num
 export interface Items<T> { items: T[] }
 
 export interface Tokens { accessToken: string; refreshToken: string; expiresIn: number }
-export interface User { id: string; phone: string | null; email: string | null; fullName: string; locale: Lang; status: string }
+export interface User { id: string; phone: string | null; email: string | null; fullName: string; locale: Lang; status: string; mfaEnabled?: boolean }
 export interface AuthResult extends Tokens { user: User; isNewUser: boolean; merchantId?: string }
 
 export interface MeMerchant {
@@ -124,6 +124,8 @@ export interface Order {
   codAmountBaisa: number; commissionBaisa?: number; currency: string; notes: string | null; prepTimeMinutes: number | null; cancelReason: string | null;
   createdAt: string; placedAt: string | null; acceptedAt: string | null; readyAt: string | null; deliveredAt: string | null; cancelledAt: string | null;
   delivery: Delivery | null; timeline: { status: OrderStatus; at: string; note: string | null }[]; rated: boolean;
+  /** Signed link (30 min) to the bilingual invoice page, once paid or delivered. */
+  invoiceUrl?: string | null;
 }
 
 export interface Tracking {
@@ -272,6 +274,7 @@ export interface PlatformSettings {
   vatRateBps: number; serviceFeeBaisa: number; defaultCommissionBps: number; codMaxBaisa: number; captainCashLimitBaisa: number;
   merchantAcceptTimeoutMinutes: number; pendingPaymentTimeoutMinutes: number; requireFleetForNonOmani: boolean;
   requiredCaptainDocuments: string[]; supportPhone: string;
+  platformLegalName: string; platformCrNumber: string; platformVatNumber: string; platformAddress: string; captainDocumentExpiryNoticeDays: number;
 }
 
 export interface TicketMessage { id: string; body: string; isInternal: boolean; author: { id: string; fullName: string; isStaff: boolean }; createdAt: string }

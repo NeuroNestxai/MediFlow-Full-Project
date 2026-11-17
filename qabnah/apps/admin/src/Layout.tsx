@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Button, Icon, LiveIndicator, useI18n, useRealtimeStatus } from '@qabnah/shared';
+import { Button, Icon, LiveIndicator, Loading, useI18n, useRealtimeStatus } from '@qabnah/shared';
 import { realtime } from './api';
 import { useSession } from './session';
 
@@ -60,18 +60,19 @@ export function Layout() {
             <div className="strong truncate">{s.me.user.fullName}</div>
             <div className="text-xs muted truncate">{roles}</div>
           </div>
+          <NavLink to="/security" className="nav-link"><Icon name="key" /><span>{t('nav.security')}</span>{!s.me.user.mfaEnabled ? <span className="badge badge--warning">{t('mfa.off')}</span> : null}</NavLink>
           <Button variant="ghost" icon="logout" onClick={async () => { await s.signOut(); nav('/login'); }}>{t('common.signOut')}</Button>
         </div>
       </aside>
       <div className="main">
         <header className="topbar">
           <Button className="topbar__menu" variant="ghost" iconOnly icon="menu" aria-label={t('common.menu')} aria-expanded={open} onClick={() => setOpen(true)} />
-          <span className="strong">{t(NAV.find((n) => loc.pathname.startsWith(n.to))?.label ?? 'admin.subtitle')}</span>
+          <span className="strong">{t(NAV.find((n) => loc.pathname.startsWith(n.to))?.label ?? (loc.pathname === '/security' ? 'nav.security' : 'admin.subtitle'))}</span>
           <div className="grow" />
           <LiveIndicator status={status} />
           <Button size="sm" variant="ghost" icon="globe" onClick={toggleLang} lang={lang === 'ar' ? 'en' : 'ar'} aria-label={t('lang.switchLabel')}>{t('lang.switch')}</Button>
         </header>
-        <main className={`content ${full ? 'content--full' : ''}`} id="main"><Outlet /></main>
+        <main className={`content ${full ? 'content--full' : ''}`} id="main"><Suspense fallback={<Loading />}><Outlet /></Suspense></main>
       </div>
     </div>
   );

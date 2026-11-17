@@ -76,8 +76,14 @@ IP allow-list or VPN. The public storefront and pay page ship in the merchant ap
 launch. They can be split later for SEO and SSR.
 
 ### D-011 · Auth: phone OTP for consumers/captains, email+password for staff (Accepted)
-JWT access tokens (15 min) plus rotating refresh tokens with reuse detection. Admin MFA (TOTP) is
-a launch blocker tracked in IMPLEMENTATION_PLAN M9. It is not implemented yet.
+JWT access tokens (15 min) plus rotating refresh tokens with reuse detection.
+
+**Update — admin MFA implemented.**
+- TOTP (RFC 6238): secrets are AES-256-GCM encrypted at rest, there is replay protection, and 10 single-use
+  recovery codes are issued.
+- With `REQUIRE_ADMIN_MFA=true`, every platform-permission endpoint requires an access token issued after the
+  second factor. The MFA claim survives token refresh.
+- The production config refuses to start without it. Merchants can opt in.
 
 ### D-012 · Hosting region and data residency (Proposed — blocked on legal)
 Sources conflict on PDPL cross-border transfer rules (Exec. Reg. 34/2024 Art. 37), and there is a
@@ -159,6 +165,30 @@ links for storefronts and payment links.
 ### D-023 · SMS OTP via generic HTTP adapter (Accepted)
 The alphanumeric sender ID must be pre-registered with each Omani operator (REPORTED). The provider
 is not chosen yet. The `console` provider logs codes in development.
+
+### D-024 · Rate limits per signed-in user, per IP only when anonymous (Accepted)
+Omani mobile networks put many subscribers behind shared carrier-NAT addresses. With per-IP limits, unrelated
+captains on the same network would throttle each other. Limits now run after authentication and are keyed by user
+id. Sign-in endpoints stay strict per IP, and captain location pings have their own limit.
+
+### D-025 · Data-subject requests: self-service export and erasure (Accepted, scope Proposed)
+- `GET /me/export` returns a JSON copy of the user's data.
+- `POST /me/delete` anonymises the account. It is refused while orders or deliveries are active, while a captain
+  balance is unsettled, and for store staff or platform staff.
+- Orders, payments and the ledger are kept for tax and accounting, without personal data. Captain ID documents,
+  location history and devices are deleted.
+- Retention periods and exceptions must be confirmed against the PDPL executive regulation (checklist 8–12).
+
+### D-026 · Bilingual receipt / simplified tax invoice per order (Proposed)
+- An Arabic-first invoice page is available through a signed link (`Order.invoiceUrl`, 30 min).
+- It lists two seller sections: the merchant for goods, and the platform for delivery and service fees.
+- The legal invoice issuer, the agent/principal treatment and Fawtara e-invoicing are still open (checklist 16–17),
+  and the page says so. Platform identifiers are blank placeholders until the company is registered.
+
+### D-027 · Subscription fees are netted at settlement (Accepted)
+Monthly plan fees go to the merchant ledger as `subscription_fee` when each period rolls over. They are deducted
+in the next settlement rather than charged to a card, which keeps Qabnah out of stored-credential card charging
+(D-018).
 
 ## Compliance checklist (all: **To validate**)
 

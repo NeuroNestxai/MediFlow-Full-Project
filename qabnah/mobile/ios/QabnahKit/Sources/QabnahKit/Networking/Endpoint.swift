@@ -105,6 +105,19 @@ public enum Endpoints {
         .send(.post, "/me/devices", body: input)
     }
 
+    public static func unregisterDevice(token: String) -> Endpoint<EmptyResponse> {
+        .send(.post, "/me/devices/unregister", body: DeviceUnregisterInput(token: token))
+    }
+
+    /// `GET /me/export` — personal data export (free-form JSON object). Use
+    /// `APIClient.data(for:)` to get the raw bytes for sharing.
+    public static func exportMyData() -> Endpoint<JSONValue> { .get("/me/export") }
+
+    /// `POST /me/delete` — 204 on success, 409 while orders/deliveries are active or a balance is unsettled.
+    public static func deleteAccount() -> Endpoint<EmptyResponse> {
+        .send(.post, "/me/delete", body: AccountDeletionInput())
+    }
+
     // MARK: Public
     public static func zones() -> Endpoint<ItemsResponse<Zone>> { .get("/zones", auth: false) }
 

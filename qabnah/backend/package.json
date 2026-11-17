@@ -39,6 +39,7 @@
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.2",
+    "autocannon": "^9.0.0",
     "s3rver": "^3.7.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

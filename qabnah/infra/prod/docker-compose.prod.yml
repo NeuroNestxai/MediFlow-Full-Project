@@ -1,0 +1,115 @@
+# Production stack (single host). Usage on the server:
+#   cd qabnah/infra/prod && cp .env.prod.example .env.prod && <fill secrets> \
+#   && docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+# Prefer a managed PostgreSQL+PostGIS in the approved hosting region (DECISIONS D-012); then remove the db service
+# and point DATABASE_URL at it. The backend refuses to start with unsafe settings (backend/src/config.ts).
+name: qabnah-prod
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/qabnah
+  JWT_SECRET: ${JWT_SECRET}
+  OTP_PEPPER: ${OTP_PEPPER}
+  FILE_SIGNING_SECRET: ${FILE_SIGNING_SECRET}
+  MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY}
+  REQUIRE_ADMIN_MFA: ${REQUIRE_ADMIN_MFA}
+  OTP_DEV_ECHO: "false"
+  PUBLIC_API_URL: ${PUBLIC_API_URL}
+  MERCHANT_WEB_URL: ${MERCHANT_WEB_URL}
+  ADMIN_WEB_URL: ${ADMIN_WEB_URL}
+  CORS_ORIGINS: ${CORS_ORIGINS}
+  LOG_LEVEL: info
+  PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
+  THAWANI_BASE_URL: ${THAWANI_BASE_URL}
+  THAWANI_CHECKOUT_URL: ${THAWANI_CHECKOUT_URL}
+  THAWANI_SECRET_KEY: ${THAWANI_SECRET_KEY}
+  THAWANI_PUBLISHABLE_KEY: ${THAWANI_PUBLISHABLE_KEY}
+  SMS_PROVIDER: ${SMS_PROVIDER}
+  SMS_HTTP_URL: ${SMS_HTTP_URL}
+  SMS_HTTP_TOKEN: ${SMS_HTTP_TOKEN}
+  SMS_SENDER_ID: ${SMS_SENDER_ID}
+  WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER}
+  WHATSAPP_GRAPH_VERSION: ${WHATSAPP_GRAPH_VERSION}
+  WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID}
+  WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+  WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET}
+  WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN}
+  PUSH_PROVIDER: ${PUSH_PROVIDER}
+  FCM_SERVICE_ACCOUNT_JSON_B64: ${FCM_SERVICE_ACCOUNT_JSON_B64}
+  APNS_KEY_P8_B64: ${APNS_KEY_P8_B64}
+  APNS_KEY_ID: ${APNS_KEY_ID}
+  APNS_TEAM_ID: ${APNS_TEAM_ID}
+  APNS_PRODUCTION: ${APNS_PRODUCTION}
+  STORAGE_DRIVER: ${STORAGE_DRIVER}
+  S3_ENDPOINT: ${S3_ENDPOINT}
+  S3_REGION: ${S3_REGION}
+  S3_BUCKET: ${S3_BUCKET}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+  ROUTING_PROVIDER: ${ROUTING_PROVIDER}
+  OSRM_URL: ${OSRM_URL}
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment: { POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}", POSTGRES_DB: qabnah }
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres -d qabnah"], interval: 5s, timeout: 3s, retries: 20 }
+    restart: unless-stopped
+
+  migrate:
+    image: qabnah/backend:prod
+    build: ../../backend
+    environment: *api-env
+    command: ["node", "dist/db/migrate.js"]
+    depends_on: { db: { condition: service_healthy } }
+
+  api:
+    image: qabnah/backend:prod
+    environment: *api-env
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    restart: unless-stopped
+    deploy: { replicas: 2 }
+
+  worker:
+    image: qabnah/backend:prod
+    environment: *api-env
+    command: ["node", "dist/worker-main.js"]
+    healthcheck: { disable: true }
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    restart: unless-stopped
+
+  merchant-web:
+    image: qabnah/merchant-web:prod
+    build: { context: ../../apps, args: { APP: merchant, VITE_API_URL: "${PUBLIC_API_URL}/v1" } }
+    restart: unless-stopped
+
+  admin-web:
+    image: qabnah/admin-web:prod
+    build: { context: ../../apps, args: { APP: admin, VITE_API_URL: "${PUBLIC_API_URL}/v1" } }
+    restart: unless-stopped
+
+  osrm:
+    image: osrm/osrm-backend:v5.25.0
+    command: ["osrm-routed", "--algorithm", "mld", "/data/oman-latest.osrm"]
+    volumes: [../osrm/data:/data:ro]
+    restart: unless-stopped
+    profiles: [osrm]
+
+  caddy:
+    image: caddy:2.8
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+      WEB_DOMAIN: ${WEB_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      ADMIN_ALLOWED_IPS: ${ADMIN_ALLOWED_IPS}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy-data:/data, caddy-config:/config]
+    depends_on: [api, merchant-web, admin-web]
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

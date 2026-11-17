@@ -127,6 +127,9 @@ public struct Order: Codable, Hashable, Identifiable, Sendable {
     public var delivery: Delivery?
     @DefaultEmpty public var timeline: [TimelineEntry]
     @DefaultFalse public var rated: Bool
+    /// Signed link (valid ~30 min) to the bilingual tax invoice page; present once paid or delivered.
+    /// Open in a browser view without auth headers.
+    public var invoiceUrl: String?
 
     /// Client-side hint mirroring the contract wording for `POST /orders/{id}/cancel`:
     /// "allowed before the merchant accepts / before pickup for C2C". The server is
@@ -149,6 +152,13 @@ public struct Order: Codable, Hashable, Identifiable, Sendable {
     public var isTrackable: Bool {
         guard let d = delivery else { return false }
         return !status.isFinal && d.status != .cancelled
+    }
+
+    /// Show the "Invoice" button: the server sent a link and the order is paid (incl. later
+    /// refunded) or delivered — the same rule the server uses before it fills `invoiceUrl`.
+    public var hasInvoice: Bool {
+        guard let url = invoiceUrl?.trimmingCharacters(in: .whitespaces), !url.isEmpty else { return false }
+        return status.isDeliveredLike || ["paid", "refunded", "partially_refunded"].contains(paymentStatus.lowercased())
     }
 
     public var awaitingOnlinePayment: Bool {

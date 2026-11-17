@@ -207,6 +207,7 @@ export function OrderStatusPage() {
               <div className="row between text-lg strong"><span>{t('common.total')}</span><span>{money(o.totalBaisa)}</span></div>
               <div className="row between"><span className="muted">{t('orders.payment')}</span><span><Badge>{t(`payment.method.${o.paymentMethod}`)}</Badge> <Badge tone={o.paymentStatus === 'paid' ? 'success' : 'neutral'}>{t(`payment.status.${o.paymentStatus}`)}</Badge></span></div>
             </div>
+            {o.invoiceUrl ? <a className="btn" href={o.invoiceUrl} target="_blank" rel="noopener noreferrer" aria-label={t('invoice.openLabel')} data-testid="invoice-link"><Icon name="file" />{t('invoice.open')}</a> : null}
             {['pending_payment', 'placed'].includes(o.status) ? <Button variant="danger-outline" onClick={() => setCancelOpen(true)}>{t('sf.cancelOrder')}</Button> : null}
             <Link to={`/s/${sf.merchant.slug}`} className="btn btn--ghost">{t('sf.backToMenu')}</Link>
           </div>

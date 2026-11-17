@@ -85,10 +85,20 @@ struct OrdersView: View {
             }
             .navigationTitle(lang.t("tab.orders"))
             .navigationDestination(for: OrderRoute.self) { route in
-                OrderDetailView(api: api, realtime: session.realtime, orderId: route.id)
+                destination(route)
             }
         }
         .task(id: router.ordersVersion) { await vm.load() }
+    }
+
+    @ViewBuilder
+    private func destination(_ route: OrderRoute) -> some View {
+        switch route.screen {
+        case .detail:
+            OrderDetailView(api: api, realtime: session.realtime, orderId: route.id)
+        case .tracking:
+            TrackingView(api: api, realtime: session.realtime, orderId: route.id)
+        }
     }
 }
 

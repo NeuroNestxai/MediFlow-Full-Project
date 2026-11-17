@@ -1,6 +1,8 @@
 package om.qabnah.android.ui.map
 
 import android.content.Context
+import android.graphics.DashPathEffect
+import android.graphics.Paint
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -72,7 +74,8 @@ fun LatLng.toGeoPoint() = GeoPoint(lat, lng)
 
 /**
  * OpenStreetMap view for Compose.
- * - [fitKey]: whenever it changes the camera fits all [markers].
+ * - [path]: solid polyline (e.g. `Tracking.path` breadcrumbs); [dashedPath]: dashed polyline (captain → next stop).
+ * - [fitKey]: whenever it changes the camera fits all [markers] and both paths.
  * - [centerRequest]: whenever it changes the camera animates there.
  * - [onCenterChanged]: reports the map centre after the user pans/zooms (pin pickers).
  */
@@ -82,6 +85,8 @@ fun OsmMap(
     markers: List<MapMarker> = emptyList(),
     path: List<LatLng> = emptyList(),
     pathColor: Int = 0xFF0E7C66.toInt(),
+    dashedPath: List<LatLng> = emptyList(),
+    dashedColor: Int = pathColor,
     initialCenter: LatLng = markers.firstOrNull()?.position ?: Geo.MUSCAT,
     initialZoom: Double = 14.0,
     fitKey: Any? = null,
@@ -145,7 +150,7 @@ fun OsmMap(
 
     LaunchedEffect(fitKey) {
         if (fitKey == null) return@LaunchedEffect
-        val points = markers.map { it.position.toGeoPoint() } + path.map { it.toGeoPoint() }
+        val points = (markers.map { it.position } + path + dashedPath).distinct().map { it.toGeoPoint() }
         mapView.post {
             when {
                 points.size >= 2 -> runCatching {
@@ -172,6 +177,16 @@ fun OsmMap(
                     outlinePaint.strokeWidth = 8f
                 }
                 view.overlays.add(line)
+            }
+            if (dashedPath.size >= 2) {
+                val dashed = Polyline(view).apply {
+                    setPoints(dashedPath.map { it.toGeoPoint() })
+                    outlinePaint.color = dashedColor
+                    outlinePaint.strokeWidth = 6f
+                    outlinePaint.strokeCap = Paint.Cap.ROUND
+                    outlinePaint.pathEffect = DashPathEffect(floatArrayOf(24f, 18f), 0f)
+                }
+                view.overlays.add(dashed)
             }
             markers.forEach { m ->
                 val marker = Marker(view).apply {

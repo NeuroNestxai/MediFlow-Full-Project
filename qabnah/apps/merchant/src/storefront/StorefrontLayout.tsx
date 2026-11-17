@@ -87,7 +87,7 @@ export function StorefrontShell({ sf, children, onCart }: { sf: Storefront; chil
           <span className="strong truncate">{pick(m.nameEn, m.nameAr)}</span>
         </Link>
         <div className="row row-nowrap" style={{ ['--gap' as string]: '6px' }}>
-          {me ? <span className="text-sm muted hide-sm ltr">{me.user.phone}</span> : null}
+          {me ? <Link to={`/s/${m.slug}/account`} className="btn btn--ghost btn--sm" data-testid="account-link"><Icon name="users" /><span className="hide-sm">{t('account.link')}</span></Link> : null}
           <Button size="sm" variant="ghost" onClick={toggleLang} lang={lang === 'ar' ? 'en' : 'ar'} aria-label={t('lang.switchLabel')}>{t('lang.switch')}</Button>
           {onCart ? (
             <button type="button" className="sf-cart-btn" onClick={onCart} aria-label={t('sf.openCart', { n: count })} data-testid="cart-button">

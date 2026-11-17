@@ -1,0 +1,9 @@
+{
+  "exportedAt": "2026-11-17T08:00:00Z",
+  "profile": { "id": "u-1", "fullName": "Salim Al Harthy", "phone": "+96891234567", "locale": "ar" },
+  "addresses": [ { "id": "a-1", "label": "home", "location": { "lat": 23.6, "lng": 58.41 } } ],
+  "orders": [ { "id": "6f1c2a52-6a7e-4d61-9a63-3b1f7a2d9c01", "number": "QB100001", "totalBaisa": 2000 } ],
+  "tickets": [],
+  "notifications": [],
+  "captain": null
+}

@@ -36,20 +36,28 @@ struct QabnahConsumerApp: App {
                     default: break
                     }
                 }
-                .onOpenURL { url in PaymentReturn.handle(url) }
+                .onOpenURL { url in
+                    PaymentReturn.handle(url)
+                    if let route = DeepLink.route(from: url, app: .consumer) {
+                        router.open(route, signedIn: session.isSignedIn)
+                    }
+                }
+                .onReceive(NotificationRouter.shared.$tapped) { payload in
+                    guard let payload else { return }
+                    NotificationRouter.shared.tapped = nil
+                    if let route = payload.route(for: .consumer) {
+                        router.open(route, signedIn: session.isSignedIn)
+                    }
+                }
         }
     }
 }
 
+/// Guests can browse Home and storefronts (`/stores`, `/stores/{slug}` and `/zones` are public).
+/// Checkout, Send, Orders and Account ask for OTP sign-in in a sheet and then carry on.
 struct ConsumerRootView: View {
-    @EnvironmentObject var session: SessionStore
-
     var body: some View {
-        if session.isSignedIn {
-            ConsumerTabView()
-        } else {
-            AuthFlowView(api: session.api, subtitleKey: "auth.subtitle_consumer")
-        }
+        ConsumerTabView()
     }
 }
 
@@ -58,37 +66,136 @@ struct ConsumerTabView: View {
     @EnvironmentObject var session: SessionStore
     @EnvironmentObject var router: ConsumerRouter
 
+    private var selection: Binding<ConsumerRouter.Tab> {
+        Binding(get: { router.tab }, set: { router.select($0, signedIn: session.isSignedIn) })
+    }
+
     var body: some View {
-        TabView(selection: $router.tab) {
+        TabView(selection: selection) {
             HomeView(api: session.api)
                 .tabItem { Label(lang.t("tab.home"), systemImage: "house") }
                 .tag(ConsumerRouter.Tab.home)
-            SendView(api: session.api)
+            gated(.send) { SendView(api: session.api) }
                 .tabItem { Label(lang.t("tab.send"), systemImage: "shippingbox") }
                 .tag(ConsumerRouter.Tab.send)
-            OrdersView(api: session.api)
+            gated(.orders) { OrdersView(api: session.api) }
                 .tabItem { Label(lang.t("tab.orders"), systemImage: "list.bullet.rectangle") }
                 .tag(ConsumerRouter.Tab.orders)
-            AccountView()
+            gated(.account) { AccountView() }
                 .tabItem { Label(lang.t("tab.account"), systemImage: "person.crop.circle") }
                 .tag(ConsumerRouter.Tab.account)
+        }
+        .signInSheet(isPresented: $router.signInPrompt, subtitleKey: "auth.subtitle_consumer") {
+            router.signedIn()
+        }
+    }
+
+    /// The tab's screen once signed in; a sign-in prompt for guests (normally not reached,
+    /// because selecting the tab already asks for sign-in).
+    @ViewBuilder
+    private func gated<Content: View>(_ tab: ConsumerRouter.Tab, @ViewBuilder content: () -> Content) -> some View {
+        if session.isSignedIn {
+            content()
+        } else {
+            SignInRequiredView { router.requestSignIn(then: tab) }
         }
     }
 }
 
-struct OrderRoute: Hashable {
-    let id: String
+struct SignInRequiredView: View {
+    @EnvironmentObject var lang: LanguageSettings
+    let signIn: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            EmptyStateView(systemImage: "person.crop.circle.badge.questionmark", title: lang.t("guest.sign_in_title"),
+                           message: lang.t("guest.sign_in_message"))
+                .frame(maxHeight: 280)
+            Button(lang.t("guest.sign_in"), action: signIn)
+                .buttonStyle(PrimaryButtonStyle())
+                .frame(maxWidth: 280)
+        }
+        .padding()
+    }
 }
 
-/// Cross-tab navigation (e.g. "order placed → open it in Orders").
+struct OrderRoute: Hashable {
+    enum Screen: Hashable { case detail, tracking }
+    let id: String
+    var screen: Screen = .detail
+}
+
+enum AccountRoute: Hashable {
+    case ticket(String)
+}
+
+/// Cross-tab navigation (e.g. "order placed → open it in Orders"), push / deep-link routing,
+/// and the guest sign-in gate.
 @MainActor
 final class ConsumerRouter: ObservableObject {
-    enum Tab: Hashable { case home, send, orders, account }
+    enum Tab: Hashable {
+        case home, send, orders, account
+        var requiresSignIn: Bool { self != .home }
+    }
+
+    private enum AfterSignIn {
+        case tab(Tab)
+        case route(AppRoute)
+    }
 
     @Published var tab: Tab = .home
     @Published var ordersPath: [OrderRoute] = []
+    @Published var accountPath: [AccountRoute] = []
     /// Bumped when a new order is created so the Orders list reloads.
     @Published private(set) var ordersVersion = 0
+    /// Presents the OTP sheet over the tabs.
+    @Published var signInPrompt = false
+    private var afterSignIn: AfterSignIn?
+
+    func select(_ newTab: Tab, signedIn: Bool) {
+        if newTab.requiresSignIn && !signedIn {
+            requestSignIn(then: newTab)
+        } else {
+            tab = newTab
+        }
+    }
+
+    func requestSignIn(then newTab: Tab) {
+        afterSignIn = .tab(newTab)
+        signInPrompt = true
+    }
+
+    /// Push tap, in-app notification or `qabnah://` link.
+    func open(_ route: AppRoute, signedIn: Bool) {
+        guard signedIn else {
+            afterSignIn = .route(route)
+            signInPrompt = true
+            return
+        }
+        switch route {
+        case .order(let id):
+            showOrder(id)
+        case .tracking(let id):
+            ordersVersion += 1
+            tab = .orders
+            ordersPath = [OrderRoute(id: id), OrderRoute(id: id, screen: .tracking)]
+        case .ticket(let id):
+            tab = .account
+            accountPath = [.ticket(id)]
+        case .offer, .delivery, .documents, .captainHome:
+            break // captain-only screens
+        }
+    }
+
+    /// The sign-in sheet closed with a session: continue where the guest was going.
+    func signedIn() {
+        guard let next = afterSignIn else { return }
+        afterSignIn = nil
+        switch next {
+        case .tab(let t): tab = t
+        case .route(let r): open(r, signedIn: true)
+        }
+    }
 
     func showOrder(_ id: String) {
         ordersVersion += 1
@@ -99,6 +206,9 @@ final class ConsumerRouter: ObservableObject {
     func reset() {
         tab = .home
         ordersPath = []
+        accountPath = []
+        afterSignIn = nil
+        signInPrompt = false
     }
 }
 

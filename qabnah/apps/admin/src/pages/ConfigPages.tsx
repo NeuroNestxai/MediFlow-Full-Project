@@ -343,9 +343,21 @@ export function SettingsPage() {
               <Input label={t('settings.supportPhone')} type="tel" dir="ltr" value={s.supportPhone} onChange={(e) => setS({ ...s, supportPhone: e.target.value })} />
             </div>
             <Switch checked={s.requireFleetForNonOmani} onChange={(v) => setS({ ...s, requireFleetForNonOmani: v })} label={t('settings.requireFleet')} description={t('settings.requireFleetHint')} />
+            {num('captainDocumentExpiryNoticeDays', t('settings.expiryNotice'), t('settings.expiryNoticeHint'), 'days')}
             <div className="field"><span className="field__label">{t('settings.requiredDocs')}</span>
               {CAPTAIN_DOCS.map((d) => <Checkbox key={d} checked={s.requiredCaptainDocuments.includes(d)} label={t(`capDoc.${d}`)}
                 onChange={(v) => setS({ ...s, requiredCaptainDocuments: v ? [...s.requiredCaptainDocuments, d] : s.requiredCaptainDocuments.filter((x) => x !== d) })} />)}
+            </div>
+          </div>
+        </Card>
+        <Card title={t('settings.invoice')}>
+          <div className="stack">
+            <p className="text-sm muted">{t('settings.invoiceHint')}</p>
+            <div className="form-grid">
+              <Input label={t('settings.legalName')} value={s.platformLegalName ?? ''} maxLength={200} error={fe.platformLegalName} onChange={(e) => setS({ ...s, platformLegalName: e.target.value })} />
+              <Input label={t('settings.crNumber')} dir="ltr" value={s.platformCrNumber ?? ''} maxLength={40} error={fe.platformCrNumber} onChange={(e) => setS({ ...s, platformCrNumber: e.target.value })} optional />
+              <Input label={t('settings.vatNumber')} dir="ltr" value={s.platformVatNumber ?? ''} maxLength={40} error={fe.platformVatNumber} onChange={(e) => setS({ ...s, platformVatNumber: e.target.value })} optional />
+              <Textarea label={t('settings.address')} rows={2} value={s.platformAddress ?? ''} maxLength={300} error={fe.platformAddress} onChange={(e) => setS({ ...s, platformAddress: e.target.value })} fieldClassName="span-all" />
             </div>
           </div>
         </Card>

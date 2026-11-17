@@ -159,3 +159,30 @@ object DateRanges {
         Preset.MONTH -> Range(today.withDayOfMonth(1), today)
     }
 }
+
+/** Map overlays for the tracking (consumer) and active-delivery (captain) screens. */
+object MapRoute {
+    /**
+     * The stop the captain is heading to: the pickup until the parcel is picked up (and while returning it),
+     * then the dropoff. Null when there is no delivery yet or it has ended.
+     */
+    fun nextStop(status: om.qabnah.core.model.DeliveryStatus?, pickup: LatLng?, dropoff: LatLng?): LatLng? {
+        if (status == null) return null
+        return when (status) {
+            om.qabnah.core.model.DeliveryStatus.PICKED_UP, om.qabnah.core.model.DeliveryStatus.AT_DROPOFF -> dropoff
+            om.qabnah.core.model.DeliveryStatus.RETURNING -> pickup
+            om.qabnah.core.model.DeliveryStatus.DELIVERED, om.qabnah.core.model.DeliveryStatus.FAILED,
+            om.qabnah.core.model.DeliveryStatus.RETURNED, om.qabnah.core.model.DeliveryStatus.CANCELLED,
+            om.qabnah.core.model.DeliveryStatus.UNKNOWN -> null
+            else -> if (status.isBeforePickup) pickup else dropoff
+        }
+    }
+
+    /** Straight "still to go" leg drawn dashed from the captain to the next stop; empty when either end is unknown. */
+    fun remainingLeg(captain: LatLng?, nextStop: LatLng?): List<LatLng> =
+        if (captain == null || nextStop == null) emptyList() else listOf(captain, nextStop)
+
+    /** Breadcrumbs plus the captain's latest fix (deduplicated), capped to the most recent [max] points. */
+    fun appendBreadcrumb(path: List<LatLng>, point: LatLng, max: Int = 200): List<LatLng> =
+        (if (path.lastOrNull() == point) path else path + point).takeLast(max)
+}

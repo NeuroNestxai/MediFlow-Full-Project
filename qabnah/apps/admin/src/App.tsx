@@ -1,16 +1,36 @@
-import type { ReactNode } from 'react';
+import { Suspense, lazy, type ComponentType, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Alert, useI18n } from '@qabnah/shared';
+import { Alert, Loading, useI18n } from '@qabnah/shared';
+
+/** React.lazy for named exports (route-level code splitting). */
+function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(load: () => Promise<M>, name: K) {
+  return lazy(() => load().then((m) => ({ default: m[name] as ComponentType })));
+}
+const OpsPage = lazyNamed(() => import('./pages/OpsPage'), 'OpsPage');
+const OrderDetailPage = lazyNamed(() => import('./pages/OrdersPages'), 'OrderDetailPage');
+const OrdersPage = lazyNamed(() => import('./pages/OrdersPages'), 'OrdersPage');
+const MerchantDetailPage = lazyNamed(() => import('./pages/MerchantsPages'), 'MerchantDetailPage');
+const MerchantsPage = lazyNamed(() => import('./pages/MerchantsPages'), 'MerchantsPage');
+const CaptainDetailPage = lazyNamed(() => import('./pages/CaptainsPages'), 'CaptainDetailPage');
+const CaptainsPage = lazyNamed(() => import('./pages/CaptainsPages'), 'CaptainsPage');
+const FleetPartnersPage = lazyNamed(() => import('./pages/CaptainsPages'), 'FleetPartnersPage');
+const DispatchPage = lazyNamed(() => import('./pages/ConfigPages'), 'DispatchPage');
+const PlansPage = lazyNamed(() => import('./pages/ConfigPages'), 'PlansPage');
+const PricingPage = lazyNamed(() => import('./pages/ConfigPages'), 'PricingPage');
+const SettingsPage = lazyNamed(() => import('./pages/ConfigPages'), 'SettingsPage');
+const ZonesPage = lazyNamed(() => import('./pages/ConfigPages'), 'ZonesPage');
+const AnalyticsPage = lazyNamed(() => import('./pages/BusinessPages'), 'AnalyticsPage');
+const FinancePage = lazyNamed(() => import('./pages/BusinessPages'), 'FinancePage');
+const SupportPage = lazyNamed(() => import('./pages/BusinessPages'), 'SupportPage');
+const TicketPage = lazyNamed(() => import('./pages/BusinessPages'), 'TicketPage');
+const AuditPage = lazyNamed(() => import('./pages/AccessPages'), 'AuditPage');
+const StaffPage = lazyNamed(() => import('./pages/AccessPages'), 'StaffPage');
+const UsersPage = lazyNamed(() => import('./pages/AccessPages'), 'UsersPage');
+
 import { Layout, firstAllowed } from './Layout';
 import { RequireStaff, useOptionalSession } from './session';
 import { LoginPage } from './pages/LoginPage';
-import { OpsPage } from './pages/OpsPage';
-import { OrderDetailPage, OrdersPage } from './pages/OrdersPages';
-import { MerchantDetailPage, MerchantsPage } from './pages/MerchantsPages';
-import { CaptainDetailPage, CaptainsPage, FleetPartnersPage } from './pages/CaptainsPages';
-import { DispatchPage, PlansPage, PricingPage, SettingsPage, ZonesPage } from './pages/ConfigPages';
-import { AnalyticsPage, FinancePage, SupportPage, TicketPage } from './pages/BusinessPages';
-import { AuditPage, StaffPage, UsersPage } from './pages/AccessPages';
+import { MfaGate, MfaSetupPage, SecurityPage } from './pages/SecurityPages';
 
 function Guard({ perms, children }: { perms: string[]; children: ReactNode }) {
   const s = useOptionalSession();
@@ -34,8 +54,12 @@ const g = (perms: string[], el: ReactNode) => <Guard perms={perms}>{el}</Guard>;
 
 export function App() {
   return (
+    <>
+    <MfaGate />
+    <Suspense fallback={<Loading />}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/security/setup" element={<RequireStaff><MfaSetupPage /></RequireStaff>} />
       <Route path="/no-access" element={<NoAccess />} />
       <Route path="/" element={<Home />} />
       <Route element={<RequireStaff><Layout /></RequireStaff>}>
@@ -59,8 +83,11 @@ export function App() {
         <Route path="/users" element={g(['users:read'], <UsersPage />)} />
         <Route path="/staff" element={g(['staff:manage', 'users:read'], <StaffPage />)} />
         <Route path="/audit" element={g(['audit:read'], <AuditPage />)} />
+        <Route path="/security" element={<SecurityPage />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>
+    </Suspense>
+    </>
   );
 }

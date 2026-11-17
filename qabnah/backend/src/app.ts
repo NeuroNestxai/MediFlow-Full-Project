@@ -56,7 +56,13 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<Fastify
   await app.register(helmet, { contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } });
   const origins = config.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
   await app.register(cors, { origin: (origin, cb) => cb(null, !origin || origins.includes(origin) || origins.includes('*')), credentials: false });
-  await app.register(rateLimit, { global: true, max: config.NODE_ENV === 'test' ? 100000 : 300, timeWindow: '1 minute', allowList: config.NODE_ENV === 'test' ? () => true : undefined });
+  // Limits run after authentication (preHandler) and are keyed per signed-in user, falling back to IP: many Omani
+  // mobile users share carrier-NAT IPs, so per-IP limits would throttle unrelated captains on the same network.
+  await app.register(rateLimit, {
+    global: true, hook: 'preHandler', max: config.NODE_ENV === 'test' ? 100000 : config.RATE_LIMIT_PER_MINUTE, timeWindow: '1 minute',
+    keyGenerator: (req) => (req.auth?.userId ? `u:${req.auth.userId}` : `ip:${req.ip}`),
+    allowList: config.NODE_ENV === 'test' ? () => true : undefined,
+  });
   await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024, files: 1 } });
   await app.register(websocket);
 

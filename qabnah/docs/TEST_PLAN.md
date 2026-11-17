@@ -70,8 +70,24 @@
 ### Realtime
 - Subscribing to another customer's order channel → `error forbidden`; own order receives `order.status_changed` after merchant accepts.
 
-## 4. Non-functional (planned, not executed in this build)
-- Load: k6 script for 200 captains streaming locations every 5 s + 50 orders/min (target p95 < 300 ms).
+## 4. Non-functional
+- **Load (executed 2026-11-17, `backend/scripts/loadtest.mjs`):**
+  - Setup: autocannon, 15 s per scenario, against the compiled API and the Docker PostGIS database, all on one
+    4-vCPU sandbox (load generator included).
+  - Rate limits were raised for the run.
+
+  | Scenario | Connections | Avg req/s | p50 | p97.5 | p99 | Errors |
+  |---|---|---|---|---|---|---|
+  | `GET /stores` near a point (public, PostGIS distance) | 50 | 2,091 | 21 ms | 44 ms | 51 ms | 0 |
+  | `POST /quotes/delivery` (zone lookup + pricing) | 50 | 2,177 | 20 ms | 42 ms | 49 ms | 0 |
+  | `POST /captain/location` (authenticated write + realtime outbox) | 20 | 484 | 5 ms | 230 ms | 308 ms | 0 |
+
+  - The location test sends every request for one captain row, so its tail latency mostly reflects lock
+    contention on that row. Real traffic is many captains, each pinging every ≥5 s; 484 writes/s corresponds to
+    about 2,400 online captains.
+  - Not yet done: a multi-captain soak test, and tests on production-sized hardware.
+- **Rate limiting** (manual check): one user hit HTTP 429 after the configured limit, while another user on the
+  same IP was unaffected (D-024).
 - Security: OWASP ASVS L2 checklist, dependency audit (`npm audit`), external pen test before launch.
 - Accessibility: WCAG 2.1 AA review of web apps; Dynamic Type & TalkBack/VoiceOver on mobile.
 - Localisation: Arabic RTL screenshots for every screen.

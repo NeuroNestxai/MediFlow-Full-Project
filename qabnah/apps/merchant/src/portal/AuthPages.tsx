@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Alert, Button, Card, Input, Select, errorMessage, isApiError, loginWithPassword, useDebounced, useI18n,
+  Alert, Button, Card, Input, MfaChallengeForm, Select, errorMessage, isApiError, passwordLogin, useDebounced, useI18n,
   type AuthResult, type LatLng, type MerchantCategory,
 } from '@qabnah/shared';
 import { PinPicker } from '@qabnah/shared/map';
@@ -22,11 +22,15 @@ export function LoginPage() {
   const loc = useLocation() as { state?: { from?: string } };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
   const m = useMutation({
-    mutationFn: () => loginWithPassword(merchantApi, email, password),
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: meKey }); },
+    mutationFn: () => passwordLogin(merchantApi, email, password),
+    onSuccess: async (r) => {
+      if (r.kind === 'mfa') { setMfaToken(r.mfaToken); return; }
+      await qc.invalidateQueries({ queryKey: meKey });
+    },
   });
-  if (session) {
+  if (session && !mfaToken) {
     if (!session.merchants.length) return <Navigate to="/no-store" replace />;
     return <Navigate to={loc.state?.from && loc.state.from !== '/login' ? loc.state.from : firstAllowedPath(session.perms)} replace />;
   }
@@ -37,6 +41,10 @@ export function LoginPage() {
         <div className="row between"><span /><LangToggle /></div>
         <img src="/brand/logo.svg" alt={t('app.name')} className="auth-logo" />
         <Card>
+          {mfaToken ? (
+            <MfaChallengeForm api={merchantApi} mfaToken={mfaToken} onCancel={() => { setMfaToken(null); setPassword(''); }}
+              onDone={async () => { setMfaToken(null); await qc.invalidateQueries({ queryKey: meKey }); }} />
+          ) : (
           <form className="stack" onSubmit={submit} noValidate>
             <div className="stack stack-sm">
               <h1>{t('auth.title')}</h1>
@@ -48,6 +56,7 @@ export function LoginPage() {
             <Button type="submit" variant="primary" size="lg" block loading={m.isPending} disabled={!email || !password}>{t('common.signIn')}</Button>
             <p className="text-sm muted" style={{ textAlign: 'center' }}>{t('auth.noAccount')} <Link to="/register">{t('auth.registerLink')}</Link></p>
           </form>
+          )}
         </Card>
       </div>
     </div>

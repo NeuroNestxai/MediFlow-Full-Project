@@ -156,3 +156,31 @@ public struct Backoff: Sendable {
 
     public mutating func reset() { attempt = 0 }
 }
+
+// MARK: - Personal data export
+
+/// Helpers for `GET /me/export` (PDPL access right): the app saves the JSON to a file and
+/// hands it to the share sheet.
+public enum DataExport {
+    /// `qabnah-consumer-data-2026-11-17.json` (date in Muscat time).
+    public static func fileName(app: ClientApp, date: Date = Date()) -> String {
+        "qabnah-\(app.rawValue)-data-\(MuscatCalendar.dayString(date)).json"
+    }
+
+    /// Pretty-printed copy of the export for humans; the original bytes if it isn't valid JSON.
+    public static func prettyPrinted(_ data: Data) -> Data {
+        guard let object = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]),
+              JSONSerialization.isValidJSONObject(object),
+              let pretty = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        else { return data }
+        return pretty
+    }
+
+    /// Writes the export to a fresh temporary file and returns its URL.
+    public static func write(_ data: Data, app: ClientApp, date: Date = Date(),
+                             directory: URL = FileManager.default.temporaryDirectory) throws -> URL {
+        let url = directory.appendingPathComponent(fileName(app: app, date: date))
+        try prettyPrinted(data).write(to: url, options: [.atomic])
+        return url
+    }
+}

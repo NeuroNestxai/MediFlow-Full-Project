@@ -58,6 +58,7 @@ dependencies {
     api(libs.play.services.location)
     api(libs.osmdroid)
     api(libs.coil.compose)
+    api(libs.firebase.messaging) // push; initialised manually only when FCM_* BuildConfig fields are set
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.exifinterface)
 

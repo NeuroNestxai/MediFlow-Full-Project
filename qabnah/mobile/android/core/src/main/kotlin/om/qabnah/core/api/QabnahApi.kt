@@ -1,6 +1,7 @@
 package om.qabnah.core.api
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -21,7 +22,9 @@ import om.qabnah.core.model.DeliveryAction
 import om.qabnah.core.model.DeliveryQuote
 import om.qabnah.core.model.DeliveryQuoteRequest
 import om.qabnah.core.model.DeliveryStatusInput
+import om.qabnah.core.model.DeleteAccountInput
 import om.qabnah.core.model.DeviceRegistration
+import om.qabnah.core.model.DeviceUnregistration
 import om.qabnah.core.model.Earnings
 import om.qabnah.core.model.FilePurpose
 import om.qabnah.core.model.FileRef
@@ -94,6 +97,23 @@ class QabnahApi(val client: ApiClient) {
     /** `app` is `consumer` or `captain`. */
     suspend fun registerDevice(app: String, token: String) =
         client.post<DeviceRegistration, Unit>("me/devices", DeviceRegistration("android", app, token))
+
+    /** `POST /me/devices/unregister` – call before signing out so this device stops receiving pushes. */
+    suspend fun unregisterDevice(token: String) =
+        client.post<DeviceUnregistration, Unit>("me/devices/unregister", DeviceUnregistration(token))
+
+    /** `GET /me/export` – personal data export (PDPL access right). Use [DataExport.toPrettyJson] to save it. */
+    suspend fun exportMyData(): JsonElement = client.get("me/export")
+
+    /**
+     * `POST /me/delete {confirm:"DELETE"}` (PDPL erasure). On 204 the server has revoked every session, so the local
+     * session is cleared too. A 409 ([ApiException.Conflict]: active orders/deliveries or an unsettled balance) leaves
+     * the session untouched; show its message.
+     */
+    suspend fun deleteAccount() {
+        client.post<DeleteAccountInput, Unit>("me/delete", DeleteAccountInput())
+        client.clearSession()
+    }
 
     suspend fun uploadFile(bytes: ByteArray, fileName: String, mimeType: String, purpose: FilePurpose): FileRef {
         val body = MultipartBody.Builder().setType(MultipartBody.FORM)

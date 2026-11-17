@@ -77,6 +77,8 @@ struct OrderDetailView: View {
     @State private var showSupport = false
     @State private var showRating = false
     @State private var showTracking = false
+    @State private var invoicePage: IdentifiableURL?
+    @State private var isOpeningInvoice = false
     private let api: APIClient
     private let realtime: RealtimeClient
 
@@ -115,6 +117,9 @@ struct OrderDetailView: View {
         .paymentSheet(payment) { _ in Task { await vm.load() } }
         .navigationDestination(isPresented: $showTracking) {
             TrackingView(api: api, realtime: realtime, orderId: vm.orderId)
+        }
+        .sheet(item: $invoicePage) { page in
+            SafariView(url: page.url).ignoresSafeArea()
         }
         .sheet(isPresented: $showSupport) {
             NewTicketView(api: api, orderId: vm.orderId) { _ in }
@@ -168,6 +173,17 @@ struct OrderDetailView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    /// `invoiceUrl` is signed for ~30 minutes: refetch the order so the link is fresh, then open it
+    /// in `SFSafariViewController` (no auth header needed).
+    private func openInvoice() async {
+        isOpeningInvoice = true
+        defer { isOpeningInvoice = false }
+        await vm.load()
+        guard let order = vm.order, order.hasInvoice, let url = api.config.resolve(order.invoiceUrl),
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return } // SFSafariViewController: web URLs only
+        invoicePage = IdentifiableURL(url: url)
     }
 
     private func pinSection(_ pin: String) -> some View {
@@ -262,6 +278,18 @@ struct OrderDetailView: View {
 
     private func actionsSection(_ order: Order) -> some View {
         Section {
+            if order.hasInvoice {
+                Button {
+                    Task { await openInvoice() }
+                } label: {
+                    HStack {
+                        Label(lang.t("order.invoice"), systemImage: "doc.text")
+                        Spacer()
+                        if isOpeningInvoice { ProgressView() }
+                    }
+                }
+                .disabled(isOpeningInvoice)
+            }
             if order.canRate {
                 Button { showRating = true } label: { Label(lang.t("order.rate"), systemImage: "star") }
             }

@@ -1,0 +1,35 @@
+# Qabnah production reverse proxy (automatic HTTPS via Let's Encrypt).
+# Domains come from environment variables (see prod/.env.prod.example). Nothing here is deployed yet.
+{
+	email {$ACME_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
+
+{$API_DOMAIN} {
+	import security_headers
+	encode gzip
+	reverse_proxy api:4000
+}
+
+{$WEB_DOMAIN} {
+	import security_headers
+	encode gzip
+	reverse_proxy merchant-web:80
+}
+
+{$ADMIN_DOMAIN} {
+	import security_headers
+	encode gzip
+	# Admin panel only from office/VPN addresses (DECISIONS D-010). Space-separated CIDRs.
+	@blocked not remote_ip {$ADMIN_ALLOWED_IPS}
+	respond @blocked "Forbidden" 403
+	reverse_proxy admin-web:80
+}

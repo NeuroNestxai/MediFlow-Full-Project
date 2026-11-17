@@ -120,4 +120,27 @@
     <string name="map_pickup">الاستلام</string>
     <string name="map_dropoff">التسليم</string>
     <string name="map_captain">الكابتن</string>
+
+    <!-- Push notification channels -->
+    <string name="channel_orders">الطلبات والتوصيل</string>
+    <string name="channel_orders_desc">تحديثات حالة طلباتك وعمليات التوصيل</string>
+    <string name="channel_support">الدعم</string>
+    <string name="channel_support_desc">ردود فريق دعم قبناه</string>
+
+    <!-- Sign-in required (guest browsing) -->
+    <string name="auth_required_title">سجّل الدخول للمتابعة</string>
+    <string name="auth_required_body">تصفّح المتاجر لا يحتاج إلى حساب. سجّل الدخول برقم هاتفك لتطلب وترسل الطرود وتتابع طلباتك.</string>
+
+    <!-- Privacy: data export and account deletion (PDPL) -->
+    <string name="privacy_title">الخصوصية</string>
+    <string name="privacy_export">تنزيل بياناتي</string>
+    <string name="privacy_export_desc">احفظ نسخة من ملفك الشخصي وعناوينك وطلباتك وتذاكر الدعم (ملف JSON).</string>
+    <string name="privacy_export_saved">تم حفظ بياناتك.</string>
+    <string name="privacy_export_write_failed">تعذّر حفظ الملف. حاول مرة أخرى.</string>
+    <string name="privacy_delete">حذف الحساب</string>
+    <string name="privacy_delete_desc">حذف حسابك وبياناتك الشخصية نهائيًا.</string>
+    <string name="privacy_delete_body">سيتم تسجيل خروجك من جميع الأجهزة وإخفاء هوية بياناتك الشخصية. تحتفظ السجلات الضريبية والمالية ببيانات لا تُعرّف بك فقط. لا يمكن التراجع عن ذلك.</string>
+    <string name="privacy_delete_type">اكتب %1$s للتأكيد</string>
+    <string name="privacy_delete_confirm">احذف حسابي</string>
+    <string name="privacy_deleted">تم حذف حسابك.</string>
 </resources>

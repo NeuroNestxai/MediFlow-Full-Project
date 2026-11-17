@@ -21,6 +21,8 @@ const schema = z.object({
   FILE_SIGNING_SECRET: z.string().default('dev-only-file-signing-secret'),
   STORAGE_DIR: z.string().default('./storage'),
   LOG_LEVEL: z.string().default('info'),
+  RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).default(300), // per user (or IP when anonymous); auth routes are stricter
+  LOCATION_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(12).default(120), // captain REST location pings
   // providers
   PAYMENT_PROVIDER: z.enum(['mock', 'thawani']).default('mock'),
   THAWANI_BASE_URL: z.string().default('https://uatcheckout.thawani.om/api/v1'),

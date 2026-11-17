@@ -77,3 +77,7 @@ val DEFAULT_ARGS_KEY: androidx.lifecycle.viewmodel.CreationExtras.Key<androidx.s
 val SAVED_STATE_REGISTRY_OWNER_KEY: androidx.lifecycle.viewmodel.CreationExtras.Key<androidx.savedstate.SavedStateRegistryOwner> = TODO()
 val VIEW_MODEL_STORE_OWNER_KEY: androidx.lifecycle.viewmodel.CreationExtras.Key<ViewModelStoreOwner> = TODO()
 fun <T : androidx.savedstate.SavedStateRegistryOwner> T.enableSavedStateHandles() where T : ViewModelStoreOwner {}
+
+// lifecycle-runtime (RepeatOnLifecycle.kt)
+suspend fun Lifecycle.repeatOnLifecycle(state: Lifecycle.State, block: suspend CoroutineScope.() -> Unit): Unit = TODO()
+suspend fun LifecycleOwner.repeatOnLifecycle(state: Lifecycle.State, block: suspend CoroutineScope.() -> Unit): Unit = TODO()
