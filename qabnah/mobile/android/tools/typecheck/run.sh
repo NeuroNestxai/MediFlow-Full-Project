@@ -11,4 +11,5 @@ if [ ! -f libs/osmdroid-classes.jar ]; then
   (cd libs && unzip -q -o osmdroid.aar classes.jar && mv classes.jar osmdroid-classes.jar && rm osmdroid.aar)
 fi
 python3 genr.py gen
+(cd ../.. && ./gradlew :core:jar --console=plain -q)
 ../../gradlew -p . compileKotlin --console=plain "$@"

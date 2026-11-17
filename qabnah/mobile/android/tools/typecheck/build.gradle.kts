@@ -1,5 +1,5 @@
 // Type-check harness for machines WITHOUT the Android SDK / Google Maven (NOT an Android build, produces no APK).
-// Compiles :core, :android-common, :consumer and :captain sources together against
+// Compiles :android-common, :consumer and :captain sources together (against the separately built :core jar) and against
 //   - JetBrains Compose for Desktop 1.8 (same APIs as Jetpack Compose 1.8 / Material3 1.3) from Maven Central,
 //   - Robolectric's android-all (API 35 framework classes) and osmdroid's classes.jar from Maven Central,
 //   - hand-written stubs (stubs/) for Google-Maven-only libraries (AppCompat, Activity, Core, Lifecycle, Play services, ...),
@@ -27,7 +27,6 @@ kotlin {
 sourceSets {
     main {
         kotlin.srcDirs(
-            "$repo/core/src/main/kotlin",
             "$repo/android-common/src/main/kotlin",
             "$repo/consumer/src/main/kotlin",
             "$repo/captain/src/main/kotlin",
@@ -37,6 +36,9 @@ sourceSets {
 }
 dependencies {
     compileOnly(files("libs/android-all.jar", "libs/osmdroid-classes.jar"))
+    // :core is compiled separately (like the real build), so cross-module rules such as "no smart cast on another
+    // module's public property" are enforced here too.
+    implementation(fileTree("$repo/core/build/libs") { include("core*.jar") })
     implementation("org.jetbrains.compose.runtime:runtime-desktop:1.8.0")
     implementation("org.jetbrains.compose.ui:ui-desktop:1.8.0")
     implementation("org.jetbrains.compose.foundation:foundation-desktop:1.8.0")
