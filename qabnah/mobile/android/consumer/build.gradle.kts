@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     id("com.android.application") // AGP comes from the root buildscript classpath (see ../build.gradle.kts)
@@ -13,7 +14,7 @@ val apiBaseUrl: String = providers.gradleProperty("qabnah.apiBaseUrl").getOrElse
 //   qabnah.consumer.fcm.appId=1:1234567890:android:abc…   (per app; falls back to qabnah.fcm.appId)
 //   qabnah.fcm.projectId=…  qabnah.fcm.apiKey=…  qabnah.fcm.senderId=…   (or the qabnah.consumer.fcm.* variants)
 // Any value left empty disables push in this app (no google-services.json / plugin is used).
-val localProperties = java.util.Properties().apply {
+val localProperties = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.isFile) f.inputStream().use { load(it) }
 }
