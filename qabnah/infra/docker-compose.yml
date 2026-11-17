@@ -51,13 +51,16 @@ x-api-env: &api-env
 services:
   db:
     image: postgis/postgis:16-3.4
+    platform: linux/amd64   # PostGIS publishes amd64 images; Apple Silicon runs it through Docker's emulation
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: qabnah
     ports: ["5433:5432"]
     volumes: [db-data:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d qabnah"]
+      # TCP check: during first-time init Postgres runs a temporary socket-only server, so a socket check would
+      # report healthy before the real server accepts connections.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d qabnah"]
       interval: 5s
       timeout: 3s
       retries: 20

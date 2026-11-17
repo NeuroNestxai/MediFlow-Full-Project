@@ -6,9 +6,24 @@ import pg from 'pg';
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const MIGRATIONS_DIR = path.resolve(here, '../../migrations');
 
+/** Connect, retrying while the database is still starting (containers, slow emulated volumes). */
+async function connectWithRetry(connectionString: string, log: (m: string) => void, attempts = 30) {
+  for (let i = 1; ; i++) {
+    const client = new pg.Client({ connectionString });
+    try {
+      await client.connect();
+      return client;
+    } catch (e) {
+      await client.end().catch(() => {});
+      if (i >= attempts) throw e;
+      log(`database not ready (${(e as Error).message}); retrying ${i}/${attempts}…`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+}
+
 export async function migrate(connectionString: string, log: (m: string) => void = console.log) {
-  const client = new pg.Client({ connectionString });
-  await client.connect();
+  const client = await connectWithRetry(connectionString, log);
   try {
     await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
     await client.query('SELECT pg_advisory_lock(727274)');
