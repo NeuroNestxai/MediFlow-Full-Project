@@ -106,13 +106,13 @@ jobs:
       - name: PostgreSQL + PostGIS
         if: steps.have.outputs.tests == 'yes'
         run: |
-          brew install postgis
-          PG=$(brew list --formula | grep -E '^postgresql@[0-9]+$' | sort -V | tail -1)
-          echo "using $PG"
-          PGBIN="$(brew --prefix "$PG")/bin"
+          # Homebrew's postgis bottle carries builds for postgresql@17 and @18 but installs neither server.
+          brew install postgresql@17 postgis
+          PGBIN="$(brew --prefix postgresql@17)/bin"
           "$PGBIN/initdb" -D "$RUNNER_TEMP/pg" -U postgres --auth=trust > /dev/null
           "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/pg" -l "$RUNNER_TEMP/pg.log" -o "-p 5432" -w start
           "$PGBIN/createdb" -h localhost -U postgres qabnah
+          "$PGBIN/psql" -h localhost -U postgres -d qabnah -c "CREATE EXTENSION IF NOT EXISTS postgis; SELECT postgis_version();"
 
       - uses: actions/setup-node@v4
         if: steps.have.outputs.tests == 'yes'
