@@ -5,6 +5,6 @@ import { createScene, type SceneHandle } from './scene';
 
 declare global { interface Window { __scene: SceneHandle; __ready?: boolean } }
 await document.fonts.load('700 58px "IBM Plex Sans Arabic"');
-const scene = createScene(document.getElementById('stage') as HTMLCanvasElement, { screenUrl: '/img/phone-storefront.png', pixelRatio: 1, onReady: () => { window.__ready = true; } });
+const scene = createScene(document.getElementById('stage') as HTMLCanvasElement, { screenUrl: '/img/phone-storefront.jpg', pixelRatio: 1, onReady: () => { window.__ready = true; } });
 window.__scene = scene;
 scene.render();

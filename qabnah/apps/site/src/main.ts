@@ -159,7 +159,7 @@ const stage = (() => {
     update();
     try {
       const [{ createScene }] = await Promise.all([import('./scene'), document.fonts.load('700 58px "IBM Plex Sans Arabic"')]);
-      scene = createScene(canvas, { screenUrl: '/img/phone-storefront.png', pixelRatio: Math.min(devicePixelRatio, 1.75), onReady: () => pin.classList.add('gl-ready') });
+      scene = createScene(canvas, { screenUrl: '/img/phone-storefront.jpg', pixelRatio: Math.min(devicePixelRatio, 1.75), onReady: () => pin.classList.add('gl-ready') });
       applyShift(); scene.setProgress(p); scene.render(); scene.start();
       new IntersectionObserver(([e]) => (e.isIntersecting ? scene!.start() : scene!.stop())).observe(root);
       document.addEventListener('visibilitychange', () => (document.hidden ? scene!.stop() : scene!.start()));
