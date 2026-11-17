@@ -1,5 +1,7 @@
 package om.qabnah.core.api
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -9,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -57,6 +60,11 @@ class ApiClient(
     private val userAgent: String? = null,
     /** Refresh this long before the access token expires. */
     private val refreshLeewayMs: Long = 30_000,
+    /**
+     * Where requests are prepared and response bodies are read. Callers are usually on the main thread (view models);
+     * reading a body there throws `NetworkOnMainThreadException` on Android whenever it is not already buffered.
+     */
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val baseUrl: HttpUrl = baseUrl.trimEnd('/').toHttpUrl()
 
@@ -91,10 +99,10 @@ class ApiClient(
      * A usable access token: refreshes first if it expires within the leeway (single-flight).
      * Returns null when signed out. [forceRefresh] refreshes unconditionally (e.g. after a WebSocket 401).
      */
-    suspend fun freshAccessToken(forceRefresh: Boolean = false): String? {
-        val current = tokenStore.read() ?: return null
-        if (!forceRefresh && !current.isExpiring()) return current.accessToken
-        return refreshMutex.withLock {
+    suspend fun freshAccessToken(forceRefresh: Boolean = false): String? = withContext(ioDispatcher) {
+        val current = tokenStore.read() ?: return@withContext null
+        if (!forceRefresh && !current.isExpiring()) return@withContext current.accessToken
+        refreshMutex.withLock {
             val latest = tokenStore.read() ?: return@withLock null
             // Another caller refreshed while we waited for the lock.
             if (latest.accessToken != current.accessToken && !latest.isExpiring()) return@withLock latest.accessToken
@@ -154,7 +162,7 @@ class ApiClient(
         auth: Boolean,
         headers: Map<String, String>,
         deserializer: DeserializationStrategy<T>?,
-    ): T {
+    ): T = withContext(ioDispatcher) {
         val url = buildUrl(path, query)
         var accessToken: String? = null
         if (auth) {
@@ -167,7 +175,7 @@ class ApiClient(
             val refreshed = refreshAfterUnauthorized(accessToken)
             response = send(buildRequest(method, url, body, refreshed, headers))
         }
-        return handle(response, deserializer)
+        handle(response, deserializer)
     }
 
     /** Multipart upload (`POST /files`). */

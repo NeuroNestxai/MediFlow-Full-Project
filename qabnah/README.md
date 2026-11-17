@@ -128,7 +128,7 @@ stores" and "register your store" go), optional `VITE_CONTACT_EMAIL`. Design rul
 | Web | Playwright e2e — admin 2FA sign-in, admin live ops, merchant board accept, storefront → OTP → quote, marketing site; against Docker (nginx-served apps + compiled API) | sandbox | ✅ 5/5 |
 | iOS | `swift test` QabnahKit (74 tests) | Linux sandbox + macOS 15 GitHub runner | ✅ |
 | iOS | `xcodegen` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
-| Android | `./gradlew :core:test` (67 tests) | sandbox + GitHub Actions | ✅ |
+| Android | `./gradlew :core:test` (68 tests) | sandbox + GitHub Actions | ✅ |
 | Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions | ✅ both build (APK artifact) |
 | Android | both apps on an API 34 emulator against the Docker stack: browse, storefront, product, cart, OTP sign-in, checkout review, parcel wizard, account; captain sign-in, home, deliveries, earnings, profile (`mobile/screens/android_screens.py`) | GitHub Actions (`Qabnah mobile screenshots`) | ✅ runs; screenshots in `docs/screenshots/mobile/android` |
 | iOS | both apps on an iPhone simulator against a backend on the runner, driven by XCUITest (`QabnahScreens`) | GitHub Actions (`Qabnah mobile screenshots`) | ✅ runs; screenshots in `docs/screenshots/mobile/ios` |
