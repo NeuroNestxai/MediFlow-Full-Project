@@ -196,6 +196,13 @@ struct AuthFlowView: View {
                 .qField()
                 .accessibilityLabel(lang.t("auth.code_title"))
                 .accessibilityIdentifier("auth.code")
+                // The number pad covers the button below, so a complete code is submitted straight away.
+                .onChange(of: vm.code) { value in
+                    guard Digits.ascii(value).filter(\.isNumber).count == 6, vm.canVerify else { return }
+                    Task {
+                        if let result = await vm.verify() { session.didSignIn(result) }
+                    }
+                }
             TextField(lang.t("auth.full_name_optional"), text: $vm.fullName)
                 .textContentType(.name)
                 .qField()

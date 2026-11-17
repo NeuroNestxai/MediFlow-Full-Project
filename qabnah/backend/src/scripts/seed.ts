@@ -139,6 +139,8 @@ const PRODUCT_DESCRIPTIONS: Record<string, [string, string]> = {
   'Seasonal Mix': ['A mixed bouquet of the season’s flowers.', 'باقة منوّعة من زهور الموسم.'],
 };
 const COVER_IMAGES: Record<string, string> = { 'saffron-grill': 'grill', 'qahwa-house': 'qahwa', 'nakheel-market': 'groceries', 'ward-flowers': 'roses' };
+/** Banner photos are plain JPEGs so the native apps can show them too (they do not render SVG). */
+const BANNER_IMAGES: Record<string, string> = { 'saffron-grill': 'tawook', 'qahwa-house': 'karak', 'nakheel-market': 'tomatoes', 'ward-flowers': 'seasonal-bouquet' };
 const sampleUrl = (name: string) => `${config.MERCHANT_WEB_URL}/sample/${name}.jpg`;
 
 const CAPTAINS = [
@@ -206,7 +208,7 @@ async function seedPeople() {
     await grant(staffUser.id, 'merchant_staff', row.id);
     await q(pool, `INSERT INTO merchant_subscriptions (merchant_id, plan_id, current_period_end) VALUES ($1,$2, now() + interval '20 days')`, [row.id, plan.id]);
     for (const [i, [en, ar]] of m.banners.entries())
-      await q(pool, `INSERT INTO storefront_banners (merchant_id, image_url, title_en, title_ar, sort_order) VALUES ($1,$2,$3,$4,$5)`, [row.id, `${config.MERCHANT_WEB_URL}/brand/banner-${m.category}.svg`, en, ar, i]);
+      await q(pool, `INSERT INTO storefront_banners (merchant_id, image_url, title_en, title_ar, sort_order) VALUES ($1,$2,$3,$4,$5)`, [row.id, sampleUrl(BANNER_IMAGES[m.slug] ?? COVER_IMAGES[m.slug] ?? 'groceries'), en, ar, i]);
     for (const [ci, [cen, car, products]] of (m.cats as any[]).entries()) {
       const cat = await one(pool, `INSERT INTO categories (merchant_id, name_en, name_ar, sort_order) VALUES ($1,$2,$3,$4) RETURNING id`, [row.id, cen, car, ci]);
       for (const [pi, [pen, par, price, groups, stock]] of (products as any[]).entries()) {

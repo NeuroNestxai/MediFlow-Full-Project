@@ -85,9 +85,10 @@ def app_log(package: str) -> None:
     """Errors the app logged, to explain a failed screen."""
     pid = ui.shell(f"pidof {package}").strip()
     out = ui.adb("logcat", "-d", "-t", "1500", timeout=60).stdout.decode(errors="replace")
-    lines = [ln for ln in out.splitlines() if (pid and f" {pid} " in ln) and re.search(r" [EW] |Exception|exception|Caused by", ln)]
+    lines = [ln for ln in out.splitlines() if (pid and f" {pid} " in ln) and re.search(r" [EW] |Exception|exception|Caused by|\tat ", ln)
+             and not re.search(r"OpenGLRenderer|FrameTracker|failed to call release", ln)]
     print(f"   logcat ({package}, pid {pid or '?'}): {len(lines)} warning/error lines")
-    for ln in lines[-40:]:
+    for ln in lines[-70:]:
         print("     " + ln[:260])
 
 
@@ -118,10 +119,12 @@ def sign_in(phone: str) -> None:
     print(f"   dev code on screen: {code}")
     ui.tap(rx(COMMON, "auth_code_label"))
     ui.type_text(code)
-    ui.back()
-    if ui.find(rx(COMMON, "auth_verify")) is not None:
-        ui.tap(rx(COMMON, "auth_verify"))
-    time.sleep(4)
+    time.sleep(4)  # a complete code is submitted automatically
+    if ui.find(rx(COMMON, "auth_verify")) is not None:  # older builds: hide the keyboard and press the button
+        ui.back()
+        if ui.find(rx(COMMON, "auth_verify")) is not None:
+            ui.tap(rx(COMMON, "auth_verify"))
+        time.sleep(4)
 
 
 def consumer(out: str, apk: str) -> ui.Session:
@@ -165,8 +168,25 @@ def captain(out: str, apk: str) -> ui.Session:
     return s
 
 
+class Tee:
+    """Mirror everything printed into a log file that is published next to the screenshots."""
+
+    def __init__(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.file, self.out = open(path, "w", encoding="utf-8"), sys.stdout
+
+    def write(self, text: str) -> int:
+        self.file.write(text)
+        self.file.flush()
+        return self.out.write(text)
+
+    def flush(self) -> None:
+        self.out.flush()
+
+
 def main() -> int:
     out, consumer_apk, captain_apk = sys.argv[1:4]
+    sys.stdout = Tee(Path(out) / "run.log")
     ui.shell("settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0")
     set_system_locale()
     ui.shell("settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0")

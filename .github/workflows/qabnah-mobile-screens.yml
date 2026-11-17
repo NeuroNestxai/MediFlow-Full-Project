@@ -82,6 +82,8 @@ jobs:
               im = im.resize((720, round(im.height * 720 / im.width)), Image.LANCZOS)
               im.save(dst / (png.stem + ".jpg"), quality=86)
           print(len(list(dst.glob("*.jpg"))), "screenshots")
+          log = src / "run.log"
+          if log.exists(): (dst / "run.log").write_text(log.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -152,7 +154,7 @@ jobs:
           # TEST_RUNNER_ prefixed variables are passed into the UI test runner process
           TEST_RUNNER_QABNAH_SHOTS_DIR="$QABNAH_SHOTS_DIR" xcodebuild test -project Qabnah.xcodeproj -scheme QabnahScreens \
             -destination "platform=iOS Simulator,name=$DEVICE" -resultBundlePath "$RUNNER_TEMP/screens.xcresult" \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "Test Case|error:|\*\* TEST|shot:|failed|Executed" | tail -150 || true
+            CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "Test Case|error:|\*\* TEST|shot:|missing:|failed|Executed" | tail -200 | tee "$QABNAH_SHOTS_DIR/run.log" || true
           ls -la "$QABNAH_SHOTS_DIR" | head -60
 
       - name: Backend log
@@ -181,6 +183,8 @@ jobs:
               im = im.resize((720, round(im.height * 720 / im.width)), Image.LANCZOS)
               im.save(dst / (png.stem + ".jpg"), quality=86)
           print(len(pngs), "screenshots")
+          log = src / "run.log"
+          if log.exists(): (dst / "run.log").write_text(log.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

@@ -259,7 +259,7 @@ final class QabnahScreensTests: XCTestCase {
         codeField.tap()
         pause(1)
         codeField.typeText(code)
-        _ = tap(app, "auth.verify", timeout: 10)
+        _ = tap(app, "auth.verify", timeout: 3) // a complete code is submitted automatically; this covers shorter codes
         pause(3)
         dismissSystemAlerts() // notifications prompt after sign-in
 

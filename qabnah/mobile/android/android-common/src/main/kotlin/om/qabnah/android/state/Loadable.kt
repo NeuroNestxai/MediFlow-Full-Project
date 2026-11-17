@@ -34,6 +34,7 @@ fun <T> MutableStateFlow<Loadable<T>>.launchLoad(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
+        android.util.Log.w("QabnahLoad", "Load failed", e)
         update { it.copy(loading = false, refreshing = false, error = e) }
     }
 }

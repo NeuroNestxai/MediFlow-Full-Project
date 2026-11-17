@@ -38,8 +38,13 @@ class AuthViewModel(private val api: QabnahApi) : ViewModel() {
     private var countdown: Job? = null
 
     fun onPhoneChange(value: String) = _state.update { it.copy(phoneInput = value.take(16), phoneInvalid = false, error = null) }
-    fun onCodeChange(value: String) =
+    fun onCodeChange(value: String) {
+        val previous = _state.value.code
         _state.update { it.copy(code = Digits.toAscii(value).filter(Char::isDigit).take(6), error = null) }
+        // The keyboard can cover the button, so a newly completed code is submitted straight away.
+        val now = _state.value
+        if (now.code.length == 6 && previous.length < 6 && !now.loading) verify()
+    }
     fun onNameChange(value: String) = _state.update { it.copy(fullName = value.take(80)) }
 
     fun requestCode() {
