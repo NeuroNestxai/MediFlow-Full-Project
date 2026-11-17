@@ -14,10 +14,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -218,7 +220,10 @@ fun qabnahTypography(arabic: Boolean): Typography {
 fun QabnahTheme(palette: QabnahPalette = QabnahPalette.SAND, content: @Composable () -> Unit) {
     val arabic = isArabic()
     val typography = remember(arabic) { qabnahTypography(arabic) }
-    CompositionLocalProvider(LocalQabnahPalette provides palette) {
+    // The layout direction always follows the language being rendered: Arabic text must never sit in a left-to-right layout
+    // (seen on a first launch, before the window picked up the direction of a freshly applied locale).
+    val direction = if (arabic) LayoutDirection.Rtl else LayoutDirection.Ltr
+    CompositionLocalProvider(LocalQabnahPalette provides palette, LocalLayoutDirection provides direction) {
         MaterialTheme(
             colorScheme = if (palette == QabnahPalette.NIGHT) NightScheme else SandScheme,
             shapes = QabnahShapes,
