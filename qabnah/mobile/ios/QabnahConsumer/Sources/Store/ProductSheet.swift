@@ -1,8 +1,9 @@
 import SwiftUI
 import QabnahKit
 
-/// Product options sheet: variants are radio buttons (minSelect/maxSelect honoured), add-ons are
-/// checkboxes up to maxSelect; the price updates live (base + deltas) × quantity.
+/// Product sheet: large photo (16:10), option rows (variants are radio buttons with
+/// minSelect/maxSelect honoured, add-ons are checkboxes up to maxSelect), stepper, and a sticky
+/// add bar whose price updates live: (base + deltas) × quantity.
 struct ProductSheet: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var cart: CartStore
@@ -22,123 +23,124 @@ struct ProductSheet: View {
     }
 
     private var product: Product { selection.product }
-    private var brand: Color { Color(hex: merchant.brandColor) ?? Brand.primary }
+    private var brand: Color { Color(hex: merchant.brandColor) ?? QTheme.primary }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    if product.imageUrl != nil {
-                        RemoteImage(urlString: product.imageUrl)
-                            .frame(height: 220)
-                            .frame(maxWidth: .infinity)
-                            .clipped()
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(lang.name(product)).font(.title2.bold())
-                        if let d = product.description(lang.language) {
-                            Text(d).foregroundColor(.secondary)
-                        }
-                        Text(lang.money(product.basePriceBaisa)).font(.headline).foregroundColor(brand)
-                    }
-                    .padding(.horizontal)
-
-                    ForEach(product.optionGroups) { group in
-                        groupView(group)
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(lang.t("product.notes")).font(.headline)
-                        TextField(lang.t("product.notes_placeholder"), text: $notes, axis: .vertical)
-                            .lineLimit(1...3)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    .padding(.horizontal)
-
-                    Stepper(value: $quantity, in: 1...max(1, product.maxQuantity)) {
-                        Text(lang.f("product.quantity", quantity))
-                    }
-                    .padding(.horizontal)
+        ScrollView {
+            VStack(alignment: .leading, spacing: QTheme.space5) {
+                QPhotoBox(urlString: product.imageUrl, aspect: 16.0 / 10.0, radius: 0,
+                          glyph: (merchant.category ?? .other).glyph, tint: brand)
+                titleBlock
+                ForEach(product.optionGroups) { group in
+                    groupView(group)
                 }
-                .padding(.bottom, 100)
+                notesBlock
             }
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 6) {
-                    if !isOpen {
-                        Text(lang.t("store.closed_cannot_order")).font(.footnote).foregroundColor(Brand.danger)
-                    }
-                    Button(action: addTapped) {
-                        HStack {
-                            Text(lang.t("product.add_to_cart"))
-                            Spacer()
-                            Text(lang.money(selection.unitPriceBaisa * quantity))
-                        }
-                    }
-                    .buttonStyle(PrimaryButtonStyle(color: brand))
-                    .disabled(!selection.isValid || !isOpen)
-                }
-                .padding()
-                .background(.bar)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
-                        .accessibilityLabel(lang.t("common.close"))
-                }
-            }
-            .confirmationDialog(lang.t("cart.replace_title"), isPresented: $confirmReplace, titleVisibility: .visible) {
-                Button(lang.t("cart.replace_confirm"), role: .destructive) { add(replacing: true) }
-                Button(lang.t("common.cancel"), role: .cancel) {}
-            } message: {
-                Text(lang.f("cart.replace_message", cart.cart.merchant.map { lang.name($0) } ?? ""))
-            }
+            .padding(.bottom, QTheme.space6)
         }
-        .tint(brand)
+        .background(QTheme.background.ignoresSafeArea())
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: { QCircleIcon(systemImage: "xmark") }
+                .padding(QTheme.space4)
+                .accessibilityLabel(lang.t("common.close"))
+                .accessibilityIdentifier("product.close")
+        }
+        .safeAreaInset(edge: .bottom) { addBar }
+        .confirmationDialog(lang.t("cart.replace_title"), isPresented: $confirmReplace, titleVisibility: .visible) {
+            Button(lang.t("cart.replace_confirm"), role: .destructive) { add(replacing: true) }
+            Button(lang.t("common.cancel"), role: .cancel) {}
+        } message: {
+            Text(lang.f("cart.replace_message", cart.cart.merchant.map { lang.name($0) } ?? ""))
+        }
         .presentationDetents([.large])
+        .qSheet()
     }
 
-    @ViewBuilder
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(lang.name(product)).qFont(.h2).foregroundColor(QTheme.ink)
+            if let d = product.description(lang.language) {
+                Text(d).qFont(.body).foregroundColor(QTheme.muted)
+            }
+            QPrice(baisa: product.basePriceBaisa, style: .h3)
+        }
+        .padding(.horizontal, QTheme.space4)
+    }
+
+    private var notesBlock: some View {
+        VStack(alignment: .leading, spacing: QTheme.space2) {
+            Text(lang.t("product.notes")).qFont(.h3).foregroundColor(QTheme.ink)
+            TextField(lang.t("product.notes_placeholder"), text: $notes, axis: .vertical)
+                .lineLimit(1...3)
+                .padding(.vertical, QTheme.space2)
+                .qField()
+        }
+        .padding(.horizontal, QTheme.space4)
+    }
+
+    private var addBar: some View {
+        VStack(spacing: QTheme.space2) {
+            if !isOpen {
+                Text(lang.t("store.closed_cannot_order")).qFont(.small).foregroundColor(QTheme.danger)
+            }
+            HStack(spacing: QTheme.space3) {
+                QStepper(value: $quantity, range: 1...max(1, product.maxQuantity),
+                         label: lang.f("product.quantity", quantity))
+                Button(action: addTapped) {
+                    HStack {
+                        Text(lang.t("product.add_to_cart"))
+                        Spacer(minLength: QTheme.space2)
+                        Text(lang.money(selection.unitPriceBaisa * quantity)).monospacedDigit()
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle(color: brand))
+                .disabled(!selection.isValid || !isOpen)
+                .accessibilityIdentifier("product.add")
+            }
+        }
+        .padding(.horizontal, QTheme.space4)
+        .padding(.vertical, QTheme.space3)
+        .background(QTheme.surface.ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Rectangle().fill(QTheme.line).frame(height: 1) }
+    }
+
     private func groupView(_ group: OptionGroup) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(lang.name(group)).font(.headline)
+        VStack(alignment: .leading, spacing: QTheme.space2) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(lang.name(group)).qFont(.h3).foregroundColor(QTheme.ink)
                 Spacer()
                 Text(requirementText(group))
-                    .font(.caption)
-                    .foregroundColor(selection.unsatisfiedGroups.contains(group) ? Brand.danger : .secondary)
+                    .qFont(.small, .medium)
+                    .foregroundColor(selection.unsatisfiedGroups.contains(group) ? QTheme.danger : QTheme.muted)
             }
             ForEach(group.options) { option in
-                Button {
-                    selection.toggle(option, in: group)
-                } label: {
-                    HStack {
-                        Image(systemName: icon(option, group))
-                            .foregroundColor(selection.isSelected(option, in: group) ? brand : .secondary)
-                            .accessibilityHidden(true)
-                        Text(lang.name(option))
-                        Spacer()
-                        if option.priceDeltaBaisa != 0 {
-                            Text((option.priceDeltaBaisa > 0 ? "+" : "") + lang.money(option.priceDeltaBaisa))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(!selection.canSelect(option, in: group))
-                .opacity(selection.canSelect(option, in: group) ? 1 : 0.45)
-                .accessibilityAddTraits(selection.isSelected(option, in: group) ? .isSelected : [])
+                optionRow(option, group)
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, QTheme.space4)
     }
 
-    private func icon(_ option: ProductOption, _ group: OptionGroup) -> String {
-        let on = selection.isSelected(option, in: group)
-        if group.kind == .variant { return on ? "largecircle.fill.circle" : "circle" }
-        return on ? "checkmark.square.fill" : "square"
+    private func optionRow(_ option: ProductOption, _ group: OptionGroup) -> some View {
+        let selected = selection.isSelected(option, in: group)
+        let enabled = selection.canSelect(option, in: group)
+        return Button {
+            selection.toggle(option, in: group)
+        } label: {
+            QChoiceRow(selected: selected, multiple: group.kind != .variant) {
+                Text(lang.name(option)).qFont(.body).foregroundColor(QTheme.ink)
+                Spacer(minLength: QTheme.space2)
+                if option.priceDeltaBaisa != 0 {
+                    Text((option.priceDeltaBaisa > 0 ? "+" : "") + lang.money(option.priceDeltaBaisa))
+                        .qFont(.small, tabular: true)
+                        .foregroundColor(QTheme.muted)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.45)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier("option.\(option.nameEn)")
     }
 
     private func requirementText(_ g: OptionGroup) -> String {

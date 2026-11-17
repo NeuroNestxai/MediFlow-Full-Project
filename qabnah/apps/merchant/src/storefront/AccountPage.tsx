@@ -45,10 +45,10 @@ export function AccountPage() {
     },
   });
   if (loading) return null;
-  if (!signedIn) return <main className="sf-container"><Card title={t('account.signIn')}><OtpSignIn /></Card></main>;
+  if (!signedIn) return <main className="sf-container sf-page"><Card title={t('account.signIn')}><OtpSignIn /></Card></main>;
   const blocked = isApiError(del.error) && del.error.code === 'account_deletion_blocked';
   return (
-    <main className="sf-container stack stack-lg">
+    <main className="sf-container sf-page">
       <div className="row between"><h1>{t('account.title')}</h1><Link to={`/s/${sf.merchant.slug}`} className="btn btn--ghost btn--sm">{t('sf.backToMenu')}</Link></div>
       <Card title={t('account.profile')} actions={<Button size="sm" icon="logout" onClick={async () => { await signOut(); nav(`/s/${sf.merchant.slug}`); }}>{t('common.signOut')}</Button>}>
         <dl className="dl">

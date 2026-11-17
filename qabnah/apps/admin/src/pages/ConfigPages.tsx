@@ -216,7 +216,7 @@ export function PricingPage() {
                 <td className="strong">{r.name}<div className="text-xs muted">{t('pricing.priority')} {num(r.priority, 0)}</div></td>
                 <td className="text-sm">{zoneName(r.zoneId)} · {r.deliveryType ? t(`order.type.${r.deliveryType}`) : t('pricing.anyType')} · {r.vehicleType ? t(`vehicle.${r.vehicleType}`) : t('pricing.anyVehicle')}</td>
                 <td className="num">{money(r.baseFeeBaisa)}</td><td className="num">{money(r.perKmBaisa)}</td><td className="num">{money(r.minFeeBaisa)}</td>
-                <td>×{num(r.surgeMultiplier, 2)}</td><td>{formatBps(r.captainShareBps)}</td><td className="strong">{money(computeFee(r, 5000))}</td>
+                <td>×{num(r.surgeMultiplier, 2)}</td><td>{formatBps(r.captainShareBps)}</td><td className="strong nowrap">{money(computeFee(r, 5000))}</td>
                 <td>{r.isActive ? <Badge tone="success">{t('common.active')}</Badge> : <Badge>{t('common.inactive')}</Badge>}</td>
                 <td>{manage ? <div className="row row-nowrap"><Button size="sm" onClick={() => setEditing(r)}>{t('common.edit')}</Button><Button size="sm" variant="ghost" iconOnly icon="trash" aria-label={t('common.delete')} onClick={() => setToDelete(r)} /></div> : null}</td>
               </tr>

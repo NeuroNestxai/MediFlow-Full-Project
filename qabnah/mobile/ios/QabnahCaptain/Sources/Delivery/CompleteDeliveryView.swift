@@ -70,6 +70,8 @@ final class CompleteDeliveryViewModel: ObservableObject {
     }
 }
 
+/// Completion: four large PIN boxes, cash collected, proof photo, recipient — and one saffron
+/// "confirm delivery" action in the bottom bar.
 struct CompleteDeliveryView: View {
     @EnvironmentObject var lang: LanguageSettings
     @Environment(\.dismiss) var dismiss
@@ -83,74 +85,19 @@ struct CompleteDeliveryView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField(lang.t("complete.pin_placeholder"), text: $vm.pin)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .font(.system(size: 32, weight: .bold, design: .monospaced))
-                        .multilineTextAlignment(.center)
-                        .environment(\.layoutDirection, .leftToRight)
-                        .onChange(of: vm.pin) { new in
-                            let cleaned = String(Digits.ascii(new).filter(\.isNumber).prefix(4))
-                            if cleaned != new { vm.pin = cleaned }
-                        }
-                        .accessibilityLabel(lang.t("complete.pin"))
-                    InlineError(error: vm.pinError)
-                } header: {
-                    Text(lang.t("complete.pin"))
-                } footer: {
-                    Text(lang.t(vm.delivery.pinRequired ? "complete.pin_required_hint" : "complete.pin_optional_hint"))
+            ScrollView {
+                VStack(alignment: .leading, spacing: QTheme.space5) {
+                    pinSection
+                    if vm.needsCod { codSection }
+                    photoSection
+                    recipientSection
+                    InlineError(error: vm.error)
                 }
-
-                if vm.needsCod {
-                    Section {
-                        TextField("0.000", text: $vm.codText)
-                            .keyboardType(.decimalPad)
-                            .font(.title3.monospacedDigit())
-                        if vm.codBaisa != vm.delivery.codAmountBaisa, let v = vm.codBaisa {
-                            Text(lang.f("complete.cod_mismatch", lang.money(v), lang.money(vm.delivery.codAmountBaisa)))
-                                .font(.footnote).foregroundColor(Brand.accent)
-                        }
-                    } header: {
-                        Text(lang.f("complete.cod", lang.money(vm.delivery.codAmountBaisa)))
-                    }
-                }
-
-                Section(lang.t("complete.photo")) {
-                    PhotoInput(image: $vm.photo)
-                }
-
-                Section(lang.t("complete.recipient")) {
-                    TextField(lang.t("complete.recipient_name"), text: $vm.recipientName).textContentType(.name)
-                    TextField(lang.t("complete.note"), text: $vm.note, axis: .vertical).lineLimit(1...3)
-                }
-
-                if vm.error != nil { Section { InlineError(error: vm.error) } }
+                .padding(QTheme.space4)
             }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    Task {
-                        if let done = await vm.submit() {
-                            onCompleted(done)
-                            dismiss()
-                        }
-                    }
-                } label: {
-                    if vm.isSubmitting {
-                        HStack {
-                            ProgressView().tint(.white)
-                            if let stage = vm.stage { Text(lang.t(stage)) }
-                        }
-                    } else {
-                        Text(lang.t("complete.submit"))
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle(color: Brand.success))
-                .disabled(!vm.canSubmit)
-                .padding()
-                .background(.bar)
-            }
+            .qScreen()
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) { submitBar }
             .navigationTitle(lang.t("action.complete"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -158,5 +105,133 @@ struct CompleteDeliveryView: View {
             }
             .interactiveDismissDisabled(vm.isSubmitting)
         }
+        .qSheet()
+    }
+
+    private var pinSection: some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("complete.pin")).qFont(.h3).foregroundColor(QTheme.ink)
+            PinBoxes(pin: $vm.pin, label: lang.t("complete.pin"), hasError: vm.pinError != nil)
+            InlineError(error: vm.pinError)
+            Text(lang.t(vm.delivery.pinRequired ? "complete.pin_required_hint" : "complete.pin_optional_hint"))
+                .qFont(.small)
+                .foregroundColor(QTheme.muted)
+        }
+    }
+
+    private var codSection: some View {
+        VStack(alignment: .leading, spacing: QTheme.space2) {
+            Text(lang.f("complete.cod", lang.money(vm.delivery.codAmountBaisa))).qFont(.h3).foregroundColor(QTheme.ink)
+            TextField("0.000", text: $vm.codText)
+                .keyboardType(.decimalPad)
+                .qFont(.h2, tabular: true)
+                .environment(\.layoutDirection, .leftToRight)
+                .qField()
+                .accessibilityLabel(lang.f("complete.cod", lang.money(vm.delivery.codAmountBaisa)))
+            if vm.codBaisa != vm.delivery.codAmountBaisa, let v = vm.codBaisa {
+                Text(lang.f("complete.cod_mismatch", lang.money(v), lang.money(vm.delivery.codAmountBaisa)))
+                    .qFont(.small)
+                    .foregroundColor(QTheme.warning)
+            }
+        }
+    }
+
+    private var photoSection: some View {
+        VStack(alignment: .leading, spacing: QTheme.space2) {
+            Text(lang.t("complete.photo")).qFont(.h3).foregroundColor(QTheme.ink)
+            PhotoInput(image: $vm.photo)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private var recipientSection: some View {
+        VStack(alignment: .leading, spacing: QTheme.space2) {
+            Text(lang.t("complete.recipient")).qFont(.h3).foregroundColor(QTheme.ink)
+            TextField(lang.t("complete.recipient_name"), text: $vm.recipientName).textContentType(.name).qField()
+            TextField(lang.t("complete.note"), text: $vm.note, axis: .vertical)
+                .lineLimit(1...3)
+                .padding(.vertical, QTheme.space2)
+                .qField()
+        }
+    }
+
+    private var submitBar: some View {
+        QNightBar {
+            Button {
+                Task {
+                    if let done = await vm.submit() {
+                        onCompleted(done)
+                        dismiss()
+                    }
+                }
+            } label: {
+                if vm.isSubmitting {
+                    HStack(spacing: QTheme.space2) {
+                        ProgressView().tint(QTheme.inkOnLight)
+                        if let stage = vm.stage { Text(lang.t(stage)) }
+                    }
+                } else {
+                    Text(lang.t("complete.submit"))
+                }
+            }
+            .buttonStyle(SaffronButtonStyle())
+            .disabled(!vm.canSubmit)
+        }
+    }
+}
+
+/// Four large digit boxes backed by one hidden number-pad field (so paste and the SMS-style
+/// one-time-code keyboard keep working). Always laid out left to right.
+struct PinBoxes: View {
+    @Binding var pin: String
+    let label: String
+    var hasError = false
+    @FocusState private var focused: Bool
+
+    private var digits: [String] {
+        let chars = Array(Digits.ascii(pin).filter(\.isNumber).prefix(4)).map { String($0) }
+        return chars + Array(repeating: "", count: max(0, 4 - chars.count))
+    }
+
+    var body: some View {
+        ZStack {
+            TextField("", text: $pin)
+                .keyboardType(.numberPad)
+                .textContentType(.oneTimeCode)
+                .focused($focused)
+                .foregroundColor(.clear)
+                .tint(.clear)
+                .frame(maxWidth: .infinity, minHeight: 72)
+                .onChange(of: pin) { new in
+                    let cleaned = String(Digits.ascii(new).filter(\.isNumber).prefix(4))
+                    if cleaned != new { pin = cleaned }
+                }
+                .accessibilityLabel(label)
+            HStack(spacing: QTheme.space3) {
+                ForEach(0..<4, id: \.self) { index in
+                    box(index)
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+        .environment(\.layoutDirection, .leftToRight)
+        .contentShape(Rectangle())
+        .onTapGesture { focused = true }
+    }
+
+    private func box(_ index: Int) -> some View {
+        let digit = digits[index]
+        let active = focused && index == min(3, digits.filter { !$0.isEmpty }.count)
+        let stroke: Color = hasError ? QTheme.danger : (active ? QTheme.saffron : QTheme.line)
+        return Text(verbatim: digit)
+            .qFont(size: 34, .bold, relativeTo: .title, tabular: true)
+            .foregroundColor(QTheme.ink)
+            .frame(maxWidth: .infinity, minHeight: 72)
+            .background(QTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusSm, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: QTheme.radiusSm, style: .continuous)
+                .stroke(stroke, lineWidth: active || hasError ? 2 : 1))
     }
 }

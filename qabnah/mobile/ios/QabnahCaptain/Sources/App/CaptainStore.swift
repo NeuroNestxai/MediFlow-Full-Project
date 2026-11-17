@@ -20,6 +20,8 @@ final class CaptainStore: ObservableObject {
 
     @Published private(set) var activeDeliveries: [CaptainDelivery] = []
     @Published var activeError: Error?
+    /// Today's earnings (Muscat day) for the strip on Home.
+    @Published private(set) var today: Earnings?
 
     let api: APIClient
     let realtime: RealtimeClient
@@ -130,6 +132,7 @@ final class CaptainStore: ObservableObject {
         profile = nil
         profileState = .idle
         activeDeliveries = []
+        today = nil
         dismissedOfferIds = []
     }
 
@@ -255,6 +258,14 @@ final class CaptainStore: ObservableObject {
             else { activeDeliveries.insert(d, at: 0) }
         } else {
             activeDeliveries.removeAll { $0.id == d.id }
+            Task { await refreshToday() } // a finished delivery changes today's figures
+        }
+    }
+
+    func refreshToday() async {
+        let range = DateRangePreset.today.range()
+        if let e = try? await api.send(Endpoints.captainEarnings(from: range.from, to: range.to)) {
+            today = e
         }
     }
 }

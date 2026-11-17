@@ -1,64 +1,71 @@
 package om.qabnah.consumer.ui.checkout
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddLocationAlt
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.outlined.AddLocationAlt
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Fastfood
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import om.qabnah.android.locale.isArabic
 import om.qabnah.android.ui.components.EmptyState
 import om.qabnah.android.ui.components.InlineError
-import om.qabnah.android.ui.components.LabelValueRow
-import om.qabnah.android.ui.components.ProgressButton
+import om.qabnah.android.ui.components.PriceRow
+import om.qabnah.android.ui.components.QBottomActionBar
+import om.qabnah.android.ui.components.QButton
+import om.qabnah.android.ui.components.QCard
+import om.qabnah.android.ui.components.QOptionRow
+import om.qabnah.android.ui.components.QPhoto
+import om.qabnah.android.ui.components.QPrice
+import om.qabnah.android.ui.components.QSecondaryButton
+import om.qabnah.android.ui.components.QStepper
+import om.qabnah.android.ui.components.QTextButton
 import om.qabnah.android.ui.components.ScreenScaffold
-import om.qabnah.android.ui.components.SectionTitle
+import om.qabnah.android.ui.components.SkeletonBox
 import om.qabnah.android.ui.components.digits
 import om.qabnah.android.ui.components.distance
 import om.qabnah.android.ui.components.durationMinutes
 import om.qabnah.android.ui.components.errorMessage
 import om.qabnah.android.ui.components.loc
-import om.qabnah.android.ui.components.money
 import om.qabnah.android.ui.components.paymentMethodLabel
+import om.qabnah.android.ui.components.priceText
 import om.qabnah.consumer.ConsumerContainer
 import om.qabnah.consumer.R
+import om.qabnah.consumer.ui.components.StepHeader
 import om.qabnah.core.model.Order
+import om.qabnah.core.model.PaymentMethod
 import om.qabnah.core.model.PriceBreakdown
 
+/** Checkout in four steps on one page: cart → deliver to → payment → summary, with a sticky "place order" bar. */
 @Composable
 fun CheckoutScreen(
     container: ConsumerContainer,
@@ -77,107 +84,133 @@ fun CheckoutScreen(
         onBack = onBack,
         bottomBar = {
             if (!ui.cart.isEmpty) {
-                Column(Modifier.navigationBarsPadding().padding(16.dp)) {
-                    ui.placeError?.let { Text(errorMessage(it), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 8.dp)) }
-                    ProgressButton(
-                        text = ui.quote?.let { stringResource(R.string.checkout_place, money(it.totalBaisa)) } ?: stringResource(R.string.checkout_place_no_total),
-                        onClick = vm::place,
-                        enabled = ui.canPlace,
-                        loading = ui.placing,
-                    )
+                QBottomActionBar {
+                    ui.placeError?.let {
+                        Text(errorMessage(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+                    }
+                    QButton(onClick = vm::place, enabled = ui.canPlace, loading = ui.placing, modifier = Modifier.fillMaxWidth()) {
+                        val total = ui.quote?.totalBaisa
+                        Text(stringResource(R.string.checkout_place_no_total), modifier = Modifier.weight(1f))
+                        if (total != null) Text(priceText(total))
+                    }
                 }
             }
         },
     ) { padding ->
         if (ui.cart.isEmpty) {
-            EmptyState(stringResource(R.string.cart_empty), modifier = Modifier.padding(padding), icon = Icons.Filled.ShoppingBag)
+            EmptyState(stringResource(R.string.cart_empty), modifier = Modifier.padding(padding))
             return@ScreenScaffold
         }
         Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
             val merchant = ui.cart.merchant
-            SectionTitle(merchant?.let { loc(it.nameEn, it.nameAr) } ?: "")
-            ui.cart.lines.forEachIndexed { index, line ->
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(loc(line.nameEn, line.nameAr), style = MaterialTheme.typography.bodyLarge)
-                        val opts = (if (isArabic()) line.optionNamesAr else line.optionNamesEn)
-                            .filter { it.isNotBlank() }
-                        if (opts.isNotEmpty()) Text(opts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        line.notes?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                        Text(money(line.lineTotalBaisa), style = MaterialTheme.typography.labelLarge)
+
+            // 1 · Cart
+            StepHeader(1, merchant?.let { loc(it.nameEn, it.nameAr) } ?: stringResource(R.string.order_items))
+            QCard(Modifier.padding(horizontal = 16.dp).fillMaxWidth(), padding = PaddingValues(0.dp)) {
+                ui.cart.lines.forEachIndexed { index, line ->
+                    Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        QPhoto(
+                            url = line.imageUrl,
+                            contentDescription = null,
+                            glyph = Icons.Outlined.Fastfood,
+                            modifier = Modifier.size(width = 72.dp, height = 54.dp),
+                            shape = MaterialTheme.shapes.small,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(loc(line.nameEn, line.nameAr), style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            val opts = (if (isArabic()) line.optionNamesAr else line.optionNamesEn).filter { it.isNotBlank() }
+                            if (opts.isNotEmpty()) {
+                                Text(opts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            line.notes?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            QPrice(line.lineTotalBaisa, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 2.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        QStepper(
+                            value = digits(line.quantity.toString()),
+                            onDecrease = { vm.setQuantity(index, line.quantity - 1) },
+                            onIncrease = { vm.setQuantity(index, line.quantity + 1) },
+                            decreaseDescription = stringResource(R.string.qty_decrease),
+                            increaseDescription = stringResource(R.string.qty_increase),
+                        )
                     }
-                    IconButton(onClick = { vm.setQuantity(index, line.quantity - 1) }) {
-                        Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.qty_decrease))
-                    }
-                    Text(digits(line.quantity.toString()), style = MaterialTheme.typography.titleMedium)
-                    IconButton(onClick = { vm.setQuantity(index, line.quantity + 1) }) {
-                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.qty_increase))
-                    }
+                    if (index != ui.cart.lines.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 12.dp))
                 }
             }
             if (!ui.cart.meetsMinimum) {
-                WarningRow(stringResource(R.string.checkout_below_minimum, money(ui.cart.shortOfMinimumBaisa)))
+                WarningRow(stringResource(R.string.checkout_below_minimum, om.qabnah.android.ui.components.money(ui.cart.shortOfMinimumBaisa)))
             }
             if (merchant != null && !merchant.isOpen) WarningRow(stringResource(R.string.store_closed_notice))
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            SectionTitle(stringResource(R.string.checkout_deliver_to))
-            when {
-                ui.addresses.isInitialLoading -> Row(Modifier.padding(16.dp)) { CircularProgressIndicator(Modifier.size(24.dp)) }
-                ui.addresses.showFullError -> InlineError(ui.addresses.error!!, onRetry = { vm.loadAddresses() })
-                else -> ui.addresses.data.orEmpty().forEach { a ->
-                    val enabled = a.isInServiceArea
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .clickable(enabled = enabled, role = Role.RadioButton) { vm.selectAddress(a.id) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = ui.selectedAddressId == a.id, onClick = null, enabled = enabled)
-                        Column(Modifier.padding(start = 8.dp)) {
-                            Text(a.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.address_untitled), style = MaterialTheme.typography.bodyLarge)
+            // 2 · Deliver to
+            StepHeader(2, stringResource(R.string.checkout_deliver_to))
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                when {
+                    ui.addresses.isInitialLoading -> SkeletonBox(Modifier.fillMaxWidth().height(64.dp))
+                    ui.addresses.showFullError -> InlineError(ui.addresses.error!!, onRetry = { vm.loadAddresses() })
+                    else -> ui.addresses.data.orEmpty().forEach { a ->
+                        val enabled = a.isInServiceArea
+                        val selected = ui.selectedAddressId == a.id
+                        QOptionRow(
+                            selected = selected,
+                            onClick = { vm.selectAddress(a.id) },
+                            enabled = enabled,
+                            leading = { Icon(Icons.Outlined.Place, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            trailing = { RadioButton(selected = selected, onClick = null, enabled = enabled) },
+                        ) {
+                            Text(a.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.address_untitled), style = MaterialTheme.typography.titleSmall)
                             Text(a.summary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            if (!enabled) Text(stringResource(om.qabnah.android.R.string.error_out_of_service_area), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                            if (!enabled) {
+                                Text(stringResource(om.qabnah.android.R.string.error_out_of_service_area), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
+                            }
                         }
                     }
                 }
-            }
-            OutlinedButton(onClick = onAddAddress, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                Icon(Icons.Filled.AddLocationAlt, contentDescription = null)
-                Text(stringResource(R.string.checkout_add_address), modifier = Modifier.padding(start = 8.dp))
+                QSecondaryButton(stringResource(R.string.checkout_add_address), onClick = onAddAddress, icon = Icons.Outlined.AddLocationAlt, modifier = Modifier.fillMaxWidth())
             }
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            SectionTitle(stringResource(R.string.checkout_payment))
-            if (ui.availableMethods.isEmpty()) WarningRow(stringResource(R.string.checkout_no_payment_methods))
-            ui.availableMethods.forEach { m ->
-                Row(
-                    Modifier.fillMaxWidth().clickable(role = Role.RadioButton) { vm.selectPayment(m) }.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = ui.paymentMethod == m, onClick = null)
-                    Text(paymentMethodLabel(m), modifier = Modifier.padding(start = 8.dp))
+            // 3 · Payment
+            StepHeader(3, stringResource(R.string.checkout_payment))
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (ui.availableMethods.isEmpty()) WarningRow(stringResource(R.string.checkout_no_payment_methods), padded = false)
+                ui.availableMethods.forEach { m ->
+                    val selected = ui.paymentMethod == m
+                    QOptionRow(
+                        selected = selected,
+                        onClick = { vm.selectPayment(m) },
+                        leading = {
+                            Icon(
+                                if (m == PaymentMethod.COD) Icons.Outlined.Payments else Icons.Outlined.CreditCard,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailing = { RadioButton(selected = selected, onClick = null) },
+                    ) {
+                        Text(paymentMethodLabel(m), style = MaterialTheme.typography.titleSmall)
+                    }
                 }
+                OutlinedTextField(
+                    value = ui.notes,
+                    onValueChange = vm::setNotes,
+                    label = { Text(stringResource(R.string.checkout_notes)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    maxLines = 3,
+                )
             }
-            OutlinedTextField(
-                value = ui.notes,
-                onValueChange = vm::setNotes,
-                label = { Text(stringResource(R.string.checkout_notes)) },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                maxLines = 3,
-            )
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            SectionTitle(stringResource(R.string.checkout_summary))
+            // 4 · Summary
+            StepHeader(4, stringResource(R.string.checkout_summary))
             Column(Modifier.padding(horizontal = 16.dp)) {
                 when {
-                    ui.quoting -> CircularProgressIndicator(Modifier.size(24.dp))
+                    ui.quoting -> SkeletonBox(Modifier.fillMaxWidth().height(120.dp), MaterialTheme.shapes.medium)
                     ui.quoteError != null -> {
-                        Text(errorMessage(ui.quoteError!!), color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = vm::retryQuote) { Text(stringResource(om.qabnah.android.R.string.common_retry)) }
+                        Text(errorMessage(ui.quoteError!!), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                        QTextButton(stringResource(om.qabnah.android.R.string.common_retry), onClick = vm::retryQuote)
                     }
                     ui.quote != null -> PriceBreakdownCard(ui.quote!!)
-                    else -> Text(stringResource(R.string.checkout_select_address_first), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else -> Text(stringResource(R.string.checkout_select_address_first), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -186,36 +219,35 @@ fun CheckoutScreen(
 }
 
 @Composable
-private fun WarningRow(text: String) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-        Text(text, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
+private fun WarningRow(text: String, padded: Boolean = true) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = if (padded) 16.dp else 0.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+        Text(text, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
 @Composable
 fun PriceBreakdownCard(q: PriceBreakdown) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            LabelValueRow(stringResource(R.string.price_subtotal), money(q.subtotalBaisa))
-            LabelValueRow(stringResource(R.string.price_delivery_fee), money(q.deliveryFeeBaisa))
-            if (q.serviceFeeBaisa > 0) LabelValueRow(stringResource(R.string.price_service_fee), money(q.serviceFeeBaisa))
-            if (q.discountBaisa > 0) LabelValueRow(stringResource(R.string.price_discount), "-" + money(q.discountBaisa))
-            if (q.vatBaisa > 0) {
-                LabelValueRow(
-                    stringResource(if (q.vatIncluded) R.string.price_vat_included else R.string.price_vat),
-                    money(q.vatBaisa),
-                )
-            }
-            HorizontalDivider(Modifier.padding(vertical = 6.dp))
-            LabelValueRow(stringResource(R.string.price_total), money(q.totalBaisa), emphasize = true)
-            if (q.distanceM > 0) {
-                Text(
-                    stringResource(R.string.price_distance_eta, distance(q.distanceM), durationMinutes(q.estimatedDurationS)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+    QCard(Modifier.fillMaxWidth()) {
+        PriceRow(stringResource(R.string.price_subtotal), q.subtotalBaisa)
+        PriceRow(stringResource(R.string.price_delivery_fee), q.deliveryFeeBaisa)
+        if (q.serviceFeeBaisa > 0) PriceRow(stringResource(R.string.price_service_fee), q.serviceFeeBaisa)
+        if (q.discountBaisa > 0) PriceRow(stringResource(R.string.price_discount), q.discountBaisa, negative = true)
+        if (q.vatBaisa > 0) {
+            PriceRow(stringResource(if (q.vatIncluded) R.string.price_vat_included else R.string.price_vat), q.vatBaisa)
+        }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        PriceRow(stringResource(R.string.price_total), q.totalBaisa, emphasize = true)
+        if (q.distanceM > 0) {
+            Text(
+                stringResource(R.string.price_distance_eta, distance(q.distanceM), durationMinutes(q.estimatedDurationS)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,29 +36,46 @@ export function LoginPage() {
   }
   const submit = (e: FormEvent) => { e.preventDefault(); m.mutate(); };
   return (
-    <div className="auth-page">
-      <div className="auth-card stack stack-lg">
-        <div className="row between"><span /><LangToggle /></div>
-        <img src="/brand/logo.svg" alt={t('app.name')} className="auth-logo" />
-        <Card>
-          {mfaToken ? (
-            <MfaChallengeForm api={merchantApi} mfaToken={mfaToken} onCancel={() => { setMfaToken(null); setPassword(''); }}
-              onDone={async () => { setMfaToken(null); await qc.invalidateQueries({ queryKey: meKey }); }} />
-          ) : (
-          <form className="stack" onSubmit={submit} noValidate>
-            <div className="stack stack-sm">
-              <h1>{t('auth.title')}</h1>
-              <p className="muted">{t('auth.subtitle')}</p>
-            </div>
+    <AuthSplit photo="/sample/merchant-handover.jpg">
+      {mfaToken ? (
+        <MfaChallengeForm api={merchantApi} mfaToken={mfaToken} onCancel={() => { setMfaToken(null); setPassword(''); }}
+          onDone={async () => { setMfaToken(null); await qc.invalidateQueries({ queryKey: meKey }); }} />
+      ) : (
+        <form className="stack stack-lg" onSubmit={submit} noValidate>
+          <div className="stack stack-sm">
+            <h1>{t('auth.title')}</h1>
+            <p className="muted">{t('auth.subtitle')}</p>
+          </div>
+          <div className="stack">
             <Input label={t('common.email')} type="email" autoComplete="username" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <Input label={t('common.password')} type="password" autoComplete="current-password" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} required />
             {m.isError ? <Alert tone="danger">{errorMessage(m.error, t)}</Alert> : null}
-            <Button type="submit" variant="primary" size="lg" block loading={m.isPending} disabled={!email || !password}>{t('common.signIn')}</Button>
-            <p className="text-sm muted" style={{ textAlign: 'center' }}>{t('auth.noAccount')} <Link to="/register">{t('auth.registerLink')}</Link></p>
-          </form>
-          )}
-        </Card>
-      </div>
+          </div>
+          <Button type="submit" variant="primary" size="lg" block loading={m.isPending} disabled={!email || !password}>{t('common.signIn')}</Button>
+          <p className="text-sm muted">{t('auth.noAccount')} <Link to="/register">{t('auth.registerLink')}</Link></p>
+        </form>
+      )}
+    </AuthSplit>
+  );
+}
+
+/** Split screen: night brand panel with the logo and a photo, form on the other side. */
+export function AuthSplit({ photo, children, wide }: { photo: string; children: ReactNode; wide?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <div className="auth-split">
+      <aside className="auth-split__brand">
+        <div className="auth-split__photo" aria-hidden="true"><img src={photo} alt="" /></div>
+        <div className="auth-split__mark"><img src="/brand/mark.svg" alt="" /><span>{t('app.name')}</span></div>
+        <div className="auth-split__claim">
+          <h1>{t('brand.tagline')}</h1>
+          <p>{t('portal.subtitle')}</p>
+        </div>
+      </aside>
+      <main className="auth-split__form">
+        <div className="row end"><LangToggle /></div>
+        <div className={`auth-split__form-inner ${wide ? 'auth-split__form-inner--wide' : ''}`}>{children}</div>
+      </main>
     </div>
   );
 }
@@ -135,10 +152,8 @@ export function RegisterPage() {
 
   const slugHint = !f.slug ? t('register.slugHint') : !slugValid ? t('register.slugInvalid') : slugQ.data === 'taken' ? undefined : slugQ.data === 'free' ? t('register.slugFree') : t('register.slugChecking');
   return (
-    <div className="auth-page">
-      <div className="auth-card auth-card--wide stack stack-lg">
-        <div className="row between"><Link to="/login" className="btn btn--ghost btn--sm">{t('common.back')}</Link><LangToggle /></div>
-        <img src="/brand/logo.svg" alt={t('app.name')} className="auth-logo" />
+    <AuthSplit photo="/sample/merchant-handover.jpg" wide>
+        <div><Link to="/login" className="btn btn--ghost btn--sm">{t('common.back')}</Link></div>
         <form onSubmit={submit} noValidate className="stack stack-lg">
           <Card title={t('register.title')}>
             <div className="stack">
@@ -177,8 +192,7 @@ export function RegisterPage() {
           <Button type="submit" variant="primary" size="lg" loading={m.isPending}>{t('register.submit')}</Button>
           <p className="text-sm muted">{t('register.reviewNote')}</p>
         </form>
-      </div>
-    </div>
+    </AuthSplit>
   );
 }
 

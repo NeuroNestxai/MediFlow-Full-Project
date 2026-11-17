@@ -48,9 +48,9 @@ struct ZonesView: View {
 
     var body: some View {
         LoadableView(state: vm.state, retry: { Task { await vm.load(current: store.profile?.zoneIds ?? []) } }) { zones in
-            List {
+            QList {
                 Section {
-                    Text(lang.t("zones.intro")).font(.subheadline).foregroundColor(.secondary)
+                    Text(lang.t("zones.intro")).qFont(.body).foregroundColor(QTheme.muted)
                 }
                 Section {
                     ForEach(zones) { z in
@@ -65,7 +65,7 @@ struct ZonesView: View {
                                     .accessibilityHidden(true)
                             }
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(QTheme.ink)
                         .accessibilityAddTraits(vm.selected.contains(z.id) ? .isSelected : [])
                     }
                 }
@@ -109,19 +109,19 @@ struct AvailabilityView: View {
     private static let weekdays = Array(0...6) // 0 = Sunday
 
     var body: some View {
-        List {
+        QList {
             Section {
-                Text(lang.t("availability.intro")).font(.subheadline).foregroundColor(.secondary)
+                Text(lang.t("availability.intro")).qFont(.body).foregroundColor(QTheme.muted)
             }
             ForEach(Self.weekdays, id: \.self) { day in
                 Section(lang.t("weekday.\(day)")) {
                     let daySlots = slots.filter { $0.weekday == day }.sorted { $0.start < $1.start }
                     if daySlots.isEmpty {
-                        Text(lang.t("availability.off")).foregroundColor(.secondary)
+                        Text(lang.t("availability.off")).foregroundColor(QTheme.muted)
                     }
                     ForEach(daySlots) { slot in
                         HStack {
-                            Text(lang.digits("\(slot.start) – \(slot.end)")).font(.body.monospacedDigit())
+                            Text(lang.digits("\(slot.start) – \(slot.end)")).qFont(.body, tabular: true)
                             Spacer()
                             Button(role: .destructive) {
                                 slots.removeAll { $0 == slot }
@@ -198,11 +198,11 @@ private struct SlotEditor: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            QForm {
                 DatePicker(lang.t("availability.start"), selection: $start, displayedComponents: .hourAndMinute)
                 DatePicker(lang.t("availability.end"), selection: $end, displayedComponents: .hourAndMinute)
                 if !slot.isValid {
-                    Text(lang.t("availability.invalid")).font(.footnote).foregroundColor(Brand.danger)
+                    Text(lang.t("availability.invalid")).qFont(.small).foregroundColor(Brand.danger)
                 }
             }
             .environment(\.timeZone, MuscatCalendar.timeZone)

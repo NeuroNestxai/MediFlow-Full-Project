@@ -1,6 +1,6 @@
 import {
   createContext, forwardRef, useCallback, useContext, useEffect, useId, useMemo, useRef, useState,
-  type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes,
+  type ButtonHTMLAttributes, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from './icons';
@@ -217,9 +217,14 @@ export function Spinner({ label }: { label?: string }) {
   return <span className="spinner" role={label ? 'status' : undefined} aria-label={label} />;
 }
 
-export function Loading({ label }: { label?: string }) {
+/** Page/section loading: skeleton shimmer (no spinners on full pages). */
+export function Loading({ label, lines = 5 }: { label?: string; lines?: number }) {
   const { t } = useI18n();
-  return <div className="center-pad"><Spinner label={label ?? t('common.loading')} /></div>;
+  return (
+    <div className="skeleton-page" role="status" aria-label={label ?? t('common.loading')} aria-busy="true">
+      {Array.from({ length: lines }, (_, i) => <span key={i} className="skeleton" />)}
+    </div>
+  );
 }
 
 export function EmptyState({ icon = 'box', title, children, action }: { icon?: IconName | string; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
@@ -301,14 +306,19 @@ function useOverlay(open: boolean, onClose: () => void) {
   return ref;
 }
 
-export function Modal({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+export function Modal({ open, onClose, title, children, footer, wide, media, className }: {
+  open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean;
+  /** Edge-to-edge media (photo) above the title — used by the product sheet. */
+  media?: ReactNode; className?: string;
+}) {
   const ref = useOverlay(open, onClose);
   const titleId = useId();
   const { t } = useI18n();
   if (!open) return null;
   return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={ref} className={cx('modal', wide && 'modal--wide')} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
+      <div ref={ref} className={cx('modal', wide && 'modal--wide', media ? 'modal--media' : null, className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
+        {media ? <div className="modal__media">{media}</div> : null}
         <div className="modal__header">
           <h2 id={titleId}>{title}</h2>
           <Button variant="ghost" iconOnly icon="x" className="modal-close" aria-label={t('common.close')} onClick={onClose} />
@@ -321,7 +331,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
   );
 }
 
-export function Drawer({ open, onClose, title, subtitle, children, footer }: { open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode }) {
+export function Drawer({ open, onClose, title, subtitle, children, footer, className }: { open: boolean; onClose: () => void; title: ReactNode; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode; className?: string }) {
   const ref = useOverlay(open, onClose);
   const titleId = useId();
   const { t } = useI18n();
@@ -329,7 +339,7 @@ export function Drawer({ open, onClose, title, subtitle, children, footer }: { o
   return createPortal(
     <>
       <div className="drawer-backdrop" onClick={onClose} aria-hidden="true" />
-      <div ref={ref} className="drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
+      <div ref={ref} className={cx('drawer', className)} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <div className="drawer__header">
           <div className="stack" style={{ ['--gap' as string]: '4px' }}>
             <h2 id={titleId}>{title}</h2>
@@ -483,4 +493,44 @@ export function useToast() {
   const v = useContext(ToastCtx);
   if (!v) throw new Error('useToast must be used inside <ToastProvider>');
   return v;
+}
+
+/* ───────── Photo & Price (Design System v2) ───────── */
+const CATEGORY_GLYPH: Record<string, string> = {
+  restaurant: 'cat-restaurant', cafe: 'cat-cafe', grocery: 'cat-grocery', pharmacy: 'cat-pharmacy', retail: 'cat-retail', flowers: 'cat-flowers', electronics: 'cat-electronics', other: 'cat-other',
+};
+
+/**
+ * Photo with `object-fit: cover`. Missing or broken image → the branded placeholder (night → brand gradient with the
+ * outlined category glyph) — never a grey box or a letter.
+ */
+export function Photo({ src, alt = '', ratio = '4 / 3', category, glyph, tint, className, scrim, eager, children, style }: {
+  src?: string | null; alt?: string; ratio?: string; category?: string | null; glyph?: IconName | string; tint?: string; className?: string; scrim?: boolean; eager?: boolean;
+  children?: ReactNode; style?: CSSProperties;
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [src]);
+  const show = !!src && !failed;
+  return (
+    <span className={cx('photo', !show && 'photo--placeholder', className)} style={{ ['--photo-ratio' as string]: ratio, ...(tint ? { ['--photo-tint' as string]: tint } : {}), ...style }}
+      role={!show && alt ? 'img' : undefined} aria-label={!show && alt ? alt : undefined}>
+      {show ? <img src={src!} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(true)} /> : <Icon name={glyph ?? CATEGORY_GLYPH[category ?? 'other'] ?? 'cat-other'} />}
+      {scrim ? <span className="photo__scrim" /> : null}
+      {children}
+    </span>
+  );
+}
+
+/** Price with tabular numerals and a small currency label ("OMR 2.500" / "٢٫٥٠٠ ر.ع."). */
+export function Price({ baisa, className, signed, testId }: { baisa: number | null | undefined; className?: string; signed?: boolean; testId?: string }) {
+  const { lang, money } = useI18n();
+  if (baisa == null || Number.isNaN(baisa)) return <span className={cx('price', className)} data-testid={testId}>—</span>;
+  const full = money(Math.abs(baisa));
+  const sign = baisa < 0 ? '-' : signed && baisa > 0 ? '+' : '';
+  const numberPart = lang === 'ar' ? full.replace(/\s*ر\.ع\.$/, '') : full.replace(/^OMR\s*/, '');
+  return lang === 'ar' ? (
+    <span className={cx('price', className)} data-testid={testId}><span>{sign}{numberPart}</span>{' '}<span className="price__cur">ر.ع.</span></span>
+  ) : (
+    <span className={cx('price', className)} data-testid={testId}><span className="price__cur">{sign}OMR</span>{' '}<span>{numberPart}</span></span>
+  );
 }

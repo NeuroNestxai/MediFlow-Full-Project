@@ -44,6 +44,7 @@ import om.qabnah.android.R
 import om.qabnah.android.ui.components.EmptyState
 import om.qabnah.android.ui.components.LoadableContent
 import om.qabnah.android.ui.components.ProgressButton
+import om.qabnah.android.ui.components.QButton
 import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.android.ui.components.StatusPill
 import om.qabnah.android.ui.components.dateTime
@@ -61,11 +62,7 @@ fun TicketsScreen(repo: SupportRepository, onBack: () -> Unit, onOpen: (String) 
         title = stringResource(R.string.support_title),
         onBack = onBack,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onNew,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.support_new)) },
-            )
+            QButton(stringResource(R.string.support_new), onClick = onNew, icon = Icons.Filled.Add)
         },
     ) { padding ->
         LoadableContent(

@@ -86,7 +86,7 @@ export function AnalyticsPage() {
       ) : null}
       {q.isLoading ? <Loading /> : q.isError ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : q.data ? (
         <>
-          <div className="grid grid-4">
+          <div className="kpi-grid" style={{ ['--cols' as string]: 3 }}>
             <Kpi label={t('analytics.orders')} value={num(q.data.orders, 0)} hint={t('analytics.completedN', { n: num(q.data.completedOrders, 0) })} />
             <Kpi label={t('analytics.gmv')} value={money(q.data.gmvBaisa)} hint={t('analytics.gmvHint')} />
             <Kpi label={t('analytics.aov')} value={money(q.data.averageOrderValueBaisa)} />

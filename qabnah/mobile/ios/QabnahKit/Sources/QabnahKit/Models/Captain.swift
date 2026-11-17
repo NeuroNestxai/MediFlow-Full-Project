@@ -233,6 +233,40 @@ public struct Earnings: Codable, Hashable, Sendable {
         if balanceBaisa < 0 { return .captainOwesPlatform(-balanceBaisa) }
         return .settled
     }
+
+    /// One bar of the earnings chart.
+    public struct DayTotal: Hashable, Identifiable, Sendable {
+        /// `YYYY-MM-DD` in Muscat time.
+        public let day: String
+        public let baisa: Int
+        public var id: String { day }
+    }
+
+    /// Ledger entry types that count as the captain's income (the same ones `earningsBaisa` sums).
+    public static let earningEntryTypes: Set<String> = ["captain_earning", "tip"]
+
+    /// Income per Muscat day from `entries`, oldest first, for the earnings bar chart.
+    /// When `from`/`to` are valid days (at most 62 apart), days without income are included as zero.
+    public func dailyEarnings() -> [DayTotal] {
+        var totals: [String: Int] = [:]
+        for entry in entries where Self.earningEntryTypes.contains(entry.entryType) {
+            guard let at = entry.createdAt else { continue }
+            totals[MuscatCalendar.dayString(at), default: 0] += entry.amountBaisa
+        }
+        var days = Set(totals.keys)
+        if let f = from.flatMap(MuscatCalendar.date(fromDay:)), let t = to.flatMap(MuscatCalendar.date(fromDay:)), f <= t {
+            let cal = MuscatCalendar.calendar
+            var cursor = f
+            var guardCount = 0
+            while cursor <= t && guardCount < 62 {
+                days.insert(MuscatCalendar.dayString(cursor))
+                guard let next = cal.date(byAdding: .day, value: 1, to: cursor) else { break }
+                cursor = next
+                guardCount += 1
+            }
+        }
+        return days.sorted().map { DayTotal(day: $0, baisa: totals[$0] ?? 0) }
+    }
 }
 
 /// `Settlement` — `GET /captain/payouts`.

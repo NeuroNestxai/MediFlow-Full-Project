@@ -28,7 +28,12 @@ data class HomeUi(
     val stores: Loadable<List<MerchantSummary>> = Loadable(loading = true),
     val total: Int = 0,
     val loadingMore: Boolean = false,
+    /** Open stores with a cover photo from the unfiltered list: the hero carousel (real stores, no invented banners). */
+    val featured: List<MerchantSummary> = emptyList(),
+    /** A real cover photo per category (first store seen in it), shown on the category chips. */
+    val categoryCovers: Map<MerchantCategory, String> = emptyMap(),
 ) {
+    val isFiltered: Boolean get() = category != null || query.isNotBlank()
     val canLoadMore: Boolean get() = (stores.data?.size ?: 0) < total && !loadingMore && !stores.loading
 }
 
@@ -77,7 +82,14 @@ class HomeViewModel(
             try {
                 val s = _ui.value
                 val page = repo.stores(s.location, s.category, s.query, offset = 0)
-                _ui.update { it.copy(stores = Loadable(page.items), total = page.total) }
+                _ui.update {
+                    it.copy(
+                        stores = Loadable(page.items),
+                        total = page.total,
+                        featured = if (s.isFiltered) it.featured else page.items.filter { m -> m.isOpen && !m.coverUrl.isNullOrBlank() }.take(MAX_FEATURED),
+                        categoryCovers = it.categoryCovers.withCoversFrom(page.items),
+                    )
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -94,12 +106,32 @@ class HomeViewModel(
             try {
                 val current = s.stores.data.orEmpty()
                 val page = repo.stores(s.location, s.category, s.query, offset = current.size)
-                _ui.update { it.copy(stores = Loadable(current + page.items.filter { n -> current.none { c -> c.id == n.id } }), total = page.total, loadingMore = false) }
+                _ui.update {
+                    it.copy(
+                        stores = Loadable(current + page.items.filter { n -> current.none { c -> c.id == n.id } }),
+                        total = page.total,
+                        loadingMore = false,
+                        categoryCovers = it.categoryCovers.withCoversFrom(page.items),
+                    )
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 _ui.update { it.copy(loadingMore = false, stores = it.stores.copy(error = e)) }
             }
         }
+    }
+
+    private fun Map<MerchantCategory, String>.withCoversFrom(stores: List<MerchantSummary>): Map<MerchantCategory, String> {
+        val result = toMutableMap()
+        for (m in stores) {
+            val cover = m.coverUrl
+            if (!cover.isNullOrBlank() && m.category !in result) result[m.category] = cover
+        }
+        return result
+    }
+
+    private companion object {
+        const val MAX_FEATURED = 5
     }
 }

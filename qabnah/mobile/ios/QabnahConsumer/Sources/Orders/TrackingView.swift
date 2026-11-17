@@ -9,6 +9,7 @@ final class TrackingViewModel: ObservableObject {
     @Published private(set) var tracking: Tracking?
     @Published private(set) var error: Error?
     @Published private(set) var captainLocation: LatLng?
+    @Published private(set) var captainHeading: Double?
     @Published private(set) var etaDropoffAt: Date?
     @Published private(set) var lastUpdate: Date?
 
@@ -54,7 +55,10 @@ final class TrackingViewModel: ObservableObject {
         do {
             let t = try await api.send(Endpoints.tracking(orderId: orderId))
             tracking = t
-            if let loc = t.captain?.location { captainLocation = loc.latLng }
+            if let loc = t.captain?.location {
+                captainLocation = loc.latLng
+                captainHeading = loc.heading ?? captainHeading
+            }
             etaDropoffAt = t.etaDropoffAt ?? etaDropoffAt
             lastUpdate = Date()
             error = nil
@@ -69,6 +73,7 @@ final class TrackingViewModel: ObservableObject {
         case RealtimeEventName.deliveryLocation:
             if let loc = try? event.decodeData(DeliveryLocationEventData.self) {
                 captainLocation = loc.latLng
+                if let h = loc.heading { captainHeading = h }
                 if let eta = loc.etaDropoffAt { etaDropoffAt = eta }
                 lastUpdate = Date()
             }
@@ -89,7 +94,8 @@ final class TrackingViewModel: ObservableObject {
             out.append(MapPoint(id: "dropoff", kind: .dropoff, coordinate: CLLocationCoordinate2D(d), label: "dropoff"))
         }
         if let c = captainLocation, tracking?.deliveryStatus?.hasActiveCaptain ?? false {
-            out.append(MapPoint(id: "captain", kind: .captain, coordinate: CLLocationCoordinate2D(c), label: "captain"))
+            out.append(MapPoint(id: "captain", kind: .captain, coordinate: CLLocationCoordinate2D(c),
+                                heading: captainHeading, label: "captain"))
         }
         return out
     }
@@ -118,6 +124,8 @@ final class TrackingViewModel: ObservableObject {
     }
 }
 
+/// Live tracking: the map fills the top; a sheet-like panel at the bottom carries the status,
+/// the approximate ETA and the captain.
 struct TrackingView: View {
     @EnvironmentObject var lang: LanguageSettings
     @StateObject private var vm: TrackingViewModel
@@ -137,9 +145,10 @@ struct TrackingView: View {
             } else {
                 RouteMapView(points: localizedPoints, path: vm.pathCoordinates,
                              dashedFrom: vm.captainCoordinate, dashedTo: vm.nextStop)
-                infoCard
+                panel
             }
         }
+        .background(QTheme.background.ignoresSafeArea())
         .navigationTitle(lang.t("tracking.title"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { vm.start() }
@@ -154,72 +163,44 @@ struct TrackingView: View {
         }
     }
 
-    private var infoCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private var panel: some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
             if let t = vm.tracking {
-                HStack {
-                    StatusPill(text: lang.t("order.status.\(t.orderStatus.rawValue)"), color: t.orderStatus.color)
-                    if let ds = t.deliveryStatus {
-                        StatusPill(text: lang.t("delivery.status.\(ds.rawValue)"), color: .secondary)
-                    }
-                    Spacer()
-                    if vm.error != nil {
-                        Image(systemName: "wifi.exclamationmark").foregroundColor(Brand.accent)
-                            .accessibilityLabel(lang.t("tracking.reconnecting"))
-                    }
-                }
+                statusRow(t)
                 if let mins = Formatters.minutesUntil(vm.etaDropoffAt), !vm.isDelivered {
-                    Text(lang.f("tracking.eta_approx", mins)).font(.title3.bold())
-                    Text(lang.t("tracking.eta_disclaimer")).font(.caption).foregroundColor(.secondary)
+                    Text(lang.f("tracking.eta_approx", mins)).qFont(.h2).foregroundColor(QTheme.ink)
+                    Text(lang.t("tracking.eta_disclaimer")).qFont(.small).foregroundColor(QTheme.muted)
                 }
                 if let captain = t.captain {
-                    captainRow(captain)
+                    CaptainCard(captain: captain)
                 } else if !vm.isDelivered {
-                    Label(lang.t("tracking.finding_captain"), systemImage: "magnifyingglass")
-                        .foregroundColor(.secondary)
+                    HStack(spacing: QTheme.space2) {
+                        Circle().fill(QTheme.saffron).frame(width: 8, height: 8).accessibilityHidden(true)
+                        Text(lang.t("tracking.finding_captain")).qFont(.body).foregroundColor(QTheme.muted)
+                    }
                 }
             }
         }
-        .padding()
+        .padding(QTheme.space4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground))
+        .background(QTheme.background)
+        .clipShape(QTopRoundedShape(radius: QTheme.radiusLg))
+        .qElevation2()
+        .padding(.top, -QTheme.radiusLg)
     }
 
-    private func captainRow(_ c: CaptainPublic) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: c.vehicleType == .car || c.vehicleType == .van ? "car.fill" : "scooter")
-                .font(.title2)
-                .frame(width: 48, height: 48)
-                .background(Brand.primaryLight, in: Circle())
-                .foregroundColor(Brand.primary)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(c.firstName).font(.headline)
-                let vehicle = [c.vehicleColor, c.vehicleModel].compactMap { $0 }.joined(separator: " ")
-                if !vehicle.isEmpty || c.vehicleType != nil {
-                    Text(vehicle.isEmpty ? lang.t("vehicle.\(c.vehicleType?.rawValue ?? "bike")") : vehicle)
-                        .font(.subheadline).foregroundColor(.secondary)
-                }
-                if let plate = c.vehiclePlate {
-                    Text(verbatim: plate).font(.caption.monospaced()).padding(.horizontal, 6)
-                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary))
-                }
+    private func statusRow(_ t: Tracking) -> some View {
+        HStack(spacing: QTheme.space2) {
+            StatusPill(text: lang.t("order.status.\(t.orderStatus.rawValue)"), color: t.orderStatus.color)
+            if let ds = t.deliveryStatus {
+                StatusPill(text: lang.t("delivery.status.\(ds.rawValue)"), color: QTheme.muted)
             }
-            Spacer()
-            if let r = c.ratingAvg, r > 0 {
-                Label(Formatters.rating(r, language: lang.language), systemImage: "star.fill")
-                    .font(.subheadline).foregroundColor(Brand.accent)
-            }
-            if let phone = c.phone, let url = ExternalLinks.tel(phone) {
-                Link(destination: url) {
-                    Image(systemName: "phone.fill")
-                        .padding(12)
-                        .background(Brand.primary, in: Circle())
-                        .foregroundColor(.white)
-                }
-                .accessibilityLabel(lang.f("tracking.call_captain", c.firstName))
+            Spacer(minLength: 0)
+            if vm.error != nil {
+                Image(systemName: "wifi.exclamationmark")
+                    .foregroundColor(QTheme.warning)
+                    .accessibilityLabel(lang.t("tracking.reconnecting"))
             }
         }
-        .accessibilityElement(children: .contain)
     }
 }

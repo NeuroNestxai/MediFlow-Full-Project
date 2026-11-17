@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { selectionErrors, toggleOption, unitPrice, useI18n, type OptionGroup, type Product, type Selection } from '@qabnah/shared';
+import { Price, selectionErrors, toggleOption, unitPrice, useI18n, type OptionGroup, type Product, type Selection } from '@qabnah/shared';
 
 type PricedProduct = Pick<Product, 'basePriceBaisa' | 'optionGroups' | 'compareAtPriceBaisa'>;
 
@@ -11,7 +11,7 @@ function groupRule(g: OptionGroup, t: (k: string, v?: Record<string, string | nu
 
 /** Variant (radio) and add-on (checkbox, min/max) selection for a product. Controlled. */
 export function ProductOptionPicker({ product, value, onChange, showErrors }: { product: PricedProduct; value: Selection; onChange: (s: Selection) => void; showErrors?: boolean }) {
-  const { t, pick, money, num } = useI18n();
+  const { t, pick, num } = useI18n();
   const uid = useId();
   const errors = showErrors ? selectionErrors(product, value) : [];
   return (
@@ -36,7 +36,7 @@ export function ProductOptionPicker({ product, value, onChange, showErrors }: { 
                   <input type={single ? 'radio' : 'checkbox'} name={name} checked={checked} disabled={disabled}
                     onChange={() => onChange({ ...value, [g.id]: toggleOption(g, selected, o.id) })} />
                   <span className="grow">{pick(o.nameEn, o.nameAr)}{!o.isAvailable ? <span className="muted text-sm"> · {t('options.soldOut')}</span> : null}</span>
-                  {o.priceDeltaBaisa ? <span className="text-sm num">{money(o.priceDeltaBaisa, { signed: true })}</span> : null}
+                  {o.priceDeltaBaisa ? <Price baisa={o.priceDeltaBaisa} signed className="option-row__delta" /> : null}
                 </label>
               );
             })}

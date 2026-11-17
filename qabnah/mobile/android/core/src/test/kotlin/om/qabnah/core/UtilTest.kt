@@ -74,3 +74,34 @@ class UtilTest {
         assertTrue(!BrandColors.prefersLightContent(0xFFF4A300.toInt()))
     }
 }
+
+class EarningsChartTest {
+    private fun entry(id: Long, type: String, amount: Long, at: String) =
+        om.qabnah.core.model.LedgerEntry(id = id, entryType = type, amountBaisa = amount, createdAt = at)
+
+    private val entries = listOf(
+        entry(1, "captain_earning", 800, "2026-11-15T05:10:00Z"),  // 09:10 Muscat, 15 Nov
+        entry(2, "tip", 200, "2026-11-15T05:30:00Z"),
+        entry(3, "cod_collected", -2500, "2026-11-15T05:31:00Z"),   // cash is not an earning
+        entry(4, "captain_earning", 1000, "2026-11-16T21:30:00Z"), // 01:30 Muscat on 17 Nov
+        entry(5, "payout", -1800, "2026-11-17T06:00:00Z"),
+        entry(6, "captain_earning", 600, "not-a-date"),
+    )
+
+    @kotlin.test.Test
+    fun `daily bars cover the whole range in Muscat time`() {
+        val range = om.qabnah.core.util.DateRanges.Range(java.time.LocalDate.of(2026, 11, 15), java.time.LocalDate.of(2026, 11, 17))
+        val bars = om.qabnah.core.util.EarningsChart.byDay(entries, range)
+        kotlin.test.assertEquals(listOf(1000L, 0L, 1000L), bars.map { it.amountBaisa })
+        kotlin.test.assertEquals(java.time.LocalDate.of(2026, 11, 16), bars[1].date)
+        kotlin.test.assertTrue(bars.all { it.startHour == null })
+    }
+
+    @kotlin.test.Test
+    fun `hour blocks split today into six bars`() {
+        val bars = om.qabnah.core.util.EarningsChart.byHourBlocks(entries, java.time.LocalDate.of(2026, 11, 15))
+        kotlin.test.assertEquals(listOf(0, 4, 8, 12, 16, 20), bars.map { it.startHour })
+        kotlin.test.assertEquals(listOf(0L, 0L, 1000L, 0L, 0L, 0L), bars.map { it.amountBaisa })
+        kotlin.test.assertEquals(1000L, om.qabnah.core.util.EarningsChart.byHourBlocks(entries, java.time.LocalDate.of(2026, 11, 17))[0].amountBaisa)
+    }
+}

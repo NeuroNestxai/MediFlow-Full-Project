@@ -71,6 +71,7 @@
 "cart.replace_title" = "Start a new cart?";
 "cart.sign_in_to_checkout" = "You'll sign in with your mobile number before paying.";
 "cart.title" = "Your cart";
+"cart.view" = "View cart";
 "cart.view_count" = "View cart (%ld)";
 "category.all" = "All";
 "category.cafe" = "Cafés";
@@ -145,9 +146,14 @@
 "guest.sign_in" = "Sign in";
 "guest.sign_in_message" = "Sign in with your mobile number to send parcels, see your orders and manage your account.";
 "guest.sign_in_title" = "Sign in to continue";
+"home.all_stores" = "All stores";
+"home.clear_filters" = "Clear filters";
 "home.empty" = "No stores found";
 "home.empty_hint" = "Try another category or search.";
+"home.greeting" = "Hello";
+"home.greeting_name" = "Hello, %@";
 "home.location_denied" = "Location is off — showing all stores. Enable it in Settings for nearby stores.";
+"home.near_you" = "Near you";
 "home.search" = "Search stores";
 "home.title" = "Qabnah";
 "map.confirm_pin" = "Confirm location";
@@ -166,6 +172,7 @@
 "order.invoice" = "Invoice";
 "order.items" = "Items";
 "order.pay_now" = "Pay now";
+"order.payment_status" = "Payment status";
 "order.pin_hint" = "Give this code to the captain only when you receive your order.";
 "order.pin_title" = "Delivery PIN";
 "order.rate" = "Rate your order";
@@ -184,6 +191,7 @@
 "order.title" = "Order";
 "order.track" = "Track live";
 "orders.active" = "Active";
+"orders.browse_stores" = "Browse stores";
 "orders.empty_active" = "No active orders";
 "orders.empty_past" = "No past orders yet";
 "orders.parcel" = "Parcel";
@@ -230,6 +238,7 @@
 "send.place_notes" = "Notes for the captain";
 "send.quote" = "Price";
 "send.quote_hint" = "Set both pins to see the price.";
+"send.route" = "Route";
 "send.size" = "Size";
 "send.submit" = "Request pickup";
 "send.title" = "Send a parcel";

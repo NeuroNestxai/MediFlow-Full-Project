@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, Kpi, LinkButton, Loading, Modal, MoneyInput, PageHeader, Pagination, Segmented, Select,
+  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Icon, Input, Kpi, LinkButton, Loading, Modal, MoneyInput, PageHeader, Pagination, Segmented, Select,
   StatusBadge, Tabs, errorMessage, isApiError, useDebounced, useI18n, useToast,
   type AdminCaptainDetail, type AdminCaptainRow, type CaptainDocument, type FleetPartner, type Items, type Page,
 } from '@qabnah/shared';
@@ -63,7 +63,9 @@ function DocTile({ d, canReview, onReview }: { d: CaptainDocument; canReview: bo
   return (
     <div className="doc-tile">
       <div className="doc-tile__preview">
-        {isImage ? <img src={d.fileUrl} alt={t(`capDoc.${d.docType}`)} onError={() => setIsImage(false)} loading="lazy" /> : <a className="btn btn--sm" href={d.fileUrl} target="_blank" rel="noopener noreferrer">{t('captains.openFile')}</a>}
+        {isImage
+          ? <img src={d.fileUrl} alt={t(`capDoc.${d.docType}`)} onError={() => setIsImage(false)} onLoad={(e) => { if (e.currentTarget.naturalWidth < 24 || e.currentTarget.naturalHeight < 24) setIsImage(false); }} />
+          : <a className="doc-tile__file" href={d.fileUrl} target="_blank" rel="noopener noreferrer" aria-label={t('captains.openFile')}><Icon name="file" /></a>}
       </div>
       <div className="stack stack-sm" style={{ padding: 12 }}>
         <div className="row between"><strong>{t(`capDoc.${d.docType}`)}</strong><StatusBadge kind="raw" status={d.status} /></div>

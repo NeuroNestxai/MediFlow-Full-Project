@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, EmptyState, Input, Loading, Textarea, errorMessage, newIdempotencyKey, normalizeOmanPhone, useI18n,
+  Alert, Badge, Button, Icon, Input, Loading, Photo, Price, Textarea, errorMessage, newIdempotencyKey, normalizeOmanPhone, useI18n,
   type Address, type AddressInput, type Checkout, type Items, type LatLng, type MarketplaceOrderInput, type Order, type PriceBreakdown,
 } from '@qabnah/shared';
 import { Marker, PICKUP_COLOR, PinPicker, Tooltip, pinIcon } from '@qabnah/shared/map';
@@ -54,7 +54,7 @@ function AddressForm({ onSaved, onCancel, defaultName, center }: { onSaved: (a: 
       </div>
       {m.isError ? <Alert tone="danger">{errorMessage(m.error, t)}</Alert> : null}
       <div className="row">
-        <Button type="submit" variant="primary" className="sf-primary" loading={m.isPending}>{t('sf.saveAddress')}</Button>
+        <Button type="submit" variant="primary" loading={m.isPending}>{t('sf.saveAddress')}</Button>
         {onCancel ? <Button onClick={onCancel}>{t('common.cancel')}</Button> : null}
       </div>
     </form>
@@ -65,7 +65,7 @@ const addressLine = (a: Address) => [a.building && `${a.building}`, a.street, a.
 
 export function CheckoutPage() {
   const { sf } = useStorefront();
-  const { t, pick, money, num } = useI18n();
+  const { t, pick, num, lang } = useI18n();
   const nav = useNavigate();
   const c = useCart();
   const { signedIn, loading, me } = useConsumer();
@@ -113,21 +113,32 @@ export function CheckoutPage() {
   });
 
   if (!mine) {
-    return <main className="sf-container"><Card><EmptyState icon="cart" title={t('sf.cartEmpty')} action={<Link className="btn btn--primary sf-primary" to={`/s/${m.slug}`}>{t('sf.backToMenu')}</Link>} /></Card></main>;
+    return (
+      <main className="sf-container sf-page">
+        <div className="card"><div className="sf-empty"><span className="sf-empty__icon"><Icon name="bag" /></span><strong>{t('sf.cartEmpty')}</strong>
+          <Link className="btn btn--primary" to={`/s/${m.slug}`}>{t('sf.backToMenu')}</Link></div></div>
+      </main>
+    );
   }
   const selected = addresses.data?.items.find((a) => a.id === addressId);
+  const addressDone = signedIn && !!selected && !adding;
+  const stepClass = (done: boolean, current: boolean) => `step ${done ? 'step--done' : current ? 'step--current' : 'step--locked'}`;
+  const num1 = (n: number, done: boolean) => <span className="step-num" aria-hidden="true">{done ? <Icon name="check" /> : num(n, 0)}</span>;
   return (
-    <main className="sf-container checkout">
-      <div className="row between"><h1>{t('sf.checkout')}</h1><Link to={`/s/${m.slug}`} className="btn btn--ghost btn--sm">{t('sf.backToMenu')}</Link></div>
+    <main className="sf-container sf-page checkout">
+      <div className="row between">
+        <h1>{t('sf.checkout')}</h1>
+        <Link to={`/s/${m.slug}`} className="btn btn--ghost btn--sm"><Icon name={lang === 'ar' ? 'arrow' : 'back'} />{t('sf.backToMenu')}</Link>
+      </div>
       <div className="checkout__grid">
         <div className="stack stack-lg">
-          <Card title={<h2><span className="step-num">1</span> {t('sf.stepSignIn')}</h2>}>
-            {loading ? <Loading /> : signedIn ? (
-              <div className="row between"><span>{t('sf.signedInAs')} <strong className="ltr">{me?.user.phone}</strong>{me?.user.fullName ? ` · ${me.user.fullName}` : ''}</span><Badge tone="success">✓</Badge></div>
-            ) : <OtpSignIn />}
-          </Card>
-          <Card title={<h2><span className="step-num">2</span> {t('sf.stepAddress')}</h2>}>
-            {!signedIn ? <p className="muted">{t('sf.signInFirst')}</p> : addresses.isLoading ? <Loading /> : (
+          <section className={stepClass(signedIn, !signedIn)} aria-labelledby="st1">
+            <div className="step__head">{num1(1, signedIn)}<h2 id="st1">{t('sf.stepSignIn')}</h2>{signedIn ? <span className="text-sm muted ltr">{me?.user.phone}</span> : null}</div>
+            {loading ? <Loading lines={3} /> : signedIn ? (me?.user.fullName ? <p className="text-sm muted">{t('sf.signedInAs')} {me.user.fullName}</p> : null) : <OtpSignIn />}
+          </section>
+          <section className={stepClass(addressDone, signedIn && !addressDone)} aria-labelledby="st2">
+            <div className="step__head">{num1(2, addressDone)}<h2 id="st2">{t('sf.stepAddress')}</h2></div>
+            {!signedIn ? <p className="muted text-sm">{t('sf.signInFirst')}</p> : addresses.isLoading ? <Loading lines={3} /> : (
               <div className="stack">
                 {addresses.data?.items.length && !adding ? (
                   <>
@@ -136,10 +147,10 @@ export function CheckoutPage() {
                         <label key={a.id} className={`option-row ${a.id === addressId ? 'option-row--on' : ''}`}>
                           <input type="radio" name="address" checked={a.id === addressId} onChange={() => setAddressId(a.id)} />
                           <span className="grow stack" style={{ ['--gap' as string]: '0px' }}>
-                            <span className="strong">{a.label ?? t('sf.address')}</span>
+                            <span className="strong">{a.label === 'home' ? t('sf.labelHome') : a.label === 'work' ? t('sf.labelWork') : a.label ?? t('sf.address')}</span>
                             <span className="text-sm muted">{addressLine(a) || `${a.location.lat.toFixed(4)}, ${a.location.lng.toFixed(4)}`}</span>
                           </span>
-                          {!a.zoneId ? <Badge tone="danger">{t('sf.outsideArea')}</Badge> : null}
+                          {!a.zoneId ? <Badge tone="danger" dot>{t('sf.outsideArea')}</Badge> : null}
                         </label>
                       ))}
                     </div>
@@ -152,59 +163,63 @@ export function CheckoutPage() {
                 {selected && !selected.zoneId ? <Alert tone="warning">{t('sf.outsideAreaBody')}</Alert> : null}
               </div>
             )}
-          </Card>
-          <Card title={<h2><span className="step-num">3</span> {t('sf.stepPayment')}</h2>}>
-            <div className="stack">
-              <div className="stack stack-sm" role="radiogroup" aria-label={t('sf.stepPayment')}>
-                {m.acceptsCod ? (
-                  <label className={`option-row ${payment === 'cod' ? 'option-row--on' : ''}`}>
-                    <input type="radio" name="pay" checked={payment === 'cod'} onChange={() => setPayment('cod')} />
-                    <span className="grow"><span className="strong">{t('payment.method.cod')}</span><br /><span className="text-sm muted">{t('sf.codHint')}</span></span>
-                  </label>
-                ) : null}
-                {m.acceptsOnline ? (
-                  <label className={`option-row ${payment === 'online' ? 'option-row--on' : ''}`}>
-                    <input type="radio" name="pay" checked={payment === 'online'} onChange={() => setPayment('online')} />
-                    <span className="grow"><span className="strong">{t('sf.payOnline')}</span><br /><span className="text-sm muted">{t('sf.onlineHint')}</span></span>
-                  </label>
-                ) : null}
-              </div>
-              <Textarea label={t('sf.orderNotes')} rows={2} maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('sf.orderNotesPlaceholder')} optional />
-            </div>
-          </Card>
-        </div>
-        <aside className="stack stack-lg checkout__summary">
-          <Card title={t('sf.summary')}>
-            <div className="stack">
-              <ul className="item-list">
-                {mine.lines.map((l) => (
-                  <li key={l.key}>
-                    <div className="row between row-nowrap"><span><span className="strong">{num(l.quantity, 0)}×</span> {pick(l.nameEn, l.nameAr)}</span><span className="num">{money(l.unitPriceBaisa * l.quantity)}</span></div>
-                    {l.optionLabels.length ? <div className="text-xs muted">{l.optionLabels.map((o) => pick(o.nameEn, o.nameAr)).join(' · ')}</div> : null}
-                  </li>
-                ))}
-              </ul>
-              <hr className="divider" />
-              {!signedIn || !addressId ? (
-                <div className="row between"><span className="muted">{t('orders.subtotal')}</span><span className="num">{money(cartSubtotal(mine))}</span></div>
-              ) : quote.isLoading || quote.isFetching ? <Loading /> : quote.isError ? <Alert tone="danger" title={t('sf.quoteFailed')}>{errorMessage(quote.error, t)}</Alert> : quote.data ? (
-                <div className="stack stack-sm text-sm" data-testid="quote-breakdown">
-                  <div className="row between"><span className="muted">{t('orders.subtotal')}</span><span className="num">{money(quote.data.subtotalBaisa)}</span></div>
-                  <div className="row between"><span className="muted">{t('orders.deliveryFee')}</span><span className="num">{money(quote.data.deliveryFeeBaisa)}</span></div>
-                  {quote.data.serviceFeeBaisa ? <div className="row between"><span className="muted">{t('orders.serviceFee')}</span><span className="num">{money(quote.data.serviceFeeBaisa)}</span></div> : null}
-                  {quote.data.discountBaisa ? <div className="row between"><span className="muted">{t('orders.discount')}</span><span className="num">{money(-quote.data.discountBaisa)}</span></div> : null}
-                  <div className="row between"><span className="muted">{quote.data.vatIncluded ? t('sf.vatIncluded') : t('orders.vat')}</span><span className="num">{money(quote.data.vatBaisa)}</span></div>
-                  <div className="row between text-lg strong"><span>{t('common.total')}</span><span className="num" data-testid="quote-total">{money(quote.data.totalBaisa)}</span></div>
-                  <span className="text-xs muted">{t('sf.eta', { n: num(Math.round((quote.data.estimatedDurationS + m.prepTimeMinutes * 60) / 60), 0) })}</span>
-                </div>
+          </section>
+          <section className={stepClass(false, addressDone)} aria-labelledby="st3">
+            <div className="step__head">{num1(3, false)}<h2 id="st3">{t('sf.stepPayment')}</h2></div>
+            <div className="stack stack-sm" role="radiogroup" aria-label={t('sf.stepPayment')}>
+              {m.acceptsCod ? (
+                <label className={`option-row ${payment === 'cod' ? 'option-row--on' : ''}`}>
+                  <input type="radio" name="pay" checked={payment === 'cod'} onChange={() => setPayment('cod')} />
+                  <span className="grow"><span className="strong">{t('payment.method.cod')}</span><br /><span className="text-sm muted">{t('sf.codHint')}</span></span>
+                  <Icon name="cash" width={22} height={22} style={{ color: 'var(--q-muted)' }} />
+                </label>
               ) : null}
-              {place.isError ? <Alert tone="danger">{errorMessage(place.error, t)}</Alert> : null}
-              <Button variant="primary" className="sf-primary" size="lg" block loading={place.isPending} disabled={!signedIn || !input || !quote.data || quote.isFetching} onClick={() => place.mutate()} data-testid="place-order">
-                {payment === 'online' ? t('sf.payAndPlace') : t('sf.placeOrder')}
-              </Button>
-              {payment === 'online' ? <p className="text-xs muted">{t('sf.redirectNote')}</p> : null}
+              {m.acceptsOnline ? (
+                <label className={`option-row ${payment === 'online' ? 'option-row--on' : ''}`}>
+                  <input type="radio" name="pay" checked={payment === 'online'} onChange={() => setPayment('online')} />
+                  <span className="grow"><span className="strong">{t('sf.payOnline')}</span><br /><span className="text-sm muted">{t('sf.onlineHint')}</span></span>
+                  <Icon name="card" width={22} height={22} style={{ color: 'var(--q-muted)' }} />
+                </label>
+              ) : null}
             </div>
-          </Card>
+            <Textarea label={t('sf.orderNotes')} rows={2} maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('sf.orderNotesPlaceholder')} optional />
+          </section>
+        </div>
+        <aside className="checkout__summary">
+          <section className="step step--current" aria-labelledby="st4">
+            <div className="step__head">{num1(4, false)}<h2 id="st4">{t('sf.stepReview')}</h2></div>
+            <ul className="cart-lines">
+              {mine.lines.map((l) => (
+                <li key={l.key} className="cart-line">
+                  <Photo src={l.imageUrl} category={m.category} tint={m.brandColor} className="cart-line__photo photo--sm" style={{ width: 56 }} />
+                  <div className="grow stack" style={{ ['--gap' as string]: '0px' }}>
+                    <div className="row between row-nowrap"><span className="strong">{pick(l.nameEn, l.nameAr)}</span><Price baisa={l.unitPriceBaisa * l.quantity} /></div>
+                    <span className="text-sm muted">{t('sf.qtyN', { n: num(l.quantity, 0) })}{l.optionLabels.length ? ` · ${l.optionLabels.map((o) => pick(o.nameEn, o.nameAr)).join(' · ')}` : ''}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {!signedIn || !addressId ? (
+              <div className="summary-lines"><div className="row between"><span className="muted">{t('orders.subtotal')}</span><Price baisa={cartSubtotal(mine)} /></div><span className="text-xs muted">{t('sf.feesAtCheckout')}</span></div>
+            ) : quote.isLoading || quote.isFetching ? <Loading lines={4} /> : quote.isError ? <Alert tone="danger" title={t('sf.quoteFailed')}>{errorMessage(quote.error, t)}</Alert> : quote.data ? (
+              <div className="stack" data-testid="quote-breakdown">
+                <div className="summary-lines">
+                  <div className="row between"><span className="muted">{t('orders.subtotal')}</span><Price baisa={quote.data.subtotalBaisa} /></div>
+                  <div className="row between"><span className="muted">{t('orders.deliveryFee')}</span><Price baisa={quote.data.deliveryFeeBaisa} /></div>
+                  {quote.data.serviceFeeBaisa ? <div className="row between"><span className="muted">{t('orders.serviceFee')}</span><Price baisa={quote.data.serviceFeeBaisa} /></div> : null}
+                  {quote.data.discountBaisa ? <div className="row between"><span className="muted">{t('orders.discount')}</span><Price baisa={-quote.data.discountBaisa} /></div> : null}
+                  <div className="row between"><span className="muted">{quote.data.vatIncluded ? t('sf.vatIncluded') : t('orders.vat')}</span><Price baisa={quote.data.vatBaisa} /></div>
+                </div>
+                <div className="summary-total"><span>{t('common.total')}</span><Price baisa={quote.data.totalBaisa} testId="quote-total" /></div>
+                <span className="text-sm muted"><Icon name="clock" width={14} height={14} /> {t('sf.eta', { n: num(Math.round((quote.data.estimatedDurationS + m.prepTimeMinutes * 60) / 60), 0) })}</span>
+              </div>
+            ) : null}
+            {place.isError ? <Alert tone="danger">{errorMessage(place.error, t)}</Alert> : null}
+            <Button variant="primary" size="lg" block loading={place.isPending} disabled={!signedIn || !input || !quote.data || quote.isFetching} onClick={() => place.mutate()} data-testid="place-order">
+              {payment === 'online' ? t('sf.payAndPlace') : t('sf.placeOrder')}
+            </Button>
+            {payment === 'online' ? <p className="text-xs muted">{t('sf.redirectNote')}</p> : null}
+          </section>
         </aside>
       </div>
     </main>

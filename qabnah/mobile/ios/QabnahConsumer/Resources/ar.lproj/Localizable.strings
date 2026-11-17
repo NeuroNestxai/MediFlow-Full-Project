@@ -71,6 +71,7 @@
 "cart.replace_title" = "بدء سلة جديدة؟";
 "cart.sign_in_to_checkout" = "ستسجّل الدخول برقم هاتفك قبل الدفع.";
 "cart.title" = "سلتك";
+"cart.view" = "عرض السلة";
 "cart.view_count" = "عرض السلة (%ld)";
 "category.all" = "الكل";
 "category.cafe" = "مقاهي";
@@ -145,9 +146,14 @@
 "guest.sign_in" = "تسجيل الدخول";
 "guest.sign_in_message" = "سجّل الدخول برقم هاتفك لإرسال الطرود ومتابعة طلباتك وإدارة حسابك.";
 "guest.sign_in_title" = "سجّل الدخول للمتابعة";
+"home.all_stores" = "كل المتاجر";
+"home.clear_filters" = "إزالة التصفية";
 "home.empty" = "لا توجد متاجر";
 "home.empty_hint" = "جرّب فئة أو بحثاً آخر.";
+"home.greeting" = "مرحباً";
+"home.greeting_name" = "مرحباً %@";
 "home.location_denied" = "الموقع غير مفعّل — نعرض كل المتاجر. فعّله من الإعدادات لرؤية الأقرب.";
+"home.near_you" = "بالقرب منك";
 "home.search" = "ابحث عن متجر";
 "home.title" = "قبناه";
 "map.confirm_pin" = "تأكيد الموقع";
@@ -166,6 +172,7 @@
 "order.invoice" = "الفاتورة";
 "order.items" = "المنتجات";
 "order.pay_now" = "ادفع الآن";
+"order.payment_status" = "حالة الدفع";
 "order.pin_hint" = "أعطِ هذا الرمز للكابتن فقط عند استلام طلبك.";
 "order.pin_title" = "رمز التسليم";
 "order.rate" = "قيّم طلبك";
@@ -184,6 +191,7 @@
 "order.title" = "الطلب";
 "order.track" = "تتبّع مباشر";
 "orders.active" = "الحالية";
+"orders.browse_stores" = "تصفّح المتاجر";
 "orders.empty_active" = "لا توجد طلبات حالية";
 "orders.empty_past" = "لا توجد طلبات سابقة";
 "orders.parcel" = "طرد";
@@ -230,6 +238,7 @@
 "send.place_notes" = "ملاحظات للكابتن";
 "send.quote" = "السعر";
 "send.quote_hint" = "حدّد الموقعين لعرض السعر.";
+"send.route" = "المسار";
 "send.size" = "الحجم";
 "send.submit" = "اطلب الاستلام";
 "send.title" = "أرسل طرداً";

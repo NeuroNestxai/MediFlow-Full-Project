@@ -10,6 +10,12 @@ for mod, pkg in mods.items():
     lines += [f'        const val {n} = {i + 1}' for i, n in enumerate(strings)]
     lines += ['    }', '    object drawable {']
     lines += [f'        const val {n} = {i + 10000}' for i, n in enumerate(drawables)]
+    fonts = [f.rsplit('.', 1)[0] for f in os.listdir(f'{res}/font')] if os.path.isdir(f'{res}/font') else []
+    bad = [n for n in drawables + fonts if not re.fullmatch(r'[a-z][a-z0-9_]*', n)]
+    if bad:
+        sys.exit(f'invalid resource file names in {mod}: {bad}')
+    lines += ['    }', '    object font {']
+    lines += [f'        const val {n} = {i + 20000}' for i, n in enumerate(fonts)]
     lines += ['    }', '}']
     if mod != 'android-common':
         lines += ['', 'object BuildConfig {', '    const val DEBUG = true', '    const val API_BASE_URL = "http://10.0.2.2:4000/v1"',

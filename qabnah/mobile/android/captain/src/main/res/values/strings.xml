@@ -62,6 +62,7 @@
     <string name="documents_choose_file">Choose from gallery or files</string>
     <string name="documents_number">Document number (optional)</string>
     <string name="documents_expiry">Expiry date (optional)</string>
+    <string name="documents_expiry_format">YYYY-MM-DD</string>
     <string name="doc_national_id">National ID / Resident card</string>
     <string name="doc_driving_license">Driving licence</string>
     <string name="doc_vehicle_registration">Vehicle registration (Mulkiya)</string>
@@ -95,6 +96,9 @@
     <string name="home_offline">You\'re offline</string>
     <string name="home_online_hint">Offers near you will appear here.</string>
     <string name="home_offline_hint">Go online to start receiving delivery offers.</string>
+    <string name="home_go_online">Go online</string>
+    <string name="home_go_offline">Go offline</string>
+    <string name="home_map_description">Map showing your current location</string>
     <string name="home_active_deliveries">Current deliveries</string>
     <string name="home_no_active">No deliveries in progress.</string>
     <string name="home_waiting_offers">Waiting for offers…</string>
@@ -124,6 +128,9 @@
     <string name="offer_you_earn">You earn</string>
     <string name="offer_cod">Collect %1$s cash</string>
     <string name="offer_parcel">Parcel · %1$s</string>
+    <string name="package_small">Small</string>
+    <string name="package_medium">Medium</string>
+    <string name="package_large">Large</string>
     <string name="offer_pickup">Pickup</string>
     <string name="offer_dropoff">Drop-off (approximate)</string>
     <string name="offer_away">%1$s away</string>
@@ -143,7 +150,6 @@
     <string name="delivery_title">Delivery</string>
     <string name="delivery_help">Get help</string>
     <string name="delivery_items">%1$s items</string>
-    <string name="delivery_earning">Earning %1$s</string>
     <string name="delivery_collect_cash">Collect %1$s cash</string>
     <string name="delivery_package">Package: %1$s</string>
     <string name="delivery_pickup">Pickup</string>
@@ -201,6 +207,13 @@
     <string name="earnings_payouts">Payouts</string>
     <string name="earnings_ledger">Activity</string>
     <string name="earnings_no_entries">No activity in this period.</string>
+    <string name="earnings_chart_description">Earnings chart. Total earned: %1$s</string>
+    <string name="ledger_captain_earning">Delivery earning</string>
+    <string name="ledger_tip">Tip</string>
+    <string name="ledger_cod_collected">Cash collected</string>
+    <string name="ledger_cod_remitted">Cash remitted</string>
+    <string name="ledger_payout">Payout</string>
+    <string name="ledger_other">Adjustment</string>
     <string name="balance_owed_to_you">Qabnah owes you</string>
     <string name="balance_owed_to_you_body">Your earnings exceed the cash you hold. It will be paid in your next settlement.</string>
     <string name="balance_you_owe">You owe Qabnah</string>
@@ -219,6 +232,7 @@
     <!-- Profile -->
     <string name="profile_title">Profile</string>
     <string name="profile_acceptance">Acceptance %1$s%%</string>
+    <string name="profile_rating">Rating</string>
     <string name="profile_vehicle_payout">Vehicle &amp; payout details</string>
     <string name="profile_sign_out_body">You\'ll go offline and stop receiving offers on this device.</string>
 

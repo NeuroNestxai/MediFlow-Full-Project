@@ -69,7 +69,7 @@ struct PhotoInput: View {
                     .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
                     .overlay(alignment: .topTrailing) {
                         Button { self.image = nil } label: {
-                            Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(Color.white, Color.black.opacity(0.5))
+                            QCircleIcon(systemImage: "xmark", size: 32)
                         }
                         .padding(6)
                         .accessibilityLabel(lang.t("photo.remove"))
@@ -82,11 +82,13 @@ struct PhotoInput: View {
                 }
                 PhotosPicker(selection: $pickerItem, matching: .images) {
                     Label(lang.t("photo.library"), systemImage: "photo.on.rectangle")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 46)
-                        .foregroundColor(Brand.primary)
-                        .background(Brand.primary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
+                        .qFont(.h3)
+                        .foregroundColor(QTheme.ink)
+                        .frame(maxWidth: .infinity, minHeight: QTheme.buttonHeight)
+                        .padding(.horizontal, QTheme.space4)
+                        .background(QTheme.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusButton, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: QTheme.radiusButton, style: .continuous).stroke(QTheme.line, lineWidth: 1))
                 }
             }
         }

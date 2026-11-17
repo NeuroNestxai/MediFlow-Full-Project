@@ -31,6 +31,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import om.qabnah.android.ui.components.ConfirmDialog
 import om.qabnah.android.ui.components.EmptyState
+import androidx.compose.foundation.layout.fillMaxWidth
+import om.qabnah.android.ui.components.QButton
+import om.qabnah.android.ui.components.QCard
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.ui.unit.dp
 import om.qabnah.android.ui.components.LoadableContent
 import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.android.ui.theme.QabnahColors
@@ -52,7 +58,7 @@ fun AddressesScreen(container: ConsumerContainer, onBack: () -> Unit, onAdd: () 
         title = stringResource(R.string.account_addresses),
         onBack = onBack,
         floatingActionButton = {
-            ExtendedFloatingActionButton(onClick = onAdd, icon = { Icon(Icons.Filled.Add, contentDescription = null) }, text = { Text(stringResource(R.string.address_add)) })
+            QButton(stringResource(R.string.address_add), onClick = onAdd, icon = Icons.Filled.Add)
         },
     ) { padding ->
         LoadableContent(
@@ -62,9 +68,16 @@ fun AddressesScreen(container: ConsumerContainer, onBack: () -> Unit, onAdd: () 
             isEmpty = { it.isEmpty() },
             empty = { EmptyState(stringResource(R.string.address_empty), icon = Icons.Filled.Place) },
         ) { list ->
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+            ) {
                 items(list, key = { it.id }) { a ->
+                    QCard(Modifier.fillMaxWidth(), onClick = { onEdit(a.id) }, padding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp)) {
                     ListItem(
+                        colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                        leadingContent = { Icon(Icons.Outlined.Place, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         headlineContent = { Text(a.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.address_untitled)) },
                         supportingContent = {
                             androidx.compose.foundation.layout.Column {
@@ -78,17 +91,16 @@ fun AddressesScreen(container: ConsumerContainer, onBack: () -> Unit, onAdd: () 
                                     Icon(
                                         if (a.isDefault) Icons.Filled.Star else Icons.Filled.StarBorder,
                                         contentDescription = stringResource(if (a.isDefault) R.string.address_default else R.string.address_make_default),
-                                        tint = QabnahColors.Accent,
+                                        tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                                 IconButton(onClick = { deleting = a }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = stringResource(CommonR.string.common_delete))
+                                    Icon(Icons.Outlined.Delete, contentDescription = stringResource(CommonR.string.common_delete))
                                 }
                             }
                         },
-                        modifier = Modifier.clickable { onEdit(a.id) },
                     )
-                    HorizontalDivider()
+                    }
                 }
             }
         }

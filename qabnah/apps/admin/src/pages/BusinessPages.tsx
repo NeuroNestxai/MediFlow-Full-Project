@@ -143,7 +143,7 @@ export function SupportPage() {
               <tbody>{q.data.items.map((tk) => (
                 <tr key={tk.id} className="clickable" tabIndex={0} onClick={() => nav(`/support/${tk.id}`)} onKeyDown={(e) => { if (e.key === 'Enter') nav(`/support/${tk.id}`); }}>
                   <td className="mono">{tk.number}</td><td className="strong">{tk.subject}<div className="text-xs muted">{t(`support.cat.${tk.category}`)}</div></td>
-                  <td>{tk.requester.fullName}<div className="text-xs muted">{tk.requester.role}</div></td>
+                  <td>{tk.requester.fullName}<div className="text-xs muted">{t(`role.${tk.requester.role}`)}</div></td>
                   <td><Badge tone={tk.priority === 'urgent' ? 'danger' : tk.priority === 'high' ? 'warning' : 'neutral'}>{t(`support.prio.${tk.priority}`)}</Badge></td>
                   <td><StatusBadge kind="raw" status={tk.status} /></td><td>{tk.assignedToName ?? <span className="muted">—</span>}</td><td className="nowrap">{relative(tk.updatedAt)}</td>
                 </tr>
@@ -240,7 +240,7 @@ export function AnalyticsPage() {
       <PageHeader title={t('nav.analytics')} description={t('analytics.hint')} actions={<Segmented label={t('analytics.range')} value={days} onChange={setDays} options={(['7', '30', '90'] as const).map((d) => ({ value: d, label: t('analytics.days', { n: d }) }))} />} />
       {q.isLoading ? <Loading /> : q.isError ? <ErrorState error={q.error} onRetry={() => q.refetch()} /> : q.data ? (
         <>
-          <div className="grid grid-4">
+          <div className="kpi-grid">
             <Kpi label={t('analytics.orders')} value={num(q.data.orders, 0)} hint={t('analytics.completedN', { n: num(q.data.completedOrders, 0) })} />
             <Kpi label={t('analytics.gmv')} value={money(q.data.gmvBaisa)} hint={t('analytics.aovN', { v: money(q.data.averageOrderValueBaisa) })} />
             <Kpi label={t('analytics.commission')} value={money(q.data.commissionBaisa)} />

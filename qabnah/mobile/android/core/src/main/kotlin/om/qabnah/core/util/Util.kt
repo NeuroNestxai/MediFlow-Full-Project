@@ -186,3 +186,58 @@ object MapRoute {
     fun appendBreadcrumb(path: List<LatLng>, point: LatLng, max: Int = 200): List<LatLng> =
         (if (path.lastOrNull() == point) path else path + point).takeLast(max)
 }
+
+/** Buckets ledger entries into the bars of the captain's earnings chart. */
+object EarningsChart {
+    /** Entry types that make up `Earnings.earningsBaisa` (captain earning + tips); cash and payouts are not earnings. */
+    val EARNING_TYPES: Set<String> = setOf("captain_earning", "tip")
+
+    /** [startHour] is set for hour-block bars (today view), [date] for daily bars. */
+    data class Bar(val date: LocalDate, val startHour: Int?, val amountBaisa: Long)
+
+    /** One bar per day of [range] (inclusive), in order; days without earnings are zero bars. */
+    fun byDay(
+        entries: List<om.qabnah.core.model.LedgerEntry>,
+        range: DateRanges.Range,
+        zone: ZoneId = DateRanges.MUSCAT,
+    ): List<Bar> {
+        val totals = HashMap<LocalDate, Long>()
+        for (e in earning(entries)) {
+            val day = instantOf(e.createdAt)?.atZone(zone)?.toLocalDate() ?: continue
+            totals[day] = (totals[day] ?: 0L) + e.amountBaisa
+        }
+        val bars = ArrayList<Bar>()
+        var d = range.from
+        while (!d.isAfter(range.to)) {
+            bars += Bar(d, null, totals[d] ?: 0L)
+            d = d.plusDays(1)
+        }
+        return bars
+    }
+
+    /** Bars of [blockHours] hours covering [day] (e.g. 6 bars of 4 h), for the "today" view. */
+    fun byHourBlocks(
+        entries: List<om.qabnah.core.model.LedgerEntry>,
+        day: LocalDate,
+        blockHours: Int = 4,
+        zone: ZoneId = DateRanges.MUSCAT,
+    ): List<Bar> {
+        require(blockHours in 1..24 && 24 % blockHours == 0) { "blockHours must divide 24" }
+        val totals = LongArray(24 / blockHours)
+        for (e in earning(entries)) {
+            val t = instantOf(e.createdAt)?.atZone(zone) ?: continue
+            if (t.toLocalDate() != day) continue
+            totals[t.hour / blockHours] += e.amountBaisa
+        }
+        return totals.mapIndexed { i, amount -> Bar(day, i * blockHours, amount) }
+    }
+
+    private fun earning(entries: List<om.qabnah.core.model.LedgerEntry>) =
+        entries.filter { it.entryType in EARNING_TYPES && it.amountBaisa > 0 }
+
+    private fun instantOf(iso: String): Instant? = try {
+        Instant.parse(iso)
+    } catch (e: DateTimeParseException) {
+        null
+    }
+}

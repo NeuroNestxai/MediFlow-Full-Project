@@ -28,6 +28,32 @@ public enum Money {
         }
     }
 
+    /// The pieces of a formatted price, for UIs that style the currency label separately
+    /// (design system: amount bold with tabular numerals, currency smaller and muted).
+    public struct Parts: Equatable, Sendable {
+        /// `2.500`, `-0.750`, `١٬٢٣٤٫٥٠٠` — digits in the reader's language, sign included.
+        public let amount: String
+        /// `OMR` / `ر.ع.`
+        public let currency: String
+        /// True when the currency is written before the amount (English).
+        public let currencyLeads: Bool
+    }
+
+    public static func parts(baisa: Int, language: AppLanguage) -> Parts {
+        let negative = baisa < 0
+        let magnitude = baisa.magnitude
+        let rials = magnitude / UInt(baisaPerRial)
+        let frac = String(format: "%03d", Int(magnitude % UInt(baisaPerRial)))
+        switch language {
+        case .en:
+            let grouped = group(String(rials), separator: ",")
+            return Parts(amount: "\(negative ? "-" : "")\(grouped).\(frac)", currency: "OMR", currencyLeads: true)
+        case .ar:
+            let number = Digits.arabicIndic("\(group(String(rials), separator: "٬"))٫\(frac)")
+            return Parts(amount: negative ? "\u{200F}-\(number)" : number, currency: "ر.ع.", currencyLeads: false)
+        }
+    }
+
     /// Compact variant without currency, e.g. `2.500` / `٢٫٥٠٠` (for input fields).
     public static func decimalString(baisa: Int, language: AppLanguage = .en) -> String {
         let negative = baisa < 0

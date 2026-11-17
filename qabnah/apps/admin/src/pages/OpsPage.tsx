@@ -150,7 +150,7 @@ export function OpsPage() {
       </div>
       <div className="ops__body">
         <div className="ops__map">
-          <MapView height="100%" zoom={11} ariaLabel={t('ops.map')}>
+          <MapView height="100%" zoom={11} ariaLabel={t('ops.map')} className="map--dark">
             {zones.data ? <ZoneLayer zones={zones.data.items} /> : null}
             {d?.deliveries.map((x) => (
               <span key={x.id}>

@@ -22,15 +22,19 @@ export function DailyChart({ data, from, to, height = 260 }: { data: DayPoint[];
     }
     return out;
   }, [data, from, to]);
+  const gid = useId().replace(/:/g, '');
   const W = 900, H = height, padL = 8, padR = 8, padT = 16, padB = 28;
   const maxG = Math.max(1, ...days.map((d) => d.gmvBaisa));
   const maxO = Math.max(1, ...days.map((d) => d.orders));
   const n = Math.max(1, days.length);
   const bw = (W - padL - padR) / n;
-  const y = (v: number, max: number) => padT + (H - padT - padB) * (1 - v / max);
+  const base = H - padB;
+  const y = (v: number, max: number, scale = 1) => padT + (base - padT) * (1 - (v / max) * scale);
   const rtl = lang === 'ar';
   const xAt = (i: number) => (rtl ? W - padR - (i + 1) * bw : padL + i * bw);
-  const line = days.map((d, i) => `${i ? 'L' : 'M'}${(xAt(i) + bw / 2).toFixed(1)},${y(d.orders, maxO).toFixed(1)}`).join(' ');
+  const pts = days.map((d, i) => [xAt(i) + bw / 2, y(d.gmvBaisa, maxG)] as const);
+  const line = pts.map(([px, py], i) => `${i ? 'L' : 'M'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+  const area = pts.length ? `${line} L${pts[pts.length - 1][0].toFixed(1)},${base} L${pts[0][0].toFixed(1)},${base} Z` : '';
   const labelEvery = Math.ceil(n / 8);
   const fmtDay = (d: string) => new Intl.DateTimeFormat(lang === 'ar' ? 'ar-OM-u-nu-arab' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`));
   const h = hover != null ? days[hover] : null;
@@ -42,19 +46,29 @@ export function DailyChart({ data, from, to, height = 260 }: { data: DayPoint[];
         {h ? <span className="chart__hover">{fmtDay(h.day)} · {money(h.gmvBaisa)} · {t('chart.ordersN', { n: num(h.orders, 0) })}</span> : null}
       </figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} className="chart__svg" role="img" aria-label={t('chart.aria')} onMouseLeave={() => setHover(null)}>
+        <defs>
+          <linearGradient id={`area-${gid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#0E7C66" stopOpacity="0.28" />
+            <stop offset="1" stopColor="#0E7C66" stopOpacity="0" />
+          </linearGradient>
+        </defs>
         {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} x1={padL} x2={W - padR} y1={y(maxG * f, maxG)} y2={y(maxG * f, maxG)} className="chart__grid" />)}
+        {/* orders: saffron bars on the lower third */}
         {days.map((d, i) => {
-          const top = y(d.gmvBaisa, maxG);
-          return (
-            <g key={d.day} onMouseEnter={() => setHover(i)}>
-              <rect x={xAt(i)} y={padT} width={bw} height={H - padT - padB} fill="transparent" />
-              <rect x={xAt(i) + bw * 0.15} y={top} width={bw * 0.7} height={Math.max(0, H - padB - top)} rx={Math.min(4, bw * 0.2)} className={`chart__bar ${hover === i ? 'chart__bar--on' : ''}`} />
-              {i % labelEvery === 0 ? <text x={xAt(i) + bw / 2} y={H - 8} textAnchor="middle" className="chart__label">{fmtDay(d.day)}</text> : null}
-            </g>
-          );
+          const top = y(d.orders, maxO, 0.34);
+          return d.orders ? <rect key={d.day} x={xAt(i) + bw * 0.3} y={top} width={bw * 0.4} height={Math.max(0, base - top)} rx={Math.min(3, bw * 0.15)} className={`chart__bar ${hover === i ? 'chart__bar--on' : ''}`} /> : null;
         })}
-        <path d={line} className="chart__line" />
-        {days.map((d, i) => <circle key={d.day} cx={xAt(i) + bw / 2} cy={y(d.orders, maxO)} r={hover === i ? 4 : 2.5} className="chart__dot" />)}
+        {/* GMV: green area */}
+        <path d={area} fill={`url(#area-${gid})`} />
+        <path d={line} className="chart__area-line" />
+        {hover != null ? <line x1={pts[hover][0]} x2={pts[hover][0]} y1={padT} y2={base} className="chart__cursor" /> : null}
+        {hover != null ? <circle cx={pts[hover][0]} cy={pts[hover][1]} r={5} className="chart__dot" /> : null}
+        {days.map((d, i) => (
+          <g key={d.day} onMouseEnter={() => setHover(i)}>
+            <rect x={xAt(i)} y={padT} width={bw} height={base - padT} fill="transparent" />
+            {i % labelEvery === 0 ? <text x={xAt(i) + bw / 2} y={H - 8} textAnchor="middle" className="chart__label">{fmtDay(d.day)}</text> : null}
+          </g>
+        ))}
       </svg>
       <table className="sr-only">
         <caption>{t('chart.aria')}</caption>

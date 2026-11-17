@@ -41,6 +41,9 @@ targets:
           - "Info.plist"
           - "*.entitlements"
       - path: SharedUI
+      # IBM Plex Sans Arabic / IBM Plex Sans (OFL) — listed in UIAppFonts in the Info.plist.
+      - path: Fonts
+        buildPhase: resources
     dependencies:
       - package: QabnahKit
     settings:
@@ -59,6 +62,9 @@ targets:
           - "Info.plist"
           - "*.entitlements"
       - path: SharedUI
+      # IBM Plex Sans Arabic / IBM Plex Sans (OFL) — listed in UIAppFonts in the Info.plist.
+      - path: Fonts
+        buildPhase: resources
     dependencies:
       - package: QabnahKit
     settings:

@@ -50,6 +50,7 @@ import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.android.ui.components.digits
 import om.qabnah.android.ui.components.errorMessage
 import om.qabnah.android.ui.components.loc
+import om.qabnah.android.ui.components.QCard
 import om.qabnah.captain.CaptainContainer
 import om.qabnah.captain.R
 import om.qabnah.core.model.AvailabilitySlot
@@ -121,8 +122,7 @@ fun AvailabilityScreen(container: CaptainContainer, onBack: () -> Unit) {
                 // Contract: 0 = Sunday. java.time: MONDAY = 1 … SUNDAY = 7.
                 val dayName = DayOfWeek.of(if (weekday == 0) 7 else weekday).getDisplayName(TextStyle.FULL, locale)
                 val daySlots = ui.slots.filter { it.weekday == weekday }
-                Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                    Column(Modifier.padding(12.dp)) {
+                QCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), padding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(dayName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                             if (daySlots.isNotEmpty()) {
@@ -153,7 +153,6 @@ fun AvailabilityScreen(container: CaptainContainer, onBack: () -> Unit) {
                                 }
                             }
                         }
-                    }
                 }
             }
         }

@@ -2,7 +2,8 @@ import SwiftUI
 import MapKit
 import QabnahKit
 
-/// Full-screen incoming offer with a countdown to `expiresAt`.
+/// Incoming offer as a full-height sheet on night: a saffron countdown ring to `expiresAt`, the
+/// earning as the big figure, pickup → drop-off rows, then accept (saffron) and decline.
 struct OfferCardView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var store: CaptainStore
@@ -16,21 +17,17 @@ struct OfferCardView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             let remaining = offer.secondsRemaining(now: ctx.date)
-            VStack(spacing: 16) {
-                header(remaining: remaining)
+            VStack(spacing: 0) {
+                header
                 ScrollView {
-                    VStack(spacing: 14) {
+                    VStack(spacing: QTheme.space4) {
+                        OfferCountdownRing(remaining: remaining, total: max(initialSeconds, remaining, 1))
+                        earning
+                        OfferRouteCard(offer: offer)
                         mapPreview
-                        amounts
-                        route
-                        if let err = store.offerError {
-                            InlineError(error: err)
-                            if (err as? APIError)?.isConflict == true {
-                                Text(lang.t("offer.taken")).font(.footnote).foregroundColor(.secondary)
-                            }
-                        }
+                        errors
                     }
-                    .padding(.horizontal)
+                    .padding(QTheme.space4)
                 }
                 actions(expired: remaining == 0)
             }
@@ -38,7 +35,7 @@ struct OfferCardView: View {
                 if expired && store.respondingOfferId != offer.id { store.dismissOffer(offer) }
             }
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(QTheme.background.ignoresSafeArea())
         .onAppear {
             initialSeconds = max(1, offer.secondsRemaining())
             store.offerError = nil
@@ -51,111 +48,166 @@ struct OfferCardView: View {
         }
     }
 
-    private func header(remaining: Int) -> some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(lang.t("offer.new")).font(.title2.bold())
-                Spacer()
-                Button { store.dismissOffer(offer) } label: {
-                    Image(systemName: "chevron.down").padding(8)
-                }
-                .accessibilityLabel(lang.t("offer.later"))
+    private var header: some View {
+        HStack {
+            Text(lang.t("offer.new")).qFont(.h2).foregroundColor(QTheme.ink)
+            Spacer()
+            Button { store.dismissOffer(offer) } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(QTheme.ink)
+                    .frame(width: 44, height: 44)
+                    .background(QTheme.surface)
+                    .clipShape(Circle())
             }
-            ProgressView(value: Double(remaining), total: Double(max(initialSeconds, remaining, 1)))
-                .tint(remaining <= 10 ? Brand.danger : Brand.primary)
-            Text(lang.f("offer.expires_in", Formatters.countdown(seconds: remaining, language: .en)))
-                .font(.headline.monospacedDigit())
-                .foregroundColor(remaining <= 10 ? Brand.danger : .primary)
-                .accessibilityLabel(lang.f("offer.seconds_left_a11y", remaining))
+            .accessibilityLabel(lang.t("offer.later"))
+            .accessibilityIdentifier("offer.hide")
         }
-        .padding([.horizontal, .top])
+        .padding(.horizontal, QTheme.space4)
+        .padding(.top, QTheme.space3)
     }
 
-    private var mapPreview: some View {
-        let points: [MapPoint] = [
-            offer.pickupLocation.map { MapPoint(id: "pickup", kind: .pickup, coordinate: CLLocationCoordinate2D($0), label: lang.t("job.pickup")) },
-            offer.dropoffLocation.map { MapPoint(id: "dropoff", kind: .dropoff, coordinate: CLLocationCoordinate2D($0), label: lang.t("job.dropoff_approx")) },
-        ].compactMap { $0 }
-        return Group {
-            if !points.isEmpty {
-                RouteMapView(points: points, dashedFrom: points.first?.coordinate,
-                             dashedTo: points.count > 1 ? points.last?.coordinate : nil, showsRecenterButton: false)
-                    .frame(height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
-                    .allowsHitTesting(false)
-            }
-        }
-    }
-
-    private var amounts: some View {
-        HStack(spacing: 12) {
-            stat(title: lang.t("offer.earning"), value: lang.money(offer.earningBaisa), color: Brand.success)
-            if offer.codAmountBaisa > 0 {
-                stat(title: lang.t("offer.cod"), value: lang.money(offer.codAmountBaisa), color: Brand.accent)
-            }
-        }
-    }
-
-    private var route: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let m = offer.merchantName {
-                Label(m, systemImage: "storefront").font(.headline)
-            } else {
-                Label(lang.t("offer.parcel"), systemImage: "shippingbox").font(.headline)
-            }
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(lang.t("job.pickup")).font(.caption).foregroundColor(.secondary)
-                    Text(offer.pickupArea).font(.body.bold())
-                    Text(lang.f("offer.to_pickup", lang.distance(offer.distanceToPickupM))).font(.caption).foregroundColor(.secondary)
-                }
-                Spacer()
-                Image(systemName: "arrow.forward").foregroundColor(.secondary).accessibilityHidden(true)
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(lang.t("job.dropoff")).font(.caption).foregroundColor(.secondary)
-                    Text(offer.dropoffArea).font(.body.bold())
-                    Text(lang.f("offer.trip", lang.distance(offer.tripDistanceM))).font(.caption).foregroundColor(.secondary)
-                }
-            }
-            if let size = offer.packageSize {
-                Label(lang.t("package.\(size)", fallback: size), systemImage: "shippingbox").font(.subheadline)
-            }
-            if let v = offer.vehicleType {
-                Label(lang.t("vehicle.\(v)", fallback: v), systemImage: "car").font(.subheadline)
-            }
-        }
-        .card()
-    }
-
-    private func stat(title: String, value: String, color: Color) -> some View {
+    private var earning: some View {
         VStack(spacing: 4) {
-            Text(title).font(.caption).foregroundColor(.secondary)
-            Text(value).font(.title3.bold()).foregroundColor(color)
+            Text(lang.t("offer.earning")).qFont(.small, .medium).foregroundColor(QTheme.muted)
+            QPrice(baisa: offer.earningBaisa, style: .display)
+            if offer.codAmountBaisa > 0 {
+                Text(lang.f("job.collect_cod", lang.money(offer.codAmountBaisa)))
+                    .qFont(.body, .semibold)
+                    .foregroundColor(QTheme.warning)
+            }
         }
         .frame(maxWidth: .infinity)
-        .card()
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private var mapPreview: some View {
+        let points = mapPoints
+        if !points.isEmpty {
+            RouteMapView(points: points, dashedFrom: points.first?.coordinate,
+                         dashedTo: points.count > 1 ? points.last?.coordinate : nil, showsRecenterButton: false)
+                .frame(height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous))
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var mapPoints: [MapPoint] {
+        var out: [MapPoint] = []
+        if let p = offer.pickupLocation {
+            out.append(MapPoint(id: "pickup", kind: .pickup, coordinate: CLLocationCoordinate2D(p), label: lang.t("job.pickup")))
+        }
+        if let d = offer.dropoffLocation {
+            out.append(MapPoint(id: "dropoff", kind: .dropoff, coordinate: CLLocationCoordinate2D(d),
+                                label: lang.t("job.dropoff_approx")))
+        }
+        return out
+    }
+
+    @ViewBuilder private var errors: some View {
+        if let err = store.offerError {
+            InlineError(error: err)
+            if (err as? APIError)?.isConflict == true {
+                Text(lang.t("offer.taken")).qFont(.small).foregroundColor(QTheme.muted)
+            }
+        }
     }
 
     private func actions(expired: Bool) -> some View {
         let busy = store.respondingOfferId == offer.id
-        return HStack(spacing: 12) {
-            Button(lang.t("offer.reject")) { showReject = true }
-                .buttonStyle(SecondaryButtonStyle(color: Brand.danger))
-                .disabled(busy || expired)
-            Button {
-                Task {
-                    // Accepted: the cover closes and the active delivery opens on Home.
-                    if let delivery = await store.accept(offer) { router.showDelivery(delivery) }
+        return QNightBar {
+            HStack(spacing: QTheme.space3) {
+                Button(lang.t("offer.reject")) { showReject = true }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .frame(maxWidth: 130)
+                    .disabled(busy || expired)
+                    .accessibilityIdentifier("offer.decline")
+                Button {
+                    Task {
+                        // Accepted: the cover closes and the active delivery opens on Home.
+                        if let delivery = await store.accept(offer) { router.showDelivery(delivery) }
+                    }
+                } label: {
+                    if busy { ProgressView().tint(QTheme.inkOnLight) } else { Text(lang.t("offer.accept")) }
                 }
-            } label: {
-                if busy { ProgressView().tint(.white) } else { Text(lang.t("offer.accept")) }
+                .buttonStyle(SaffronButtonStyle())
+                .disabled(busy || expired)
+                .accessibilityIdentifier("offer.accept")
             }
-            .buttonStyle(PrimaryButtonStyle(color: Brand.success))
-            .disabled(busy || expired)
         }
-        .padding()
-        .background(.bar)
+    }
+}
+
+/// Saffron ring that empties as the offer runs out, with the seconds in the middle.
+private struct OfferCountdownRing: View {
+    @EnvironmentObject var lang: LanguageSettings
+    let remaining: Int
+    let total: Int
+
+    private var fraction: CGFloat {
+        guard total > 0 else { return 0 }
+        return min(1, max(0, CGFloat(remaining) / CGFloat(total)))
+    }
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(QTheme.line, lineWidth: 8)
+            Circle()
+                .trim(from: 0, to: fraction)
+                .stroke(remaining <= 10 ? QTheme.danger : QTheme.saffron, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 1), value: remaining)
+            Text(lang.digits("\(remaining)"))
+                .qFont(size: 34, .bold, relativeTo: .title, tabular: true)
+                .foregroundColor(QTheme.ink)
+        }
+        .frame(width: 104, height: 104)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(lang.f("offer.seconds_left_a11y", remaining))
+    }
+}
+
+/// Pickup → drop-off rows with the distances the server sent.
+private struct OfferRouteCard: View {
+    @EnvironmentObject var lang: LanguageSettings
+    let offer: Offer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Label(offer.merchantName ?? lang.t("offer.parcel"),
+                  systemImage: offer.merchantName == nil ? "shippingbox" : "bag")
+                .qFont(.h3)
+                .foregroundColor(QTheme.ink)
+            stop(color: QTheme.primary, title: lang.t("job.pickup"), area: offer.pickupArea,
+                 detail: lang.f("offer.to_pickup", lang.distance(offer.distanceToPickupM)))
+            stop(color: QTheme.saffron, title: lang.t("job.dropoff"), area: offer.dropoffArea,
+                 detail: lang.f("offer.trip", lang.distance(offer.tripDistanceM)))
+            if let size = offer.packageSize {
+                Label(lang.t("package.\(size)", fallback: size), systemImage: "shippingbox")
+                    .qFont(.small)
+                    .foregroundColor(QTheme.muted)
+            }
+            if let v = offer.vehicleType {
+                Label(lang.t("vehicle.\(v)", fallback: v), systemImage: "car")
+                    .qFont(.small)
+                    .foregroundColor(QTheme.muted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private func stop(color: Color, title: String, area: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: QTheme.space3) {
+            Circle().fill(color).frame(width: 12, height: 12).padding(.top, 5).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).qFont(.small, .medium).foregroundColor(QTheme.muted)
+                Text(area).qFont(.h3).foregroundColor(QTheme.ink)
+                Text(detail).qFont(.small).foregroundColor(QTheme.muted)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }

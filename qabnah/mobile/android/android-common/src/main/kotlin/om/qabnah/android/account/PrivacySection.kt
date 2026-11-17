@@ -11,12 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDirection
@@ -48,7 +50,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import om.qabnah.android.R
-import om.qabnah.android.ui.components.SectionTitle
 import om.qabnah.android.ui.components.errorMessage
 import om.qabnah.core.account.DataExport
 import om.qabnah.core.api.QabnahApi
@@ -166,16 +167,23 @@ fun PrivacySection(api: QabnahApi, onAccountDeleted: () -> Unit) {
         }
     }
 
-    SectionTitle(stringResource(R.string.privacy_title))
+    Text(
+        stringResource(R.string.privacy_title),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+    )
     ListItem(
-        leadingContent = { Icon(Icons.Filled.Download, contentDescription = null) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = { Icon(Icons.Outlined.Download, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
         headlineContent = { Text(stringResource(R.string.privacy_export)) },
         supportingContent = { Text(stringResource(R.string.privacy_export_desc)) },
         trailingContent = { if (ui.exporting) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) },
         modifier = Modifier.clickable(enabled = !ui.exporting) { vm.export() },
     )
     ListItem(
-        leadingContent = { Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = { Icon(Icons.Outlined.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
         headlineContent = { Text(stringResource(R.string.privacy_delete), color = MaterialTheme.colorScheme.error) },
         supportingContent = { Text(stringResource(R.string.privacy_delete_desc)) },
         modifier = Modifier.clickable { vm.clearDeleteError(); confirmingDelete = true },

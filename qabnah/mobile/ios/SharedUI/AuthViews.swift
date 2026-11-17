@@ -107,7 +107,7 @@ struct AuthFlowView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: QTheme.space5) {
                     header
                     switch vm.step {
                     case .phone: phoneStep
@@ -115,16 +115,17 @@ struct AuthFlowView: View {
                     case .name: nameStep
                     }
                     InlineError(error: vm.error)
-                    LanguagePicker().padding(.top, 24)
+                    LanguagePicker().padding(.top, QTheme.space6)
                 }
-                .padding(24)
+                .padding(QTheme.space6)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .qScreen()
             .toolbar {
                 if let onCancel {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(lang.t("common.cancel"), action: onCancel)
+                            .accessibilityIdentifier("auth.cancel")
                     }
                 }
             }
@@ -132,114 +133,111 @@ struct AuthFlowView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: QTheme.space2) {
             Image("BrandMark")
                 .resizable()
                 .frame(width: 64, height: 64)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous))
                 .accessibilityHidden(true)
-            Text(lang.t("app.name")).font(.largeTitle.bold())
-            Text(lang.t(subtitleKey)).foregroundColor(.secondary)
+            Text(lang.t("app.name")).qFont(.h1).foregroundColor(QTheme.ink)
+            Text(lang.t(subtitleKey)).qFont(.body).foregroundColor(QTheme.muted)
         }
-        .padding(.top, 24)
+        .padding(.top, QTheme.space6)
     }
 
     private var phoneStep: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(lang.t("auth.phone_title")).font(.headline)
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("auth.phone_title")).qFont(.h3).foregroundColor(QTheme.ink)
+            HStack(spacing: QTheme.space2) {
                 Text(verbatim: "+968")
-                    .font(.title3.monospacedDigit())
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: Brand.radiusSm))
+                    .qFont(.h3, tabular: true)
+                    .foregroundColor(QTheme.ink)
+                    .qField()
                 TextField(lang.t("auth.phone_placeholder"), text: $vm.phoneInput)
                     .keyboardType(.phonePad)
                     .textContentType(.telephoneNumber)
-                    .font(.title3.monospacedDigit())
-                    .padding(12)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: Brand.radiusSm))
+                    .qFont(.h3, tabular: true)
+                    .qField()
                     .accessibilityLabel(lang.t("auth.phone_title"))
+                    .accessibilityIdentifier("auth.phone")
             }
             .environment(\.layoutDirection, .leftToRight) // phone numbers read LTR
-            Text(lang.t("auth.phone_hint")).font(.footnote).foregroundColor(.secondary)
+            Text(lang.t("auth.phone_hint")).qFont(.small).foregroundColor(QTheme.muted)
             Button {
                 Task { await vm.requestCode() }
             } label: {
-                if vm.isBusy { ProgressView().tint(.white) } else { Text(lang.t("auth.send_code")) }
+                if vm.isBusy { ProgressView().tint(QTheme.onCta) } else { Text(lang.t("auth.send_code")) }
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(!vm.canRequestCode)
+            .accessibilityIdentifier("auth.sendCode")
         }
     }
 
     private var codeStep: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(lang.t("auth.code_title")).font(.headline)
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("auth.code_title")).qFont(.h3).foregroundColor(QTheme.ink)
             if let phone = vm.phoneE164 {
-                HStack {
+                HStack(spacing: QTheme.space2) {
                     Text(lang.t("auth.code_sent_to"))
                     Text(verbatim: PhoneNumber.display(phone)).environment(\.layoutDirection, .leftToRight)
                     Button(lang.t("auth.change_number")) { vm.editPhone() }
-                        .font(.footnote)
+                        .buttonStyle(TertiaryButtonStyle())
                 }
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .qFont(.small)
+                .foregroundColor(QTheme.muted)
             }
             if let dev = vm.devCode { DevCodeBanner(code: dev) }
             TextField(lang.t("auth.code_placeholder"), text: $vm.code)
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
-                .font(.title2.monospacedDigit())
                 .multilineTextAlignment(.center)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: Brand.radiusSm))
+                .qFont(.h2, tabular: true)
+                .qField()
                 .accessibilityLabel(lang.t("auth.code_title"))
-            LabeledField(label: lang.t("auth.full_name_optional"), text: $vm.fullName, contentType: .name)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: Brand.radiusSm))
+                .accessibilityIdentifier("auth.code")
+            TextField(lang.t("auth.full_name_optional"), text: $vm.fullName)
+                .textContentType(.name)
+                .qField()
             Button {
                 Task {
                     if let result = await vm.verify() { session.didSignIn(result) }
                 }
             } label: {
-                if vm.isBusy { ProgressView().tint(.white) } else { Text(lang.t("auth.verify")) }
+                if vm.isBusy { ProgressView().tint(QTheme.onCta) } else { Text(lang.t("auth.verify")) }
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(!vm.canVerify)
+            .accessibilityIdentifier("auth.verify")
 
             TimelineView(.periodic(from: .now, by: 1)) { ctx in
                 let remaining = Int((vm.resendAvailableAt ?? .distantPast).timeIntervalSince(ctx.date))
                 Button(remaining > 0 ? lang.f("auth.resend_in", remaining) : lang.t("auth.resend")) {
                     Task { await vm.requestCode() }
                 }
+                .buttonStyle(TertiaryButtonStyle())
                 .disabled(remaining > 0 || vm.isBusy)
-                .font(.subheadline)
             }
         }
     }
 
     private var nameStep: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(lang.t("auth.name_title")).font(.headline)
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("auth.name_title")).qFont(.h3).foregroundColor(QTheme.ink)
             TextField(lang.t("auth.full_name"), text: $vm.fullName)
                 .textContentType(.name)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: Brand.radiusSm))
+                .qField()
+                .accessibilityIdentifier("auth.name")
             Button {
                 Task {
                     if let result = await vm.saveName() { session.didSignIn(result) }
                 }
             } label: {
-                if vm.isBusy { ProgressView().tint(.white) } else { Text(lang.t("common.continue")) }
+                if vm.isBusy { ProgressView().tint(QTheme.onCta) } else { Text(lang.t("common.continue")) }
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(vm.fullName.trimmingCharacters(in: .whitespaces).isEmpty || vm.isBusy)
+            .accessibilityIdentifier("auth.saveName")
         }
     }
 }

@@ -114,6 +114,7 @@ final class SendViewModel: ObservableObject {
     }
 }
 
+/// Send a parcel as a three-step wizard: route (pickup and drop-off), package, payment and price.
 struct SendView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var session: SessionStore
@@ -122,6 +123,7 @@ struct SendView: View {
     @StateObject private var payment: PaymentFlow
     @State private var pinTarget: PinTarget? = nil
     @State private var createdOrder: Order? = nil
+    @State private var step = 0
 
     enum PinTarget: String, Identifiable { case pickup, dropoff; var id: String { rawValue } }
 
@@ -130,53 +132,24 @@ struct SendView: View {
         _payment = StateObject(wrappedValue: PaymentFlow(api: api))
     }
 
+    private var stepTitles: [String] {
+        [lang.t("send.route"), lang.t("send.package"), lang.t("checkout.payment")]
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                placeSection(.pickup, draft: $vm.pickup)
-                placeSection(.dropoff, draft: $vm.dropoff)
-                Section(lang.t("send.package")) {
-                    Picker(lang.t("send.size"), selection: $vm.size) {
-                        ForEach(PackageSize.knownCases, id: \.self) { s in
-                            Text(lang.t("package.\(s.rawValue)")).tag(s)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    TextField(lang.t("send.description"), text: $vm.packageDescription)
-                    TextField(lang.t("send.notes"), text: $vm.notes, axis: .vertical).lineLimit(1...3)
+            ScrollView {
+                VStack(alignment: .leading, spacing: QTheme.space5) {
+                    QStepProgress(titles: stepTitles, current: step)
+                    stepContent
+                    InlineError(error: vm.createError)
+                    InlineError(error: payment.error)
                 }
-                Section(lang.t("checkout.payment")) {
-                    Picker(lang.t("checkout.payment"), selection: $vm.paymentMethod) {
-                        Text(lang.t("payment.online")).tag(PaymentMethod.online)
-                        Text(lang.t("payment.cod")).tag(PaymentMethod.cod)
-                    }
-                    .pickerStyle(.segmented)
-                    if vm.paymentMethod == .cod {
-                        Picker(lang.t("send.cod_payer"), selection: $vm.codPayer) {
-                            Text(lang.t("cod_payer.sender")).tag(CodPayer.sender)
-                            Text(lang.t("cod_payer.recipient")).tag(CodPayer.recipient)
-                        }
-                    }
-                }
-                quoteSection
-                if vm.createError != nil || payment.error != nil {
-                    Section {
-                        InlineError(error: vm.createError)
-                        InlineError(error: payment.error)
-                    }
-                }
+                .padding(QTheme.space4)
             }
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    Task { await submit() }
-                } label: {
-                    if vm.isCreating { ProgressView().tint(.white) } else { Text(lang.t("send.submit")) }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!vm.canSubmit)
-                .padding()
-                .background(.bar)
-            }
+            .qScreen()
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) { bottomBar }
             .navigationTitle(lang.t("send.title"))
             .overlay { PaymentPollingOverlay(flow: payment) }
             .paymentSheet(payment) { _ in finish() }
@@ -192,49 +165,192 @@ struct SendView: View {
         }
     }
 
-    private func placeSection(_ target: PinTarget, draft: Binding<PlaceDraft>) -> some View {
-        Section(lang.t("send.\(target.rawValue)")) {
-            Button { pinTarget = target } label: {
-                HStack {
-                    Image(systemName: target == .pickup ? "shippingbox" : "flag.checkered")
-                        .foregroundColor(target == .pickup ? Brand.accent : Brand.primary)
-                        .accessibilityHidden(true)
-                    if let loc = draft.wrappedValue.location {
-                        Text(verbatim: String(format: "%.5f, %.5f", loc.lat, loc.lng))
-                            .font(.subheadline.monospacedDigit())
-                        Spacer()
-                        Text(lang.t("address.move_pin")).font(.footnote)
-                    } else {
-                        Text(lang.t("send.\(target.rawValue)_pin"))
-                    }
-                }
-            }
-            TextField(lang.t("send.address_text"), text: draft.address)
-            TextField(lang.t("address.contact_name"), text: draft.contactName).textContentType(.name)
-            TextField(lang.t("address.contact_phone"), text: draft.contactPhone)
-                .keyboardType(.phonePad)
-                .textContentType(.telephoneNumber)
-            TextField(lang.t("send.place_notes"), text: draft.notes)
+    @ViewBuilder private var stepContent: some View {
+        switch step {
+        case 0: routeStep
+        case 1: packageStep
+        default: paymentStep
         }
     }
 
-    private var quoteSection: some View {
-        Section(lang.t("send.quote")) {
-            if vm.isQuoting {
-                ProgressView()
-            } else if let q = vm.quote {
-                KeyValueRow(label: lang.t("checkout.delivery_fee"), value: lang.money(q.feeBaisa), bold: true)
-                KeyValueRow(label: lang.t("send.distance"), value: lang.distance(q.distanceM))
-                KeyValueRow(label: lang.t("send.duration"), value: lang.f("send.duration_approx", lang.minutes(q.estimatedDurationS)))
-                if q.zoneId == nil {
-                    Text(lang.t("address.out_of_area")).font(.footnote).foregroundColor(Brand.danger)
+    // MARK: Step 1 — route
+
+    private var routeStep: some View {
+        VStack(alignment: .leading, spacing: QTheme.space4) {
+            if !routePoints.isEmpty {
+                RouteMapView(points: routePoints, dashedFrom: vm.pickup.location.map { CLLocationCoordinate2D($0) },
+                             dashedTo: vm.dropoff.location.map { CLLocationCoordinate2D($0) }, showsRecenterButton: false)
+                    .frame(height: 170)
+                    .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous))
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+            placeCard(.pickup, draft: $vm.pickup)
+            placeCard(.dropoff, draft: $vm.dropoff)
+        }
+    }
+
+    private var routePoints: [MapPoint] {
+        var out: [MapPoint] = []
+        if let p = vm.pickup.location {
+            out.append(MapPoint(id: "pickup", kind: .pickup, coordinate: CLLocationCoordinate2D(p), label: lang.t("send.pickup")))
+        }
+        if let d = vm.dropoff.location {
+            out.append(MapPoint(id: "dropoff", kind: .dropoff, coordinate: CLLocationCoordinate2D(d), label: lang.t("send.dropoff")))
+        }
+        return out
+    }
+
+    private func placeCard(_ target: PinTarget, draft: Binding<PlaceDraft>) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("send.\(target.rawValue)")).qFont(.h3).foregroundColor(QTheme.ink)
+            Button { pinTarget = target } label: {
+                HStack(spacing: QTheme.space2) {
+                    Image(systemName: "mappin.and.ellipse").accessibilityHidden(true)
+                    Text(draft.wrappedValue.location == nil ? lang.t("send.\(target.rawValue)_pin") : lang.t("address.move_pin"))
+                    Spacer(minLength: 0)
+                    if draft.wrappedValue.location != nil {
+                        Image(systemName: "checkmark.circle.fill").foregroundColor(QTheme.success).accessibilityHidden(true)
+                    }
                 }
-            } else if let e = vm.quoteError {
-                InlineError(error: e)
-            } else {
-                Text(lang.t("send.quote_hint")).foregroundColor(.secondary)
+            }
+            .buttonStyle(SecondaryButtonStyle(compact: true))
+            TextField(lang.t("send.address_text"), text: draft.address).qField()
+            TextField(lang.t("address.contact_name"), text: draft.contactName).textContentType(.name).qField()
+            TextField(lang.t("address.contact_phone"), text: draft.contactPhone)
+                .keyboardType(.phonePad)
+                .textContentType(.telephoneNumber)
+                .qField()
+            TextField(lang.t("send.place_notes"), text: draft.notes).qField()
+        }
+        .card()
+    }
+
+    // MARK: Step 2 — package
+
+    private var packageStep: some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            QSectionTitle(text: lang.t("send.package"))
+            Text(lang.t("send.size")).qFont(.small, .medium).foregroundColor(QTheme.muted)
+            Picker(lang.t("send.size"), selection: $vm.size) {
+                ForEach(PackageSize.knownCases, id: \.self) { s in
+                    Text(lang.t("package.\(s.rawValue)")).tag(s)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            TextField(lang.t("send.description"), text: $vm.packageDescription).qField()
+            TextField(lang.t("send.notes"), text: $vm.notes, axis: .vertical)
+                .lineLimit(1...3)
+                .padding(.vertical, QTheme.space2)
+                .qField()
+        }
+    }
+
+    // MARK: Step 3 — payment and price
+
+    private var paymentStep: some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            QSectionTitle(text: lang.t("checkout.payment"))
+            methodRow(.online, icon: "creditcard")
+            methodRow(.cod, icon: "banknote")
+            if vm.paymentMethod == .cod {
+                Text(lang.t("send.cod_payer")).qFont(.small, .medium).foregroundColor(QTheme.muted)
+                Picker(lang.t("send.cod_payer"), selection: $vm.codPayer) {
+                    Text(lang.t("cod_payer.sender")).tag(CodPayer.sender)
+                    Text(lang.t("cod_payer.recipient")).tag(CodPayer.recipient)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            VStack(alignment: .leading, spacing: QTheme.space3) {
+                Text(lang.t("send.quote")).qFont(.h3).foregroundColor(QTheme.ink)
+                quoteRows
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+            .padding(.top, QTheme.space2)
+        }
+    }
+
+    private func methodRow(_ method: PaymentMethod, icon: String) -> some View {
+        let selected = vm.paymentMethod == method
+        return Button { vm.paymentMethod = method } label: {
+            QChoiceRow(selected: selected) {
+                Image(systemName: icon).foregroundColor(QTheme.muted).accessibilityHidden(true)
+                Text(lang.t("payment.\(method.rawValue)")).qFont(.body).foregroundColor(QTheme.ink)
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    @ViewBuilder private var quoteRows: some View {
+        if vm.isQuoting {
+            QSkeleton(height: 14)
+            QSkeleton(width: 160, height: 14)
+        } else if let q = vm.quote {
+            KeyValueRow(label: lang.t("checkout.delivery_fee"), value: lang.money(q.feeBaisa), bold: true)
+            KeyValueRow(label: lang.t("send.distance"), value: lang.distance(q.distanceM))
+            KeyValueRow(label: lang.t("send.duration"), value: lang.f("send.duration_approx", lang.minutes(q.estimatedDurationS)))
+            if q.zoneId == nil {
+                Text(lang.t("address.out_of_area")).qFont(.small).foregroundColor(QTheme.danger)
+            }
+        } else if let e = vm.quoteError {
+            InlineError(error: e)
+        } else {
+            Text(lang.t("send.quote_hint")).qFont(.body).foregroundColor(QTheme.muted)
+        }
+    }
+
+    // MARK: Bottom bar
+
+    private var canContinue: Bool {
+        switch step {
+        case 0: return vm.pickup.isComplete && vm.dropoff.isComplete
+        case 1: return !vm.packageDescription.trimmingCharacters(in: .whitespaces).isEmpty
+        default: return vm.canSubmit
+        }
+    }
+
+    private var bottomBar: some View {
+        QNightBar {
+            if let q = vm.quote {
+                HStack {
+                    Text(lang.t("checkout.delivery_fee")).qFont(.body).foregroundColor(QTheme.muted)
+                    Spacer()
+                    QPrice(baisa: q.feeBaisa, style: .h3)
+                }
+            }
+            HStack(spacing: QTheme.space3) {
+                if step > 0 {
+                    Button(lang.t("common.back")) { step -= 1 }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .frame(maxWidth: 120)
+                        .disabled(vm.isCreating)
+                }
+                Button {
+                    Task { await primaryTapped() }
+                } label: {
+                    if vm.isCreating {
+                        ProgressView().tint(QTheme.onCta)
+                    } else {
+                        Text(step < 2 ? lang.t("common.continue") : lang.t("send.submit"))
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!canContinue)
+                .accessibilityIdentifier("send.primary")
+            }
+        }
+    }
+
+    private func primaryTapped() async {
+        if step < 2 {
+            step += 1
+            return
+        }
+        await submit()
     }
 
     private func submit() async {
@@ -252,6 +368,7 @@ struct SendView: View {
         guard let order = createdOrder else { return }
         createdOrder = nil
         vm.reset()
+        step = 0
         router.showOrder(order.id)
     }
 }

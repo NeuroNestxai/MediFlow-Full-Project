@@ -10,6 +10,9 @@
     <string name="home_title">ماذا تطلب اليوم؟</string>
     <string name="home_search_hint">ابحث عن متجر</string>
     <string name="home_location_denied">الموقع غير مفعّل – نعرض كل المتاجر. فعّله لرؤية الأقرب إليك.</string>
+    <string name="home_location_near">بالقرب منك</string>
+    <string name="home_location_off">الموقع متوقف</string>
+    <string name="home_location_finding">جارٍ تحديد موقعك…</string>
     <string name="home_empty">لا توجد متاجر</string>
     <string name="home_empty_body">جرّب تصنيفاً أو كلمة بحث أخرى.</string>
     <string name="category_all">الكل</string>
@@ -31,7 +34,8 @@
     <string name="store_other_items">منتجات أخرى</string>
     <string name="product_unavailable">غير متوفر</string>
     <string name="product_notes">تعليمات خاصة</string>
-    <string name="product_add">أضف · %1$s</string>
+    <string name="product_add_label">أضف إلى السلة</string>
+    <string name="product_add_to_cart">أضف %1$s إلى السلة</string>
     <string name="option_required_one">مطلوب · اختر ١</string>
     <string name="option_required_range">مطلوب · اختر %1$s–%2$s</string>
     <string name="option_optional_one">اختياري</string>
@@ -40,6 +44,7 @@
     <string name="qty_increase">زيادة الكمية</string>
 
     <string name="cart_view">عرض السلة (%1$s) · %2$s</string>
+    <string name="cart_view_short">عرض السلة</string>
     <string name="cart_empty">سلتك فارغة</string>
     <string name="cart_replace_title">بدء سلة جديدة؟</string>
     <string name="cart_replace_body">سلتك تحتوي على منتجات من %1$s. يمكنك الطلب من متجر واحد في كل مرة.</string>
@@ -54,7 +59,6 @@
     <string name="checkout_summary">الملخص</string>
     <string name="checkout_select_address_first">اختر عنوان التوصيل لعرض الإجمالي.</string>
     <string name="checkout_below_minimum">أضف %1$s للوصول إلى الحد الأدنى للطلب.</string>
-    <string name="checkout_place">تأكيد الطلب · %1$s</string>
     <string name="checkout_place_no_total">تأكيد الطلب</string>
 
     <string name="price_subtotal">المجموع الفرعي</string>
@@ -85,7 +89,7 @@
     <string name="order_title">الطلب</string>
     <string name="order_parcel">توصيل طرد</string>
     <string name="order_delivery">توصيل</string>
-    <string name="order_pay_now">ادفع الآن · %1$s</string>
+    <string name="order_pay_now_label">ادفع الآن</string>
     <string name="order_track">تتبّع مباشر</string>
     <string name="order_pin_title">رمز التسليم</string>
     <string name="order_pin_hint">شاركه مع الكابتن فقط عند استلام طلبك.</string>
@@ -117,9 +121,13 @@
 
     <string name="send_title">إرسال طرد</string>
     <string name="send_subtitle">يستلمه كابتن ويوصله إلى أي مكان ضمن منطقة الخدمة.</string>
+    <string name="send_step_of">الخطوة %1$s من %2$s</string>
+    <string name="send_step_places">الاستلام والتسليم</string>
+    <string name="send_step_review">الدفع والمراجعة</string>
     <string name="send_pickup">الاستلام</string>
     <string name="send_dropoff">التسليم</string>
     <string name="send_set_on_map">حدد الموقع على الخريطة</string>
+    <string name="send_location_set">تم تحديد الموقع · تغيير</string>
     <string name="send_location_required">اختر الموقع على الخريطة.</string>
     <string name="send_address_details">تفاصيل العنوان (المبنى، معلم قريب)</string>
     <string name="send_contact_name">اسم جهة الاتصال</string>
@@ -133,7 +141,6 @@
     <string name="send_cod_recipient">المستلم (عند التسليم)</string>
     <string name="send_set_both_pins">حدد الموقعين لعرض السعر.</string>
     <string name="send_fix_fields">يرجى إكمال الحقول المحددة.</string>
-    <string name="send_submit">اطلب كابتن · %1$s</string>
     <string name="send_submit_no_price">اطلب كابتن</string>
     <string name="package_small">صغير</string>
     <string name="package_medium">متوسط</string>

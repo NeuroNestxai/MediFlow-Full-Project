@@ -2,14 +2,15 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, LinkButton, Loading, MoneyInput, PageHeader, Segmented, Select, Switch, Tabs,
-  Textarea, errorMessage, isApiError, useI18n, useToast,
-  type Banner, type BannerInput, type Items, type LatLng, type MerchantCategory, type MerchantDetail, type MerchantUpdate, type OpeningWindow,
+  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Icon, Input, LinkButton, Loading, MoneyInput, PageHeader, Photo, Price, Segmented, Select, Switch, Tabs,
+  Textarea, errorMessage, fromPrice, isApiError, useI18n, useToast,
+  type Banner, type BannerInput, type Category, type Product, type Items, type LatLng, type MerchantCategory, type MerchantDetail, type MerchantUpdate, type OpeningWindow,
 } from '@qabnah/shared';
 import { PinPicker } from '@qabnah/shared/map';
 import { merchantApi } from '../../api';
 import { ImageUploadField } from '../../components/ImageUploadField';
 import { merchantKey, useSession } from '../session';
+import { StoreLogo, brandStyle } from '../../storefront/StorefrontLayout';
 
 export function useMerchantPatch() {
   const { merchantId } = useSession();
@@ -79,22 +80,43 @@ function ProfileTab({ m, readOnly }: { m: MerchantDetail; readOnly: boolean }) {
   );
 }
 
+/** Live phone preview of the public storefront with the store's real products. */
 function StorefrontPreview({ m, brandColor, accentColor, logoUrl, coverUrl, tagline }: { m: MerchantDetail; brandColor: string; accentColor: string; logoUrl: string; coverUrl: string; tagline: string }) {
-  const { pick, t } = useI18n();
+  const { pick, t, num } = useI18n();
+  const { merchantId } = useSession();
+  const products = useQuery({ queryKey: ['m', 'products', merchantId, '', ''], queryFn: () => merchantApi.get<Items<Product>>(`/merchants/${merchantId}/products`), staleTime: 5 * 60_000 });
+  const cats = useQuery({ queryKey: ['m', 'categories', merchantId], queryFn: () => merchantApi.get<Items<Category>>(`/merchants/${merchantId}/categories`), staleTime: 5 * 60_000 });
+  const items = (products.data?.items ?? []).filter((p) => p.isAvailable).slice(0, 3);
   return (
-    <div className="sf-preview" style={{ ['--brand' as string]: brandColor, ['--brand-accent' as string]: accentColor }} aria-label={t('store.preview')}>
-      <div className="sf-preview__cover" style={coverUrl ? { backgroundImage: `url("${coverUrl}")` } : undefined} />
-      <div className="sf-preview__body">
-        <div className="sf-preview__logo">{logoUrl ? <img src={logoUrl} alt="" /> : <span>{pick(m.nameEn, m.nameAr).slice(0, 1)}</span>}</div>
-        <div className="stack" style={{ ['--gap' as string]: '2px' }}>
-          <strong>{pick(m.nameEn, m.nameAr)}</strong>
-          <span className="text-sm muted">{tagline || t('store.taglinePlaceholder')}</span>
+    <div className="phone" style={{ ...brandStyle(brandColor, accentColor) }} aria-label={t('store.preview')} role="img">
+      <div className="phone__screen">
+        <div className="phone__cover">
+          {coverUrl ? <img src={coverUrl} alt="" /> : null}
+          <div className="phone__cover-text"><strong>{pick(m.nameEn, m.nameAr)}</strong><span>{tagline || t('store.taglinePlaceholder')}</span></div>
         </div>
-        <div className="row" style={{ marginBlockStart: 10 }}>
-          <span className="sf-chip sf-chip--on">{t('storefront.all')}</span><span className="sf-chip">{t('catalog.categories')}</span>
-          <span className="grow" />
-          <span className="sf-btn">{t('storefront.addToCart')}</span>
+        <div className="phone__body">
+          <StoreLogo m={{ ...m, logoUrl: logoUrl || null, brandColor }} size={40} />
+          <div className="sf-pills">
+            <span className={`pill ${m.isOpen ? 'pill--open' : 'pill--closed'}`}><span className="pill__dot" />{m.isOpen ? t('store.open') : t('store.closed')}</span>
+            <span className="pill">{t('sf.prep', { n: num(m.prepTimeMinutes, 0) })}</span>
+          </div>
+          {cats.data?.items.length ? <div className="phone__tabs">{cats.data.items.slice(0, 3).map((c) => <span key={c.id}>{pick(c.nameEn, c.nameAr)}</span>)}</div> : null}
+          {items.length ? (
+            <div className="phone__list">
+              {items.map((p) => (
+                <div key={p.id} className="phone__item">
+                  <Photo src={p.imageUrl} category={m.category} tint={brandColor} />
+                  <div className="grow stack" style={{ ['--gap' as string]: '0px', minWidth: 0 }}>
+                    <span className="strong truncate">{pick(p.nameEn, p.nameAr)}</span>
+                    <Price baisa={fromPrice(p)} />
+                  </div>
+                  <span className="phone__add"><Icon name="plus" /></span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
+        <div className="phone__cart"><span>{t('sf.cart')}</span><span>{t('sf.viewCart')}</span></div>
       </div>
     </div>
   );

@@ -29,7 +29,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import om.qabnah.android.state.Loadable
 import om.qabnah.android.ui.components.EmptyState
 import om.qabnah.android.ui.components.LoadableContent
+import om.qabnah.android.ui.components.QCard
+import om.qabnah.android.ui.components.QLargeTitle
+import om.qabnah.android.ui.components.QPhoto
+import om.qabnah.android.ui.components.QPrice
+import om.qabnah.android.ui.components.QSegmentedControl
+import om.qabnah.android.ui.components.QStoreLogo
 import om.qabnah.android.ui.components.StatusPill
+import om.qabnah.android.ui.theme.QabnahColors
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.ui.text.style.TextOverflow
 import om.qabnah.android.ui.components.dateTime
 import om.qabnah.android.ui.components.digits
 import om.qabnah.android.ui.components.loc
@@ -53,11 +67,13 @@ fun OrdersScreen(container: ConsumerContainer, onOpen: (String) -> Unit) {
         onPauseOrDispose { }
     }
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Text(stringResource(R.string.orders_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
-        TabRow(selectedTabIndex = tab) {
-            Tab(selected = tab == 0, onClick = { vm.selectTab(0) }, text = { Text(stringResource(R.string.orders_active)) })
-            Tab(selected = tab == 1, onClick = { vm.selectTab(1) }, text = { Text(stringResource(R.string.orders_past)) })
-        }
+        QLargeTitle(stringResource(R.string.orders_title))
+        QSegmentedControl(
+            options = listOf(stringResource(R.string.orders_active), stringResource(R.string.orders_past)),
+            selectedIndex = tab,
+            onSelect = vm::selectTab,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
         val isActive = tab == 0
         OrderList(
             state = if (isActive) active else past,
@@ -75,31 +91,53 @@ private fun OrderList(state: Loadable<OrderList>, onRefresh: () -> Unit, onLoadM
         state = state,
         onRefresh = onRefresh,
         isEmpty = { it.items.isEmpty() },
-        empty = { EmptyState(emptyText, icon = Icons.Filled.Receipt) },
+        empty = { EmptyState(emptyText) },
     ) { list ->
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             itemsIndexed(list.items, key = { _, o -> o.id }) { index, order ->
                 if (index >= list.items.size - 3) LaunchedEffect(list.items.size) { onLoadMore() }
                 OrderRow(order, onClick = { onOpen(order.id) })
-                HorizontalDivider()
             }
         }
     }
 }
 
+/** Order card: store logo (or the parcel glyph), title, number and date, status pill and total. */
 @Composable
 private fun OrderRow(order: Order, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            val title = when {
-                order.type == OrderType.C2C -> stringResource(R.string.order_parcel)
-                order.merchant != null -> loc(order.merchant!!.nameEn, order.merchant!!.nameAr)
-                else -> stringResource(R.string.order_delivery)
+    val merchant = order.merchant
+    val title = when {
+        order.type == OrderType.C2C -> stringResource(R.string.order_parcel)
+        merchant != null -> loc(merchant.nameEn, merchant.nameAr)
+        else -> stringResource(R.string.order_delivery)
+    }
+    QCard(Modifier.fillMaxWidth(), onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (merchant != null && order.type != OrderType.C2C) {
+                QStoreLogo(merchant.logoUrl, title, QabnahColors.Primary, size = 48.dp)
+            } else {
+                QPhoto(url = null, contentDescription = null, glyph = Icons.Outlined.Inventory2, shape = MaterialTheme.shapes.small, modifier = Modifier.size(48.dp))
             }
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(digits("#" + order.number) + " · " + dateTime(order.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(money(order.totalBaisa), style = MaterialTheme.typography.labelLarge)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    digits("#" + order.number) + "  ·  " + dateTime(order.createdAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        StatusPill(orderStatusLabel(order.status), orderStatusColor(order.status))
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            StatusPill(orderStatusLabel(order.status), orderStatusColor(order.status))
+            Spacer(Modifier.weight(1f))
+            QPrice(order.totalBaisa, style = MaterialTheme.typography.titleMedium)
+        }
     }
 }

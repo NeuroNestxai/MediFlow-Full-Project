@@ -28,6 +28,7 @@ const StorefrontLayout = lazyNamed(() => import('./storefront/StorefrontLayout')
 const StorefrontPage = lazyNamed(() => import('./storefront/StorefrontPage'), 'StorefrontPage');
 const CheckoutPage = lazyNamed(() => import('./storefront/CheckoutPage'), 'CheckoutPage');
 const OrderStatusPage = lazyNamed(() => import('./storefront/OrderStatusPage'), 'OrderStatusPage');
+const StoresDirectory = lazyNamed(() => import('./storefront/StoresDirectory'), 'StoresDirectory');
 const PayPage = lazyNamed(() => import('./pay/PayPage'), 'PayPage');
 const AccountPage = lazyNamed(() => import('./storefront/AccountPage'), 'AccountPage');
 const SecurityPage = lazyNamed(() => import('./portal/SecurityPage'), 'SecurityPage');
@@ -63,6 +64,7 @@ export function App() {
         <Route path="account" element={<AccountPage />} />
       </Route>
       <Route path="/pay/:code" element={<PayPage />} />
+      <Route path="/stores" element={<StoresDirectory />} />
 
       {/* Merchant portal */}
       <Route element={<MerchantSessionProvider><PortalRoutesOutlet /></MerchantSessionProvider>}>

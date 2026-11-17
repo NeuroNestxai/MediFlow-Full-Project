@@ -120,6 +120,7 @@
 "earnings.earned" = "الأرباح";
 "earnings.entries" = "الحركات";
 "earnings.payouts" = "التحويلات";
+"earnings.per_day" = "الدخل اليومي";
 "earnings.period" = "الفترة";
 "earnings.preset.month" = "هذا الشهر";
 "earnings.preset.today" = "اليوم";
@@ -145,6 +146,8 @@
 "history.empty" = "لا توجد توصيلات مكتملة بعد";
 "home.active_jobs" = "المهام الحالية";
 "home.always_location_hint" = "اسمح بالموقع «دائماً» ليتمكن العملاء من تتبعك والتطبيق في الخلفية.";
+"home.go_offline" = "اضغط لإيقاف الاتصال";
+"home.go_online" = "ابدأ الاتصال";
 "home.location_needed_message" = "يحتاج كابتن قبناه إلى موقعك للاتصال واستقبال العروض القريبة.";
 "home.location_needed_title" = "الموقع مطلوب";
 "home.not_active_hint" = "يمكنك الاتصال بعد اعتماد حسابك.";
@@ -160,10 +163,13 @@
 "job.dropoff" = "التسليم";
 "job.dropoff_approx" = "التسليم (تقريبي)";
 "job.items_count" = "%ld منتجات";
+"job.more_actions" = "إجراءات أخرى";
+"job.navigate" = "الملاحة";
 "job.navigate_dropoff" = "الملاحة إلى التسليم";
 "job.navigate_pickup" = "الملاحة إلى الاستلام";
 "job.navigate_with" = "الملاحة عبر %@";
 "job.pickup" = "الاستلام";
+"job.whatsapp" = "واتساب";
 "job.whatsapp_a11y" = "واتساب %@";
 "ledger.adjustment" = "تسوية";
 "ledger.captain_earning" = "ربح توصيل";

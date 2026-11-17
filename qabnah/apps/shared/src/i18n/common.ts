@@ -2,6 +2,8 @@
 export const common = {
   en: {
     'app.name': 'Qabnah',
+    'brand.tagline': 'We brought it.',
+    'nav.more': 'More',
     'lang.switch': 'العربية',
     'lang.switchLabel': 'Switch language to Arabic',
     'common.save': 'Save',
@@ -175,6 +177,8 @@ export const common = {
   },
   ar: {
     'app.name': 'قبناه',
+    'brand.tagline': 'قبناه لك',
+    'nav.more': 'المزيد',
     'lang.switch': 'English',
     'lang.switchLabel': 'تغيير اللغة إلى الإنجليزية',
     'common.save': 'حفظ',

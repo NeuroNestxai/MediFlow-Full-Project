@@ -33,6 +33,9 @@ import kotlinx.coroutines.launch
 import om.qabnah.android.state.Loadable
 import om.qabnah.android.state.launchLoad
 import om.qabnah.android.ui.components.EmptyState
+import om.qabnah.android.ui.components.QLargeTitle
+import om.qabnah.android.ui.components.QSegmentedControl
+import androidx.compose.foundation.layout.fillMaxWidth
 import om.qabnah.android.ui.components.LoadableContent
 import om.qabnah.captain.CaptainContainer
 import om.qabnah.captain.R
@@ -92,19 +95,25 @@ fun DeliveriesScreen(container: CaptainContainer, onOpen: (String) -> Unit) {
         onPauseOrDispose { }
     }
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Text(stringResource(R.string.deliveries_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
-        TabRow(selectedTabIndex = tab) {
-            Tab(selected = tab == 0, onClick = { vm.selectTab(0) }, text = { Text(stringResource(R.string.deliveries_active)) })
-            Tab(selected = tab == 1, onClick = { vm.selectTab(1) }, text = { Text(stringResource(R.string.deliveries_history)) })
-        }
+        QLargeTitle(stringResource(R.string.deliveries_title))
+        QSegmentedControl(
+            options = listOf(stringResource(R.string.deliveries_active), stringResource(R.string.deliveries_history)),
+            selectedIndex = tab,
+            onSelect = vm::selectTab,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
         val state = if (tab == 0) active else history
         LoadableContent(
             state = state,
             onRefresh = { vm.load(tab, refresh = true) },
             isEmpty = { it.items.isEmpty() },
-            empty = { EmptyState(stringResource(if (tab == 0) R.string.deliveries_empty_active else R.string.deliveries_empty_history), icon = Icons.Filled.LocalShipping) },
+            empty = { EmptyState(stringResource(if (tab == 0) R.string.deliveries_empty_active else R.string.deliveries_empty_history)) },
         ) { list ->
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+            ) {
                 itemsIndexed(list.items, key = { _, d -> d.id }) { index, d ->
                     if (index >= list.items.size - 3) LaunchedEffect(list.items.size) { vm.loadMore(tab) }
                     DeliveryCard(d, onClick = { onOpen(d.id) })

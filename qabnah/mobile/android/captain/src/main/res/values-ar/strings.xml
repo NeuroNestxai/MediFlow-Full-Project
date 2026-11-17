@@ -58,6 +58,7 @@
     <string name="documents_choose_file">اختيار من المعرض أو الملفات</string>
     <string name="documents_number">رقم المستند (اختياري)</string>
     <string name="documents_expiry">تاريخ الانتهاء (اختياري)</string>
+    <string name="documents_expiry_format">سنة-شهر-يوم</string>
     <string name="doc_national_id">البطاقة الشخصية / الإقامة</string>
     <string name="doc_driving_license">رخصة القيادة</string>
     <string name="doc_vehicle_registration">ملكية المركبة</string>
@@ -89,6 +90,9 @@
     <string name="home_offline">أنت غير متصل</string>
     <string name="home_online_hint">ستظهر هنا العروض القريبة منك.</string>
     <string name="home_offline_hint">اتصل لتبدأ باستقبال عروض التوصيل.</string>
+    <string name="home_go_online">اتصل الآن</string>
+    <string name="home_go_offline">قطع الاتصال</string>
+    <string name="home_map_description">خريطة تعرض موقعك الحالي</string>
     <string name="home_active_deliveries">التوصيلات الحالية</string>
     <string name="home_no_active">لا توجد توصيلات جارية.</string>
     <string name="home_waiting_offers">بانتظار العروض…</string>
@@ -116,6 +120,9 @@
     <string name="offer_you_earn">ستربح</string>
     <string name="offer_cod">تحصيل %1$s نقداً</string>
     <string name="offer_parcel">طرد · %1$s</string>
+    <string name="package_small">صغير</string>
+    <string name="package_medium">متوسط</string>
+    <string name="package_large">كبير</string>
     <string name="offer_pickup">الاستلام</string>
     <string name="offer_dropoff">التسليم (تقريبي)</string>
     <string name="offer_away">على بعد %1$s</string>
@@ -134,7 +141,6 @@
     <string name="delivery_title">التوصيل</string>
     <string name="delivery_help">مساعدة</string>
     <string name="delivery_items">%1$s منتجات</string>
-    <string name="delivery_earning">الربح %1$s</string>
     <string name="delivery_collect_cash">تحصيل %1$s نقداً</string>
     <string name="delivery_package">الطرد: %1$s</string>
     <string name="delivery_pickup">الاستلام</string>
@@ -189,6 +195,13 @@
     <string name="earnings_payouts">الدفعات</string>
     <string name="earnings_ledger">الحركات</string>
     <string name="earnings_no_entries">لا توجد حركات في هذه الفترة.</string>
+    <string name="earnings_chart_description">مخطط الأرباح. إجمالي الأرباح: %1$s</string>
+    <string name="ledger_captain_earning">أرباح توصيل</string>
+    <string name="ledger_tip">إكرامية</string>
+    <string name="ledger_cod_collected">نقد مُحصَّل</string>
+    <string name="ledger_cod_remitted">نقد مُسلَّم</string>
+    <string name="ledger_payout">تحويل مستحقات</string>
+    <string name="ledger_other">تسوية</string>
     <string name="balance_owed_to_you">مستحق لك من قبناه</string>
     <string name="balance_owed_to_you_body">أرباحك أكبر من النقد الذي بحوزتك، وستُدفع في التسوية القادمة.</string>
     <string name="balance_you_owe">مستحق عليك لقبناه</string>
@@ -206,6 +219,7 @@
 
     <string name="profile_title">الملف الشخصي</string>
     <string name="profile_acceptance">نسبة القبول %1$s%%</string>
+    <string name="profile_rating">التقييم</string>
     <string name="profile_vehicle_payout">بيانات المركبة والدفع</string>
     <string name="profile_sign_out_body">سيتم قطع اتصالك ولن تصلك العروض على هذا الجهاز.</string>
 

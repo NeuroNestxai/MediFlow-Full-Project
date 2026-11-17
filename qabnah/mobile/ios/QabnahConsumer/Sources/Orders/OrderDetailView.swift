@@ -68,6 +68,8 @@ final class OrderDetailViewModel: ObservableObject {
     }
 }
 
+/// Order detail: status header, delivery PIN on a night card, captain card, vertical timeline,
+/// items, totals and actions.
 struct OrderDetailView: View {
     @EnvironmentObject var lang: LanguageSettings
     @StateObject private var vm: OrderDetailViewModel
@@ -91,26 +93,15 @@ struct OrderDetailView: View {
 
     var body: some View {
         LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { order in
-            List {
-                statusSection(order)
-                if let pin = order.delivery?.deliveryPin, !pin.isEmpty, !order.status.isFinal {
-                    pinSection(pin)
+            ScrollView {
+                VStack(alignment: .leading, spacing: QTheme.space4) {
+                    cards(order)
                 }
-                if order.awaitingOnlinePayment {
-                    Section {
-                        Button(lang.t("order.pay_now")) { Task { await payment.start(order: order) } }
-                            .buttonStyle(PrimaryButtonStyle())
-                        InlineError(error: payment.error)
-                    }
-                }
-                if !order.items.isEmpty { itemsSection(order) }
-                if order.type == .c2c, let d = order.delivery { parcelSection(order, d) }
-                moneySection(order)
-                if !order.timeline.isEmpty { timelineSection(order) }
-                actionsSection(order)
+                .padding(QTheme.space4)
             }
             .refreshable { await vm.load() }
         }
+        .qScreen()
         .navigationTitle(vm.order.map { $0.number } ?? lang.t("order.title"))
         .navigationBarTitleDisplayMode(.inline)
         .overlay { PaymentPollingOverlay(flow: payment) }
@@ -146,32 +137,195 @@ struct OrderDetailView: View {
         .onDisappear { if !showTracking { vm.stopLiveUpdates() } }
     }
 
-    private func statusSection(_ order: Order) -> some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    StatusPill(text: lang.t("order.status.\(order.status.rawValue)"), color: order.status.color)
-                    if let ds = order.delivery?.status, ds != .created {
-                        StatusPill(text: lang.t("delivery.status.\(ds.rawValue)"), color: .secondary)
-                    }
+    @ViewBuilder
+    private func cards(_ order: Order) -> some View {
+        statusCard(order)
+        if let pin = order.delivery?.deliveryPin, !pin.isEmpty, !order.status.isFinal {
+            pinCard(pin)
+        }
+        if let captain = order.delivery?.captain, !order.status.isFinal {
+            CaptainCard(captain: captain)
+        }
+        if !order.timeline.isEmpty { timelineCard(order) }
+        if !order.items.isEmpty { itemsCard(order) }
+        if order.type == .c2c, let d = order.delivery { parcelCard(order, d) }
+        moneyCard(order)
+        actions(order)
+    }
+
+    // MARK: Status
+
+    private func statusCard(_ order: Order) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            HStack(spacing: QTheme.space2) {
+                StatusPill(text: lang.t("order.status.\(order.status.rawValue)"), color: order.status.color)
+                if let ds = order.delivery?.status, ds != .created {
+                    StatusPill(text: lang.t("delivery.status.\(ds.rawValue)"), color: QTheme.muted)
                 }
-                Text(order.merchant.map { lang.name($0) } ?? lang.t("orders.parcel")).font(.title3.bold())
-                Text(lang.dateTime(order.createdAt)).font(.caption).foregroundColor(.secondary)
-                if let reason = order.cancelReason, order.status == .cancelled || order.status == .rejected {
-                    Text(reason).font(.footnote).foregroundColor(Brand.danger)
-                }
-                if let eta = order.delivery?.etaDropoffAt, let mins = Formatters.minutesUntil(eta), !order.status.isFinal {
-                    Text(lang.f("tracking.eta_approx", mins)).font(.subheadline).foregroundColor(Brand.primary)
-                }
-                if order.isTrackable {
-                    Button { showTracking = true } label: {
-                        Label(lang.t("order.track"), systemImage: "map")
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-                InlineError(error: vm.actionError)
             }
-            .padding(.vertical, 4)
+            Text(order.merchant.map { lang.name($0) } ?? lang.t("orders.parcel")).qFont(.h2).foregroundColor(QTheme.ink)
+            Text(lang.dateTime(order.createdAt)).qFont(.small).foregroundColor(QTheme.muted)
+            if let reason = order.cancelReason, order.status == .cancelled || order.status == .rejected {
+                Text(reason).qFont(.small).foregroundColor(QTheme.danger)
+            }
+            if let eta = order.delivery?.etaDropoffAt, let mins = Formatters.minutesUntil(eta), !order.status.isFinal {
+                Text(lang.f("tracking.eta_approx", mins)).qFont(.body, .semibold).foregroundColor(QTheme.ink)
+            }
+            if order.awaitingOnlinePayment {
+                Button(lang.t("order.pay_now")) { Task { await payment.start(order: order) } }
+                    .buttonStyle(PrimaryButtonStyle())
+                InlineError(error: payment.error)
+            }
+            if order.isTrackable {
+                Button { showTracking = true } label: {
+                    Label(lang.t("order.track"), systemImage: "map")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+            InlineError(error: vm.actionError)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    // MARK: PIN (the one night surface of this screen)
+
+    private func pinCard(_ pin: String) -> some View {
+        VStack(spacing: QTheme.space2) {
+            Text(lang.t("order.pin_title")).qFont(.h3).foregroundColor(QTheme.onNight)
+            Text(verbatim: pin)
+                .kerning(10)
+                .qFont(size: 44, .bold, relativeTo: .largeTitle, tabular: true)
+                .foregroundColor(QTheme.saffron)
+                .environment(\.layoutDirection, .leftToRight)
+            Text(lang.t("order.pin_hint"))
+                .qFont(.small)
+                .foregroundColor(QTheme.onNightMuted)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(QTheme.space5)
+        .background(QTheme.night)
+        .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous))
+        .qElevation1()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(lang.t("order.pin_title")): \(pin.map(String.init).joined(separator: " "))")
+    }
+
+    // MARK: Timeline
+
+    private func timelineCard(_ order: Order) -> some View {
+        let entries = order.timeline.sorted { a, b in a.at < b.at }
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(lang.t("order.timeline")).qFont(.h3).foregroundColor(QTheme.ink).padding(.bottom, QTheme.space3)
+            ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                TimelineRow(entry: entry, isLast: index == entries.count - 1,
+                            isCurrent: index == entries.count - 1 && !order.status.isFinal)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    // MARK: Items / parcel / money
+
+    private func itemsCard(_ order: Order) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("order.items")).qFont(.h3).foregroundColor(QTheme.ink)
+            ForEach(order.items) { item in
+                HStack(alignment: .top, spacing: QTheme.space2) {
+                    Text(lang.digits("\(item.quantity)×")).qFont(.body, .semibold, tabular: true).foregroundColor(QTheme.muted)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(lang.name(item)).qFont(.body).foregroundColor(QTheme.ink)
+                        if !item.options.isEmpty {
+                            Text(item.options.map { lang.name($0) }.joined(separator: "، "))
+                                .qFont(.small).foregroundColor(QTheme.muted)
+                        }
+                        if let n = item.notes, !n.isEmpty { Text(n).qFont(.small).foregroundColor(QTheme.muted) }
+                    }
+                    Spacer(minLength: QTheme.space2)
+                    QPrice(baisa: item.lineTotalBaisa)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private func parcelCard(_ order: Order, _ d: Delivery) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("send.package")).qFont(.h3).foregroundColor(QTheme.ink)
+            if let size = d.packageSize { KeyValueRow(label: lang.t("send.size"), value: lang.t("package.\(size)", fallback: size)) }
+            if let desc = d.packageDescription { Text(desc).qFont(.body).foregroundColor(QTheme.ink) }
+            if let p = d.pickup?.address { KeyValueRow(label: lang.t("send.pickup"), value: p) }
+            if let p = d.dropoff?.address { KeyValueRow(label: lang.t("send.dropoff"), value: p) }
+            if let payer = order.codPayer, order.paymentMethod == .cod {
+                KeyValueRow(label: lang.t("send.cod_payer"), value: lang.t("cod_payer.\(payer)", fallback: payer))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private func moneyCard(_ order: Order) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("checkout.summary")).qFont(.h3).foregroundColor(QTheme.ink)
+            if order.subtotalBaisa > 0 {
+                KeyValueRow(label: lang.t("checkout.subtotal"), value: lang.money(order.subtotalBaisa))
+            }
+            KeyValueRow(label: lang.t("checkout.delivery_fee"), value: lang.money(order.deliveryFeeBaisa))
+            if order.serviceFeeBaisa > 0 {
+                KeyValueRow(label: lang.t("checkout.service_fee"), value: lang.money(order.serviceFeeBaisa))
+            }
+            if order.discountBaisa > 0 {
+                KeyValueRow(label: lang.t("checkout.discount"), value: "-" + lang.money(order.discountBaisa), valueColor: QTheme.success)
+            }
+            if order.vatBaisa > 0 {
+                KeyValueRow(label: lang.t("checkout.vat_included"), value: lang.money(order.vatBaisa))
+            }
+            Rectangle().fill(QTheme.line).frame(height: 1)
+            KeyValueRow(label: lang.t("checkout.total"), value: lang.money(order.totalBaisa), bold: true)
+            KeyValueRow(label: lang.t("checkout.payment"), value: lang.t("payment.\(order.paymentMethod.rawValue)"))
+            KeyValueRow(label: lang.t("order.payment_status"),
+                        value: lang.t("payment_status.\(order.paymentStatus)", fallback: order.paymentStatus))
+            if order.paymentMethod == .cod && order.codAmountBaisa > 0 && !order.status.isFinal {
+                Text(lang.f("order.cod_hint", lang.money(order.codAmountBaisa))).qFont(.small).foregroundColor(QTheme.muted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    // MARK: Actions
+
+    private func actions(_ order: Order) -> some View {
+        VStack(spacing: QTheme.space3) {
+            if order.hasInvoice {
+                Button {
+                    Task { await openInvoice() }
+                } label: {
+                    Label(lang.t("order.invoice"), systemImage: "doc.text")
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(isOpeningInvoice)
+            }
+            if order.canRate {
+                Button { showRating = true } label: { Label(lang.t("order.rate"), systemImage: "star") }
+                    .buttonStyle(SecondaryButtonStyle())
+            }
+            Button { showSupport = true } label: { Label(lang.t("order.get_help"), systemImage: "questionmark.circle") }
+                .buttonStyle(SecondaryButtonStyle())
+            if let phone = order.merchant?.contactPhone, let url = ExternalLinks.tel(phone), !order.status.isFinal {
+                Link(destination: url) { Label(lang.t("order.call_store"), systemImage: "phone") }
+                    .buttonStyle(SecondaryButtonStyle())
+            }
+            if order.isCancellable {
+                Button { showCancel = true } label: {
+                    Label(lang.t("order.cancel"), systemImage: "xmark.circle")
+                }
+                .buttonStyle(DestructiveButtonStyle())
+                .disabled(vm.isCancelling)
+            }
         }
     }
 
@@ -185,125 +339,103 @@ struct OrderDetailView: View {
               ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return } // SFSafariViewController: web URLs only
         invoicePage = IdentifiableURL(url: url)
     }
+}
 
-    private func pinSection(_ pin: String) -> some View {
-        Section {
-            VStack(spacing: 6) {
-                Text(lang.t("order.pin_title")).font(.headline)
-                Text(verbatim: pin)
-                    .font(.system(size: 44, weight: .bold, design: .monospaced))
-                    .kerning(8)
-                    .foregroundColor(Brand.primary)
-                    .environment(\.layoutDirection, .leftToRight)
-                Text(lang.t("order.pin_hint")).font(.footnote).foregroundColor(.secondary).multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(lang.t("order.pin_title")): \(pin.map(String.init).joined(separator: " "))")
-        }
-    }
+/// One step of the vertical order timeline: completed steps in the tint colour, the current step
+/// a saffron dot with a soft halo.
+private struct TimelineRow: View {
+    @EnvironmentObject var lang: LanguageSettings
+    let entry: TimelineEntry
+    let isLast: Bool
+    let isCurrent: Bool
 
-    private func itemsSection(_ order: Order) -> some View {
-        Section(lang.t("order.items")) {
-            ForEach(order.items) { item in
-                HStack(alignment: .top) {
-                    Text(lang.digits("\(item.quantity)×")).foregroundColor(.secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(lang.name(item))
-                        if !item.options.isEmpty {
-                            Text(item.options.map { lang.name($0) }.joined(separator: "، "))
-                                .font(.caption).foregroundColor(.secondary)
-                        }
-                        if let n = item.notes { Text(n).font(.caption).italic().foregroundColor(.secondary) }
-                    }
-                    Spacer()
-                    Text(lang.money(item.lineTotalBaisa))
+    var body: some View {
+        HStack(alignment: .top, spacing: QTheme.space3) {
+            VStack(spacing: 0) {
+                ZStack {
+                    if isCurrent { Circle().fill(QTheme.saffron.opacity(0.25)).frame(width: 22, height: 22) }
+                    Circle().fill(isCurrent ? QTheme.saffron : QTheme.tint).frame(width: 10, height: 10)
+                }
+                .frame(width: 22, height: 22)
+                if !isLast {
+                    Rectangle().fill(QTheme.tint).frame(width: 2).frame(maxHeight: .infinity)
                 }
             }
-        }
-    }
-
-    private func parcelSection(_ order: Order, _ d: Delivery) -> some View {
-        Section(lang.t("send.package")) {
-            if let size = d.packageSize { KeyValueRow(label: lang.t("send.size"), value: lang.t("package.\(size)", fallback: size)) }
-            if let desc = d.packageDescription { Text(desc) }
-            if let p = d.pickup?.address { KeyValueRow(label: lang.t("send.pickup"), value: p) }
-            if let p = d.dropoff?.address { KeyValueRow(label: lang.t("send.dropoff"), value: p) }
-            if let payer = order.codPayer, order.paymentMethod == .cod {
-                KeyValueRow(label: lang.t("send.cod_payer"), value: lang.t("cod_payer.\(payer)", fallback: payer))
-            }
-        }
-    }
-
-    private func moneySection(_ order: Order) -> some View {
-        Section(lang.t("checkout.summary")) {
-            if order.subtotalBaisa > 0 {
-                KeyValueRow(label: lang.t("checkout.subtotal"), value: lang.money(order.subtotalBaisa))
-            }
-            KeyValueRow(label: lang.t("checkout.delivery_fee"), value: lang.money(order.deliveryFeeBaisa))
-            if order.serviceFeeBaisa > 0 {
-                KeyValueRow(label: lang.t("checkout.service_fee"), value: lang.money(order.serviceFeeBaisa))
-            }
-            if order.discountBaisa > 0 {
-                KeyValueRow(label: lang.t("checkout.discount"), value: "-" + lang.money(order.discountBaisa), valueColor: Brand.success)
-            }
-            if order.vatBaisa > 0 {
-                KeyValueRow(label: lang.t("checkout.vat_included"), value: lang.money(order.vatBaisa))
-            }
-            KeyValueRow(label: lang.t("checkout.total"), value: lang.money(order.totalBaisa), bold: true)
-            KeyValueRow(label: lang.t("checkout.payment"),
-                        value: "\(lang.t("payment.\(order.paymentMethod.rawValue)")) · \(lang.t("payment_status.\(order.paymentStatus)", fallback: order.paymentStatus))")
-            if order.paymentMethod == .cod && order.codAmountBaisa > 0 && !order.status.isFinal {
-                Text(lang.f("order.cod_hint", lang.money(order.codAmountBaisa))).font(.footnote).foregroundColor(.secondary)
-            }
-        }
-    }
-
-    private func timelineSection(_ order: Order) -> some View {
-        Section(lang.t("order.timeline")) {
-            ForEach(order.timeline.sorted { $0.at < $1.at }) { entry in
-                HStack(alignment: .top, spacing: 10) {
-                    Circle().fill(Brand.primary).frame(width: 8, height: 8).padding(.top, 6).accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(lang.t("order.status.\(entry.status)", fallback: entry.status))
-                        if let note = entry.note { Text(note).font(.caption).foregroundColor(.secondary) }
-                    }
-                    Spacer()
-                    Text(lang.time(entry.at)).font(.caption).foregroundColor(.secondary)
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(lang.t("order.status.\(entry.status)", fallback: entry.status))
+                    .qFont(.body, isCurrent ? QFontWeight.semibold : QFontWeight.regular)
+                    .foregroundColor(QTheme.ink)
+                if let note = entry.note, !note.isEmpty {
+                    Text(note).qFont(.small).foregroundColor(QTheme.muted)
                 }
             }
+            .padding(.bottom, isLast ? 0 : QTheme.space4)
+            Spacer(minLength: QTheme.space2)
+            Text(lang.time(entry.at)).qFont(.small, tabular: true).foregroundColor(QTheme.muted)
         }
+        // Row height = the text's height, so the connector line stretches to the next dot.
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Captain card: vehicle, plate, rating (when the API has one) and a call button.
+struct CaptainCard: View {
+    @EnvironmentObject var lang: LanguageSettings
+    let captain: CaptainPublic
+
+    private var vehicle: String {
+        let described = [captain.vehicleColor, captain.vehicleModel].compactMap { $0 }.joined(separator: " ")
+        if !described.isEmpty { return described }
+        return captain.vehicleType.map { lang.t("vehicle.\($0.rawValue)", fallback: $0.rawValue) } ?? ""
     }
 
-    private func actionsSection(_ order: Order) -> some View {
-        Section {
-            if order.hasInvoice {
-                Button {
-                    Task { await openInvoice() }
-                } label: {
-                    HStack {
-                        Label(lang.t("order.invoice"), systemImage: "doc.text")
-                        Spacer()
-                        if isOpeningInvoice { ProgressView() }
+    var body: some View {
+        HStack(spacing: QTheme.space3) {
+            Image(systemName: captain.vehicleType == .car || captain.vehicleType == .van ? "car.fill" : "scooter")
+                .font(.system(size: 20))
+                .foregroundColor(QTheme.tint)
+                .frame(width: 48, height: 48)
+                .background(QTheme.primarySoft)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(captain.firstName).qFont(.h3).foregroundColor(QTheme.ink)
+                if !vehicle.isEmpty {
+                    Text(vehicle).qFont(.small).foregroundColor(QTheme.muted)
+                }
+                HStack(spacing: QTheme.space2) {
+                    if let plate = captain.vehiclePlate {
+                        Text(verbatim: plate)
+                            .qFont(.small, .semibold, tabular: true)
+                            .foregroundColor(QTheme.ink)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(QTheme.line, lineWidth: 1))
+                    }
+                    if let r = captain.ratingAvg, r > 0 {
+                        Label(Formatters.rating(r, language: lang.language), systemImage: "star.fill")
+                            .qFont(.small, .semibold)
+                            .foregroundColor(QTheme.muted)
                     }
                 }
-                .disabled(isOpeningInvoice)
             }
-            if order.canRate {
-                Button { showRating = true } label: { Label(lang.t("order.rate"), systemImage: "star") }
-            }
-            Button { showSupport = true } label: { Label(lang.t("order.get_help"), systemImage: "questionmark.circle") }
-            if let phone = order.merchant?.contactPhone, let url = ExternalLinks.tel(phone), !order.status.isFinal {
-                Link(destination: url) { Label(lang.t("order.call_store"), systemImage: "phone") }
-            }
-            if order.isCancellable {
-                Button(role: .destructive) { showCancel = true } label: {
-                    if vm.isCancelling { ProgressView() } else { Label(lang.t("order.cancel"), systemImage: "xmark.circle") }
+            Spacer(minLength: 0)
+            if let phone = captain.phone, let url = ExternalLinks.tel(phone) {
+                Link(destination: url) {
+                    Image(systemName: "phone.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(QTheme.onCta)
+                        .frame(width: 48, height: 48)
+                        .background(QTheme.cta)
+                        .clipShape(Circle())
                 }
-                .disabled(vm.isCancelling)
+                .accessibilityLabel(lang.f("tracking.call_captain", captain.firstName))
             }
         }
+        .card()
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -356,7 +488,7 @@ struct RatingSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            QForm {
                 if vm.hasCaptain {
                     Section(lang.f("rating.captain", vm.order.delivery?.captain?.firstName ?? "")) {
                         StarPicker(score: $vm.captainScore)
@@ -389,6 +521,7 @@ struct RatingSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .qSheet()
     }
 }
 
@@ -401,8 +534,8 @@ struct StarPicker: View {
             ForEach(1...5, id: \.self) { i in
                 Button { score = i } label: {
                     Image(systemName: i <= score ? "star.fill" : "star")
-                        .font(.title2)
-                        .foregroundColor(Brand.accent)
+                        .qFont(.h2)
+                        .foregroundColor(QTheme.saffron)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(lang.f("rating.stars_a11y", i))

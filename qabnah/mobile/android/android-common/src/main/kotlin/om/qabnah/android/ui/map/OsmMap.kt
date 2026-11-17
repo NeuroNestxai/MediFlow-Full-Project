@@ -1,6 +1,8 @@
 package om.qabnah.android.ui.map
 
 import android.content.Context
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import androidx.annotation.DrawableRes
@@ -19,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import om.qabnah.android.ui.theme.isNightPalette
 import om.qabnah.core.model.LatLng
 import om.qabnah.core.util.Geo
 import org.osmdroid.config.Configuration
@@ -72,9 +75,24 @@ data class MapMarker(
 
 fun LatLng.toGeoPoint() = GeoPoint(lat, lng)
 
+/** Design-system map styles applied to the OSM raster tiles: muted light (consumer) and dark (captain). */
+private object TileStyles {
+    /** Muted light: reduced saturation so brand-coloured pins and the saffron route stand out. */
+    val mutedLight: ColorMatrixColorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0.45f) })
+
+    /** Dark: inverted luminance mapped onto the night colour (#061A16), so land is night and labels are light. */
+    val dark: ColorMatrixColorFilter = run {
+        val k = 0.72f
+        fun row(base: Float) = floatArrayOf(-0.299f * k, -0.587f * k, -0.114f * k, 0f, base + 255f * k)
+        ColorMatrixColorFilter(ColorMatrix(row(6f) + row(26f) + row(22f) + floatArrayOf(0f, 0f, 0f, 1f, 0f)))
+    }
+}
+
 /**
  * OpenStreetMap view for Compose.
- * - [path]: solid polyline (e.g. `Tracking.path` breadcrumbs); [dashedPath]: dashed polyline (captain → next stop).
+ * - [path]: route line (e.g. `Tracking.path` breadcrumbs), 4 dp saffron with a white casing;
+ *   [dashedPath]: dashed line (captain → next stop).
+ * - [darkTiles]: dark map style (captain app); otherwise the muted light style.
  * - [fitKey]: whenever it changes the camera fits all [markers] and both paths.
  * - [centerRequest]: whenever it changes the camera animates there.
  * - [onCenterChanged]: reports the map centre after the user pans/zooms (pin pickers).
@@ -84,7 +102,7 @@ fun OsmMap(
     modifier: Modifier = Modifier,
     markers: List<MapMarker> = emptyList(),
     path: List<LatLng> = emptyList(),
-    pathColor: Int = 0xFF0E7C66.toInt(),
+    pathColor: Int = 0xFFF4A300.toInt(),
     dashedPath: List<LatLng> = emptyList(),
     dashedColor: Int = pathColor,
     initialCenter: LatLng = markers.firstOrNull()?.position ?: Geo.MUSCAT,
@@ -93,6 +111,7 @@ fun OsmMap(
     centerRequest: LatLng? = null,
     onCenterChanged: ((LatLng) -> Unit)? = null,
     contentDescription: String? = null,
+    darkTiles: Boolean = isNightPalette,
 ) {
     val context = LocalContext.current
     val mapView = remember {
@@ -108,6 +127,10 @@ fun OsmMap(
             controller.setCenter(initialCenter.toGeoPoint())
             overlays.add(CopyrightOverlay(context))
         }
+    }
+    LaunchedEffect(mapView, darkTiles) {
+        mapView.overlayManager.tilesOverlay.setColorFilter(if (darkTiles) TileStyles.dark else TileStyles.mutedLight)
+        mapView.invalidate()
     }
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -170,21 +193,33 @@ fun OsmMap(
         modifier = modifier.semantics { if (contentDescription != null) this.contentDescription = contentDescription },
         update = { view ->
             view.overlays.removeAll { it is Marker || it is Polyline }
+            val density = view.resources.displayMetrics.density
             if (path.size >= 2) {
-                val line = Polyline(view).apply {
-                    setPoints(path.map { it.toGeoPoint() })
-                    outlinePaint.color = pathColor
-                    outlinePaint.strokeWidth = 8f
+                val points = path.map { it.toGeoPoint() }
+                val casing = Polyline(view).apply {
+                    setPoints(points)
+                    outlinePaint.color = if (darkTiles) 0xFF061A16.toInt() else 0xFFFFFFFF.toInt()
+                    outlinePaint.strokeWidth = 7f * density
+                    outlinePaint.strokeCap = Paint.Cap.ROUND
+                    outlinePaint.strokeJoin = Paint.Join.ROUND
                 }
+                val line = Polyline(view).apply {
+                    setPoints(points)
+                    outlinePaint.color = pathColor
+                    outlinePaint.strokeWidth = 4f * density
+                    outlinePaint.strokeCap = Paint.Cap.ROUND
+                    outlinePaint.strokeJoin = Paint.Join.ROUND
+                }
+                view.overlays.add(casing)
                 view.overlays.add(line)
             }
             if (dashedPath.size >= 2) {
                 val dashed = Polyline(view).apply {
                     setPoints(dashedPath.map { it.toGeoPoint() })
                     outlinePaint.color = dashedColor
-                    outlinePaint.strokeWidth = 6f
+                    outlinePaint.strokeWidth = 3f * density
                     outlinePaint.strokeCap = Paint.Cap.ROUND
-                    outlinePaint.pathEffect = DashPathEffect(floatArrayOf(24f, 18f), 0f)
+                    outlinePaint.pathEffect = DashPathEffect(floatArrayOf(8f * density, 7f * density), 0f)
                 }
                 view.overlays.add(dashed)
             }

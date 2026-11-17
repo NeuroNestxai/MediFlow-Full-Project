@@ -9,20 +9,23 @@ struct CaptainProfileView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            QList {
                 if let p = store.profile {
                     Section {
                         HStack(spacing: 12) {
-                            Image(systemName: "person.crop.circle.fill")
-                                .font(.system(size: 48))
-                                .foregroundColor(Brand.primary)
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(QTheme.tint)
+                                .frame(width: 52, height: 52)
+                                .background(QTheme.primarySoft)
+                                .clipShape(Circle())
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(p.fullName.isEmpty ? (session.me?.user.fullName ?? "") : p.fullName).font(.headline)
+                                Text(p.fullName.isEmpty ? (session.me?.user.fullName ?? "") : p.fullName).qFont(.h3)
                                 Text(verbatim: PhoneNumber.display(p.phone.isEmpty ? (session.me?.user.phone ?? "") : p.phone))
-                                    .font(.subheadline).foregroundColor(.secondary)
+                                    .qFont(.body).foregroundColor(QTheme.muted)
                                 StatusPill(text: lang.t("captain_status.\(p.status.rawValue)"),
-                                           color: p.status == .active ? Brand.success : Brand.accent)
+                                           color: p.status == .active ? QTheme.success : QTheme.warning)
                             }
                         }
                         HStack {
@@ -47,7 +50,7 @@ struct CaptainProfileView: View {
                                 Label(lang.t("onboarding.documents"), systemImage: "doc.text")
                                 Spacer()
                                 if !p.missingDocuments.isEmpty {
-                                    StatusPill(text: lang.digits("\(p.missingDocuments.count)"), color: Brand.danger)
+                                    StatusPill(text: lang.digits("\(p.missingDocuments.count)"), color: QTheme.danger)
                                 }
                             }
                         }
@@ -74,7 +77,7 @@ struct CaptainProfileView: View {
                     }
                     .disabled(store.isOnline)
                     if store.isOnline {
-                        Text(lang.t("profile.go_offline_first")).font(.footnote).foregroundColor(.secondary)
+                        Text(lang.t("profile.go_offline_first")).qFont(.small).foregroundColor(QTheme.muted)
                     }
                 }
             }

@@ -15,6 +15,11 @@ import om.qabnah.captain.data.OfferRepository
 import om.qabnah.captain.data.OnlineController
 import om.qabnah.core.model.CaptainDelivery
 import om.qabnah.core.model.CaptainProfile
+import om.qabnah.core.model.Earnings
+import om.qabnah.core.model.LatLng
+import om.qabnah.core.util.DateRanges
+import om.qabnah.android.location.LocationProvider
+import om.qabnah.captain.data.LocationReporter
 
 data class OnlineUi(val busy: Boolean = false, val error: Throwable? = null)
 
@@ -22,6 +27,8 @@ class HomeViewModel(
     private val repo: CaptainRepository,
     private val online: OnlineController,
     offers: OfferRepository,
+    private val location: LocationProvider,
+    reporter: LocationReporter,
 ) : ViewModel() {
     val profile: StateFlow<CaptainProfile?> = repo.profile
     private val _active = MutableStateFlow(Loadable<List<CaptainDelivery>>())
@@ -29,13 +36,37 @@ class HomeViewModel(
     private val _online = MutableStateFlow(OnlineUi())
     val onlineUi: StateFlow<OnlineUi> = _online.asStateFlow()
 
+    /** Today's earnings (Muscat day) for the strip on the home sheet; null until loaded or when the call fails. */
+    private val _today = MutableStateFlow<Earnings?>(null)
+    val today: StateFlow<Earnings?> = _today.asStateFlow()
+
+    /** Where to centre the map: the live fix while online, else a one-shot fix when location is permitted. */
+    private val _position = MutableStateFlow(reporter.last.value)
+    val position: StateFlow<LatLng?> = _position.asStateFlow()
+
     init {
-        viewModelScope.launch { offers.deliveriesChanged.collect { loadActive(refresh = true) } }
+        viewModelScope.launch {
+            offers.deliveriesChanged.collect {
+                loadActive(refresh = true)
+                loadToday()
+            }
+        }
+        viewModelScope.launch { reporter.last.collect { fix -> if (fix != null) _position.value = fix } }
     }
 
     fun refresh() {
         viewModelScope.launch { runCatching { repo.refreshProfile() } }
         loadActive(refresh = _active.value.data != null)
+        loadToday()
+        if (_position.value == null && location.hasPermission()) {
+            viewModelScope.launch { runCatching { location.current() }.getOrNull()?.let { _position.value = it } }
+        }
+    }
+
+    private fun loadToday() {
+        viewModelScope.launch {
+            runCatching { repo.earnings(DateRanges.of(DateRanges.Preset.TODAY)) }.onSuccess { _today.value = it }
+        }
     }
 
     private fun loadActive(refresh: Boolean) {

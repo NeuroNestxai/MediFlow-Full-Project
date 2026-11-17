@@ -1,6 +1,26 @@
 package om.qabnah.captain.ui.profile
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PowerSettingsNew
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.SupportAgent
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import om.qabnah.android.ui.components.QCard
+import om.qabnah.android.ui.components.QLargeTitle
+import om.qabnah.android.ui.components.tabular
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -116,54 +136,70 @@ fun ProfileScreen(
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-        Text(stringResource(R.string.profile_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
-        profile?.let { p ->
-            Column(Modifier.padding(horizontal = 16.dp)) {
-                Text(p.fullName, style = MaterialTheme.typography.titleLarge)
-                Text(p.phone, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                    StatusPill(captainStatusLabel(p.status), captainStatusColor(p.status))
-                    Text(
-                        "  ★ " + digits(String.format(java.util.Locale.US, "%.1f", p.ratingAvg)) + "  ·  " +
-                            stringResource(R.string.profile_acceptance, digits((p.acceptanceRate * 100).toInt().toString())),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+        QLargeTitle(stringResource(R.string.profile_title))
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            profile?.let { p ->
+                QCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(p.fullName, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(p.phone, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        StatusPill(captainStatusLabel(p.status), captainStatusColor(p.status))
+                    }
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Real figures from the captain profile; the rating appears once the captain has been rated.
+                        if (p.ratingAvg > 0) {
+                            Icon(Icons.Filled.Star, contentDescription = stringResource(R.string.profile_rating), tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
+                            Text(
+                                digits(String.format(java.util.Locale.US, "%.1f", p.ratingAvg)),
+                                style = MaterialTheme.typography.titleMedium.tabular(),
+                                modifier = Modifier.padding(start = 4.dp, end = 16.dp),
+                            )
+                        }
+                        Text(stringResource(R.string.profile_acceptance, digits((p.acceptanceRate * 100).toInt().toString())), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    val vehicle = listOfNotNull(vehicleLabel(p.vehicleType).ifBlank { null }, p.vehicleMake, p.vehicleModel, p.vehicleColor, p.vehiclePlate).joinToString("  ·  ")
+                    if (vehicle.isNotBlank()) {
+                        Text(vehicle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
+                    }
                 }
-                Text(
-                    listOfNotNull(vehicleLabel(p.vehicleType).ifBlank { null }, p.vehicleMake, p.vehicleModel, p.vehicleColor, p.vehiclePlate).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
+            }
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                NavRow(Icons.Outlined.Description, stringResource(R.string.documents_title), onDocuments)
+                NavRow(Icons.Outlined.Map, stringResource(R.string.zones_title), onZones)
+                NavRow(Icons.Outlined.Schedule, stringResource(R.string.availability_title), onAvailability)
+                NavRow(Icons.Outlined.DirectionsCar, stringResource(R.string.profile_vehicle_payout), onVehicle)
+                NavRow(Icons.Outlined.Security, stringResource(R.string.permissions_title), onPermissions)
+            }
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                NavRow(Icons.Outlined.Notifications, stringResource(CommonR.string.notifications_title), onNotifications)
+                NavRow(Icons.Outlined.SupportAgent, stringResource(CommonR.string.support_title), onSupport)
+                NavRow(
+                    Icons.Outlined.Language,
+                    stringResource(CommonR.string.language),
+                    onClick = { choosingLanguage = true },
+                    value = stringResource(if (isArabic()) CommonR.string.language_ar else CommonR.string.language_en),
+                )
+            }
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                PrivacySection(container.api, onAccountDeleted = container::onAccountDeleted)
+            }
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    leadingContent = { Icon(Icons.Outlined.PowerSettingsNew, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    headlineContent = { Text(stringResource(CommonR.string.sign_out), color = MaterialTheme.colorScheme.error) },
+                    modifier = Modifier.clickable { confirmSignOut = true },
                 )
             }
         }
-        HorizontalDivider(Modifier.padding(vertical = 12.dp))
-        NavRow(Icons.Filled.Description, stringResource(R.string.documents_title), onDocuments)
-        NavRow(Icons.Filled.Map, stringResource(R.string.zones_title), onZones)
-        NavRow(Icons.Filled.Schedule, stringResource(R.string.availability_title), onAvailability)
-        NavRow(Icons.Filled.DirectionsCar, stringResource(R.string.profile_vehicle_payout), onVehicle)
-        NavRow(Icons.Filled.Security, stringResource(R.string.permissions_title), onPermissions)
-        NavRow(Icons.Filled.Notifications, stringResource(CommonR.string.notifications_title), onNotifications)
-        NavRow(Icons.Filled.SupportAgent, stringResource(CommonR.string.support_title), onSupport)
-        ListItem(
-            leadingContent = { Icon(Icons.Filled.Language, contentDescription = null) },
-            headlineContent = { Text(stringResource(CommonR.string.language)) },
-            supportingContent = { Text(stringResource(if (isArabic()) CommonR.string.language_ar else CommonR.string.language_en)) },
-            modifier = Modifier.clickable { choosingLanguage = true },
-        )
-        HorizontalDivider()
-        PrivacySection(container.api, onAccountDeleted = container::onAccountDeleted)
-        HorizontalDivider()
-        ListItem(
-            leadingContent = { Icon(Icons.Filled.PowerSettingsNew, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            headlineContent = { Text(stringResource(CommonR.string.sign_out), color = MaterialTheme.colorScheme.error) },
-            modifier = Modifier.clickable { confirmSignOut = true },
-        )
         Text(
-            stringResource(CommonR.string.common_version, BuildConfig.VERSION_NAME),
+            stringResource(CommonR.string.common_version, digits(BuildConfig.VERSION_NAME)),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
         )
     }
 
@@ -200,10 +236,17 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun NavRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+private fun NavRow(icon: ImageVector, title: String, onClick: () -> Unit, value: String? = null) {
     ListItem(
-        leadingContent = { Icon(icon, contentDescription = null) },
-        headlineContent = { Text(title) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+        headlineContent = { Text(title, style = MaterialTheme.typography.bodyMedium) },
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (value != null) Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
+            }
+        },
         modifier = Modifier.clickable(onClick = onClick),
     )
 }

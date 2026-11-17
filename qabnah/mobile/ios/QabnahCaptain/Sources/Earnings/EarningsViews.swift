@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 import QabnahKit
 
 // MARK: - Deliveries history
@@ -52,20 +53,27 @@ struct DeliveriesHistoryView: View {
                 if items.isEmpty {
                     EmptyStateView(systemImage: "shippingbox", title: lang.t("history.empty"))
                 } else {
-                    List {
-                        ForEach(items) { d in
-                            HistoryRow(delivery: d)
-                                .onAppear { if d.id == items.last?.id { Task { await vm.loadMore() } } }
-                        }
-                        if vm.isLoadingMore { ProgressView().frame(maxWidth: .infinity) }
-                    }
-                    .listStyle(.plain)
+                    list(items)
                 }
             }
-            .refreshable { await vm.load() }
+            .qScreen()
             .navigationTitle(lang.t("tab.deliveries"))
             .task { await vm.load() }
         }
+    }
+
+    private func list(_ items: [CaptainDelivery]) -> some View {
+        ScrollView {
+            LazyVStack(spacing: QTheme.space3) {
+                ForEach(items) { d in
+                    HistoryRow(delivery: d)
+                        .onAppear { if d.id == items.last?.id { Task { await vm.loadMore() } } }
+                }
+                if vm.isLoadingMore { QSkeletonRow() }
+            }
+            .padding(QTheme.space4)
+        }
+        .refreshable { await vm.load() }
     }
 }
 
@@ -73,27 +81,33 @@ struct HistoryRow: View {
     @EnvironmentObject var lang: LanguageSettings
     let delivery: CaptainDelivery
 
+    private var statusColor: Color {
+        if delivery.status == .delivered { return QTheme.success }
+        if delivery.status == .failed { return QTheme.danger }
+        return QTheme.muted
+    }
+
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: QTheme.space3) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(delivery.merchantName ?? lang.t("offer.parcel")).font(.headline)
+                Text(delivery.merchantName ?? lang.t("offer.parcel")).qFont(.h3).foregroundColor(QTheme.ink).lineLimit(1)
                 if let n = delivery.orderNumber {
-                    Text(verbatim: n).font(.caption.monospaced()).foregroundColor(.secondary)
+                    Text(verbatim: n).qFont(.small, tabular: true).foregroundColor(QTheme.muted)
                 }
                 if let at = delivery.deliveredAt ?? delivery.assignedAt {
-                    Text(lang.dateTime(at)).font(.caption2).foregroundColor(.secondary)
+                    Text(lang.dateTime(at)).qFont(.micro).foregroundColor(QTheme.muted)
                 }
                 if let reason = delivery.failureReason, delivery.status == .failed {
-                    Text(reason).font(.caption).foregroundColor(Brand.danger)
+                    Text(reason).qFont(.small).foregroundColor(QTheme.danger)
                 }
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(lang.money(delivery.earningBaisa)).font(.subheadline.bold()).foregroundColor(Brand.success)
-                StatusPill(text: lang.t("delivery.status.\(delivery.status.rawValue)"),
-                           color: delivery.status == .delivered ? Brand.success : (delivery.status == .failed ? Brand.danger : .secondary))
+            Spacer(minLength: QTheme.space2)
+            VStack(alignment: .trailing, spacing: 6) {
+                QPrice(baisa: delivery.earningBaisa)
+                StatusPill(text: lang.t("delivery.status.\(delivery.status.rawValue)"), color: statusColor)
             }
         }
+        .card()
         .accessibilityElement(children: .combine)
     }
 }
@@ -120,6 +134,8 @@ final class EarningsViewModel: ObservableObject {
     }
 }
 
+/// Earnings: period selector, the earned figure, a bar chart of income per day, the balance with
+/// the platform and the ledger activity.
 struct EarningsView: View {
     @EnvironmentObject var lang: LanguageSettings
     @StateObject private var vm: EarningsViewModel
@@ -132,83 +148,141 @@ struct EarningsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Picker(lang.t("earnings.period"), selection: $vm.preset) {
-                    ForEach(DateRangePreset.allCases) { p in Text(lang.t("earnings.preset.\(p.rawValue)")).tag(p) }
-                }
-                .pickerStyle(.segmented)
-                .padding()
-
-                LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { e in
-                    List {
-                        Section {
-                            HStack(spacing: 12) {
-                                stat(lang.t("earnings.earned"), lang.money(e.earningsBaisa), Brand.success)
-                                stat(lang.t("earnings.deliveries"), lang.digits("\(e.deliveriesCount)"), Brand.primary)
-                            }
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            KeyValueRow(label: lang.t("earnings.cod_collected"), value: lang.money(e.codCollectedBaisa))
-                        }
-                        Section(lang.t("earnings.balance")) {
-                            balance(e)
-                            NavigationLink { PayoutsView(api: api) } label: {
-                                Label(lang.t("earnings.payouts"), systemImage: "building.columns")
-                            }
-                        }
-                        if !e.entries.isEmpty {
-                            Section(lang.t("earnings.entries")) {
-                                ForEach(e.entries) { entry in
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(lang.t("ledger.\(entry.entryType)", fallback: entry.entryType))
-                                            Text(entry.description).font(.caption).foregroundColor(.secondary)
-                                            if let at = entry.createdAt {
-                                                Text(lang.dateTime(at)).font(.caption2).foregroundColor(.secondary)
-                                            }
-                                        }
-                                        Spacer()
-                                        Text(lang.money(entry.amountBaisa))
-                                            .foregroundColor(entry.amountBaisa >= 0 ? Brand.success : Brand.danger)
-                                    }
-                                    .accessibilityElement(children: .combine)
-                                }
-                            }
-                        }
+            ScrollView {
+                VStack(alignment: .leading, spacing: QTheme.space4) {
+                    Picker(lang.t("earnings.period"), selection: $vm.preset) {
+                        ForEach(DateRangePreset.allCases) { p in Text(lang.t("earnings.preset.\(p.rawValue)")).tag(p) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { e in
+                        content(e)
                     }
                 }
-                .refreshable { await vm.load() }
+                .padding(QTheme.space4)
             }
+            .qScreen()
+            .refreshable { await vm.load() }
             .navigationTitle(lang.t("tab.earnings"))
             .task(id: vm.preset) { await vm.load() }
         }
     }
 
-    private func stat(_ title: String, _ value: String, _ color: Color) -> some View {
-        VStack(spacing: 4) {
-            Text(title).font(.caption).foregroundColor(.secondary)
-            Text(value).font(.title3.bold()).foregroundColor(color).minimumScaleFactor(0.7).lineLimit(1)
+    @ViewBuilder
+    private func content(_ e: Earnings) -> some View {
+        summary(e)
+        EarningsChartCard(days: e.dailyEarnings())
+        balanceCard(e)
+        NavigationLink { PayoutsView(api: api) } label: {
+            HStack {
+                Label(lang.t("earnings.payouts"), systemImage: "building.columns").qFont(.h3).foregroundColor(QTheme.ink)
+                Spacer()
+                Image(systemName: "chevron.forward").font(.system(size: 13, weight: .semibold)).foregroundColor(QTheme.muted)
+                    .accessibilityHidden(true)
+            }
+            .card()
         }
-        .frame(maxWidth: .infinity)
+        .buttonStyle(.plain)
+        if !e.entries.isEmpty { entriesCard(e) }
+    }
+
+    private func summary(_ e: Earnings) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("earnings.earned")).qFont(.small, .medium).foregroundColor(QTheme.muted)
+            QPrice(baisa: e.earningsBaisa, style: .h1)
+            Rectangle().fill(QTheme.line).frame(height: 1)
+            KeyValueRow(label: lang.t("earnings.deliveries"), value: lang.digits("\(e.deliveriesCount)"))
+            KeyValueRow(label: lang.t("earnings.cod_collected"), value: lang.money(e.codCollectedBaisa))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .card()
-        .accessibilityElement(children: .combine)
+    }
+
+    private func balanceCard(_ e: Earnings) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(lang.t("earnings.balance")).qFont(.small, .medium).foregroundColor(QTheme.muted)
+            balance(e)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 
     @ViewBuilder
     private func balance(_ e: Earnings) -> some View {
         switch e.balanceDirection {
         case .platformOwesCaptain(let amount):
-            VStack(alignment: .leading, spacing: 4) {
-                Text(lang.f("earnings.we_owe_you", lang.money(amount))).font(.headline).foregroundColor(Brand.success)
-                Text(lang.t("earnings.we_owe_you_hint")).font(.footnote).foregroundColor(.secondary)
-            }
+            Text(lang.f("earnings.we_owe_you", lang.money(amount))).qFont(.h3).foregroundColor(QTheme.success)
+            Text(lang.t("earnings.we_owe_you_hint")).qFont(.small).foregroundColor(QTheme.muted)
         case .captainOwesPlatform(let amount):
-            VStack(alignment: .leading, spacing: 4) {
-                Text(lang.f("earnings.you_owe", lang.money(amount))).font(.headline).foregroundColor(Brand.danger)
-                Text(lang.t("earnings.you_owe_hint")).font(.footnote).foregroundColor(.secondary)
-            }
+            Text(lang.f("earnings.you_owe", lang.money(amount))).qFont(.h3).foregroundColor(QTheme.danger)
+            Text(lang.t("earnings.you_owe_hint")).qFont(.small).foregroundColor(QTheme.muted)
         case .settled:
-            Text(lang.t("earnings.settled")).font(.headline)
+            Text(lang.t("earnings.settled")).qFont(.h3).foregroundColor(QTheme.ink)
+        }
+    }
+
+    private func entriesCard(_ e: Earnings) -> some View {
+        VStack(alignment: .leading, spacing: QTheme.space3) {
+            Text(lang.t("earnings.entries")).qFont(.h3).foregroundColor(QTheme.ink)
+            ForEach(e.entries) { entry in
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(lang.t("ledger.\(entry.entryType)", fallback: entry.entryType)).qFont(.body).foregroundColor(QTheme.ink)
+                        if let number = entry.orderNumber {
+                            Text(verbatim: number).qFont(.small, tabular: true).foregroundColor(QTheme.muted)
+                        }
+                        if let at = entry.createdAt {
+                            Text(lang.dateTime(at)).qFont(.micro).foregroundColor(QTheme.muted)
+                        }
+                    }
+                    Spacer(minLength: QTheme.space2)
+                    Text(lang.money(entry.amountBaisa))
+                        .qFont(.body, .semibold, tabular: true)
+                        .foregroundColor(entry.amountBaisa >= 0 ? QTheme.success : QTheme.danger)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+}
+
+/// Bar chart of income per day (Swift Charts). Hidden when the period is a single day.
+private struct EarningsChartCard: View {
+    @EnvironmentObject var lang: LanguageSettings
+    let days: [Earnings.DayTotal]
+
+    private struct Bar: Identifiable {
+        let id: String
+        let date: Date
+        let rials: Double
+    }
+
+    private var bars: [Bar] {
+        var out: [Bar] = []
+        for day in days {
+            guard let date = MuscatCalendar.date(fromDay: day.day) else { continue }
+            out.append(Bar(id: day.day, date: date, rials: Double(day.baisa) / 1000))
+        }
+        return out
+    }
+
+    var body: some View {
+        if bars.count > 1 {
+            VStack(alignment: .leading, spacing: QTheme.space3) {
+                Text(lang.t("earnings.per_day")).qFont(.h3).foregroundColor(QTheme.ink)
+                Chart(bars) { bar in
+                    BarMark(x: .value(lang.t("earnings.period"), bar.date, unit: .day),
+                            y: .value(lang.t("earnings.earned"), bar.rials))
+                        .foregroundStyle(QTheme.saffron)
+                        .cornerRadius(3)
+                }
+                .frame(height: 180)
+                .accessibilityLabel(lang.t("earnings.per_day"))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
         }
     }
 }
@@ -247,24 +321,26 @@ struct PayoutsView: View {
                 List(items) { s in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text(lang.digits("\(s.periodStart ?? "") → \(s.periodEnd ?? "")")).font(.subheadline)
+                            Text(lang.digits("\(s.periodStart ?? "") → \(s.periodEnd ?? "")")).qFont(.body)
                             Spacer()
                             StatusPill(text: lang.t("settlement.status.\(s.status)", fallback: s.status),
-                                       color: s.status == "paid" ? Brand.success : Brand.info)
+                                       color: s.status == "paid" ? QTheme.success : QTheme.info)
                         }
                         KeyValueRow(label: lang.t("payouts.net"), value: lang.money(s.netBaisa), bold: true,
-                                    valueColor: s.netBaisa >= 0 ? Brand.success : Brand.danger)
+                                    valueColor: s.netBaisa >= 0 ? QTheme.success : QTheme.danger)
                         KeyValueRow(label: lang.t("payouts.credits"), value: lang.money(s.creditsBaisa))
                         KeyValueRow(label: lang.t("payouts.debits"), value: lang.money(s.debitsBaisa))
                         if let ref = s.payoutReference {
-                            Text(verbatim: ref).font(.caption.monospaced()).foregroundColor(.secondary)
+                            Text(verbatim: ref).qFont(.small, tabular: true).foregroundColor(QTheme.muted)
                         }
                     }
                     .padding(.vertical, 4)
+                    .listRowBackground(QTheme.surface)
                 }
                 .refreshable { await vm.load() }
             }
         }
+        .qScreen()
         .navigationTitle(lang.t("earnings.payouts"))
         .task { await vm.load() }
     }

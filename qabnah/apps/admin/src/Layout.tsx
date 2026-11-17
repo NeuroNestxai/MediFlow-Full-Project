@@ -56,8 +56,8 @@ export function Layout() {
           </nav>
         ))}
         <div className="sidebar__footer">
-          <div className="text-sm">
-            <div className="strong truncate">{s.me.user.fullName}</div>
+          <div className="sidebar__user text-sm">
+            <div className="strong truncate" style={{ color: '#fff' }}>{s.me.user.fullName}</div>
             <div className="text-xs muted truncate">{roles}</div>
           </div>
           <NavLink to="/security" className="nav-link"><Icon name="key" /><span>{t('nav.security')}</span>{!s.me.user.mfaEnabled ? <span className="badge badge--warning">{t('mfa.off')}</span> : null}</NavLink>

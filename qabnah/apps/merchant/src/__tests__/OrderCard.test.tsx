@@ -33,7 +33,7 @@ describe('OrderCard actions by status', () => {
     expect(buttons()).toEqual(['Accept', 'Reject']);
     await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
     expect(onAction).toHaveBeenCalledWith('accept');
-    expect(screen.getByText('OMR 1.790')).toBeInTheDocument();
+    expect(screen.getByTestId('order-total')).toHaveTextContent('OMR 1.790');
   });
   it('accepted order: preparing and ready (cancel lives in the drawer)', () => {
     setup(order('accepted', 'searching'));

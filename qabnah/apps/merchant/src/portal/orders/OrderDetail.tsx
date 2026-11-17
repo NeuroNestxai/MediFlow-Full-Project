@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
-  Badge, Button, Drawer, ErrorState, Icon, LinkButton, Loading, StatusBadge, FINAL_ORDER_STATUSES, merchantActionsFor, useI18n, useRealtimeChannel,
+  Badge, Button, Drawer, ErrorState, Icon, LinkButton, Loading, Photo, Price, StatusBadge, FINAL_ORDER_STATUSES, merchantActionsFor, useI18n, useRealtimeChannel,
   type LatLng, type Order,
 } from '@qabnah/shared';
 import { DROPOFF_COLOR, FitBounds, MapView, Marker, PICKUP_COLOR, Tooltip, captainIcon, pinIcon } from '@qabnah/shared/map';
@@ -10,6 +10,7 @@ import { merchantApi, merchantRealtime } from '../../api';
 import { useSession } from '../session';
 import { ACTION_VARIANT } from './OrderCard';
 import { useOrderActions } from './useOrderActions';
+import { useProductImages } from '../useProductImages';
 
 export function useMerchantOrder(orderId: string | null) {
   const { merchantId } = useSession();
@@ -49,6 +50,8 @@ export function OrderMap({ order, height = 260 }: { order: Order; height?: numbe
 
 export function OrderDetailBody({ order, showMap }: { order: Order; showMap?: boolean }) {
   const { t, money, pick, dateTime, time, num } = useI18n();
+  const images = useProductImages();
+  const { detail } = useSession();
   const d = order.delivery;
   return (
     <>
@@ -63,21 +66,23 @@ export function OrderDetailBody({ order, showMap }: { order: Order; showMap?: bo
       {order.items.length ? (
         <section className="stack stack-sm" aria-labelledby="od-items">
           <h3 id="od-items">{t('orders.items')}</h3>
-          <ul className="item-list">
+          <ul className="cart-lines">
             {order.items.map((i) => (
-              <li key={i.id}>
-                <div className="row between row-nowrap">
-                  <span><span className="strong">{num(i.quantity, 0)}×</span> {pick(i.nameEn, i.nameAr)}</span>
-                  <span className="num">{money(i.lineTotalBaisa)}</span>
+              <li key={i.id} className="cart-line">
+                <Photo src={images.get(i.productId ?? '')} category={detail?.category} className="photo--sm" style={{ width: 60 }} />
+                <div className="grow stack" style={{ ['--gap' as string]: '2px' }}>
+                  <div className="row between row-nowrap">
+                    <span className="strong">{pick(i.nameEn, i.nameAr)}</span>
+                    <Price baisa={i.lineTotalBaisa} />
+                  </div>
+                  <span className="text-sm muted">{t('orders.qtyN', { n: num(i.quantity, 0) })}</span>
+                  {i.options?.length ? (
+                    <span className="text-sm muted">
+                      {i.options.map((o) => `${o.groupNameEn || o.groupNameAr ? `${pick(o.groupNameEn, o.groupNameAr)}: ` : ''}${pick(o.nameEn, o.nameAr)}`).join(' · ')}
+                    </span>
+                  ) : null}
+                  {i.notes ? <span className="text-sm"><Icon name="edit" width={14} height={14} /> {i.notes}</span> : null}
                 </div>
-                {i.options?.length ? (
-                  <ul className="text-sm muted option-list">
-                    {i.options.map((o, k) => (
-                      <li key={k}>{o.groupNameEn || o.groupNameAr ? `${pick(o.groupNameEn, o.groupNameAr)}: ` : ''}{pick(o.nameEn, o.nameAr)}{o.priceDeltaBaisa ? ` (${money(o.priceDeltaBaisa, { signed: true })})` : ''}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {i.notes ? <div className="text-sm"><Icon name="edit" width={14} height={14} /> {i.notes}</div> : null}
               </li>
             ))}
           </ul>
@@ -128,7 +133,7 @@ export function OrderDetailBody({ order, showMap }: { order: Order; showMap?: bo
             {d.captain ? (
               <>
                 <dt>{t('orders.captain')}</dt>
-                <dd>{d.captain.firstName} · {t(`vehicle.${d.captain.vehicleType}`)}{d.captain.vehiclePlate ? <> · <span className="ltr">{d.captain.vehiclePlate}</span></> : null}</dd>
+                <dd><span className="row row-nowrap"><Photo ratio="1 / 1" glyph="user" className="photo--round" style={{ width: 36 }} /><span>{d.captain.firstName} · {t(`vehicle.${d.captain.vehicleType}`)}{d.captain.vehiclePlate ? <> · <span className="ltr">{d.captain.vehiclePlate}</span></> : null}</span></span></dd>
                 {d.captain.phone ? <><dt>{t('orders.captainPhone')}</dt><dd><a className="ltr" href={`tel:${d.captain.phone}`}>{d.captain.phone}</a></dd></> : null}
               </>
             ) : <><dt>{t('orders.captain')}</dt><dd className="muted">{t('orders.noCaptainYet')}</dd></>}

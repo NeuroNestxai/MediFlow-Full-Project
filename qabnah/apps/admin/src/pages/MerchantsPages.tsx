@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, Kpi, LinkButton, Loading, PageHeader, Pagination, Select, StatusBadge, Tabs,
+  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, Kpi, LinkButton, Loading, PageHeader, Pagination, Photo, Select, StatusBadge, Tabs,
   errorMessage, formatBps, useDebounced, useI18n, useToast, type AdminMerchantDetail, type Items, type MerchantDetail, type Page, type Plan,
 } from '@qabnah/shared';
 import { api } from '../api';
@@ -34,7 +34,7 @@ export function MerchantsPage() {
               <thead><tr><th>{t('common.name')}</th><th>{t('merchants.category')}</th><th>{t('common.status')}</th><th>{t('merchants.plan')}</th><th>{t('merchants.commission')}</th><th>{t('merchants.created')}</th></tr></thead>
               <tbody>{r.data.items.map((m) => (
                 <tr key={m.id} className="clickable" tabIndex={0} onClick={() => nav(`/merchants/${m.id}`)} onKeyDown={(e) => { if (e.key === 'Enter') nav(`/merchants/${m.id}`); }}>
-                  <td><div className="strong">{pick(m.nameEn, m.nameAr)}</div><div className="text-xs muted ltr">/{m.slug}</div></td>
+                  <td><div className="row" style={{ flexWrap: 'nowrap' }}><Photo src={m.coverUrl ?? m.logoUrl} ratio="1 / 1" category={m.category} className="photo--sm" style={{ width: 44 }} /><div><div className="strong">{pick(m.nameEn, m.nameAr)}</div><div className="text-xs muted ltr">/{m.slug}</div></div></div></td>
                   <td>{t(`category.${m.category}`)}</td>
                   <td><StatusBadge kind="raw" status={m.status} /></td>
                   <td>{m.plan ? pick(m.plan.nameEn, m.plan.nameAr) : '—'}</td>

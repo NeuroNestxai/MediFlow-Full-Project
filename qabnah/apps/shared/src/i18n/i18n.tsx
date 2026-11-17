@@ -40,8 +40,19 @@ export interface I18n {
 
 const Ctx = createContext<I18n | null>(null);
 
+/** Reads `?lang=ar|en` from the current URL (first load only). */
+export function langFromUrl(search: string = typeof window !== 'undefined' ? window.location.search : ''): Lang | null {
+  try {
+    const v = new URLSearchParams(search).get('lang')?.toLowerCase();
+    return v === 'ar' || v === 'en' ? v : null;
+  } catch { return null; }
+}
+
 export function I18nProvider({ dictionaries, defaultLang, storageKey, children }: { dictionaries: Dictionaries; defaultLang: Lang; storageKey: string; children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
+    // An explicit `?lang=ar|en` (e.g. links from the marketing site) wins on first load and is remembered.
+    const fromUrl = langFromUrl();
+    if (fromUrl) { prefs.set(storageKey, fromUrl); return fromUrl; }
     const saved = prefs.get<string | null>(storageKey, null);
     return saved === 'ar' || saved === 'en' ? saved : defaultLang;
   });

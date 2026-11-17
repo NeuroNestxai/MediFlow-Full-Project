@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +29,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import om.qabnah.android.ui.components.ProgressButton
+import om.qabnah.android.ui.components.QSecondaryButton
+import androidx.compose.foundation.layout.fillMaxWidth
 import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.android.ui.components.errorMessage
 import om.qabnah.android.ui.theme.QabnahColors
@@ -72,36 +74,36 @@ fun PaymentScreen(container: ConsumerContainer, orderId: String, onDone: () -> U
                     )
                 }
                 PaymentUi.Phase.IN_BROWSER -> {
-                    Icon(Icons.Filled.HourglassTop, contentDescription = null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Outlined.HourglassTop, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(16.dp))
-                    Text(stringResource(R.string.payment_in_browser), textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.payment_in_browser), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(16.dp))
                     ProgressButton(stringResource(R.string.payment_open_again), onClick = vm::reopenTab)
-                    OutlinedButton(onClick = vm::poll, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.payment_check_now)) }
+                    QSecondaryButton(stringResource(R.string.payment_check_now), onClick = vm::poll, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 }
                 PaymentUi.Phase.PENDING -> {
-                    Icon(Icons.Filled.HourglassTop, contentDescription = null, modifier = Modifier.size(56.dp), tint = QabnahColors.Accent)
+                    Icon(Icons.Outlined.HourglassTop, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(16.dp))
-                    Text(stringResource(R.string.payment_pending), textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.payment_pending), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(16.dp))
                     ProgressButton(stringResource(R.string.payment_check_now), onClick = vm::poll)
-                    OutlinedButton(onClick = vm::reopenTab, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.payment_open_again)) }
+                    QSecondaryButton(stringResource(R.string.payment_open_again), onClick = vm::reopenTab, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 }
                 PaymentUi.Phase.FAILED -> {
-                    Icon(Icons.Filled.ErrorOutline, contentDescription = null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Outlined.ErrorOutline, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(16.dp))
-                    Text(stringResource(R.string.payment_failed), textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.payment_failed), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(16.dp))
                     ProgressButton(stringResource(R.string.payment_try_again), onClick = vm::startCheckout)
-                    OutlinedButton(onClick = onDone, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.payment_view_order)) }
+                    QSecondaryButton(stringResource(R.string.payment_view_order), onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 }
                 PaymentUi.Phase.ERROR -> {
-                    Icon(Icons.Filled.ErrorOutline, contentDescription = null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Outlined.ErrorOutline, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(16.dp))
-                    Text(ui.error?.let { errorMessage(it) } ?: "", textAlign = TextAlign.Center)
+                    Text(ui.error?.let { errorMessage(it) } ?: "", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(16.dp))
                     ProgressButton(stringResource(om.qabnah.android.R.string.common_retry), onClick = vm::startCheckout)
-                    OutlinedButton(onClick = onDone, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.payment_view_order)) }
+                    QSecondaryButton(stringResource(R.string.payment_view_order), onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 }
             }
         }

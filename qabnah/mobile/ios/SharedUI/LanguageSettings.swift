@@ -21,9 +21,13 @@ final class LanguageSettings: ObservableObject {
     private(set) var localizer: Localizer
     var onChange: ((AppLanguage) -> Void)?
 
+    /// The saved language (before any `LanguageSettings` instance exists, e.g. in `App.init`).
+    static var storedLanguage: AppLanguage {
+        UserDefaults.standard.string(forKey: storageKey).flatMap(AppLanguage.init(rawValue:)) ?? .default
+    }
+
     init() {
-        let stored = UserDefaults.standard.string(forKey: Self.storageKey).flatMap(AppLanguage.init(rawValue:))
-        let lang = stored ?? .default
+        let lang = Self.storedLanguage
         language = lang
         localizer = Localizer(language: lang)
     }

@@ -10,12 +10,14 @@ import { useSession } from '../session';
 import { OrderCard } from './OrderCard';
 import { OrderDrawer } from './OrderDetail';
 import { useOrderActions } from './useOrderActions';
+import { useProductImages } from '../useProductImages';
 
 const SOUND_KEY = 'qabnah.merchant.sound';
 
 export function OrdersBoard() {
   const { t, num } = useI18n();
-  const { merchantId, perms } = useSession();
+  const { merchantId, perms, detail } = useSession();
+  const images = useProductImages();
   const qc = useQueryClient();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
@@ -85,7 +87,7 @@ export function OrdersBoard() {
         <>
           <div className="board-mobile-switch">
             <Segmented label={t('nav.board')} value={mobileCol} onChange={setMobileCol}
-              options={columns.map((c) => ({ value: c.key, label: <>{t(`order.status.${c.key}`)} <span className="badge">{num(c.orders.length, 0)}</span></> }))} />
+              options={columns.map((c) => ({ value: c.key, label: <>{t(`order.status.${c.key}`)}{c.orders.length ? <> <span className="badge">{num(c.orders.length, 0)}</span></> : null}</> }))} />
           </div>
           <div className="board" role="list" aria-label={t('nav.board')}>
             {columns.map((c) => (
@@ -96,7 +98,8 @@ export function OrdersBoard() {
                 </header>
                 <div className="board__col-body">
                   {c.orders.length === 0 ? <div className="board__empty">{t('orders.columnEmpty')}</div> : c.orders.map((o) => (
-                    <OrderCard key={o.id} order={o} perms={perms} busy={busy} highlight={fresh.has(o.id)} onOpen={() => open(o.id)} onAction={(a) => run(o, a)} />
+                    <OrderCard key={o.id} order={o} perms={perms} busy={busy} highlight={fresh.has(o.id)} onOpen={() => open(o.id)} onAction={(a) => run(o, a)}
+                      thumbUrl={images.get(o.items[0]?.productId ?? '')} category={detail?.category} />
                   ))}
                 </div>
               </section>

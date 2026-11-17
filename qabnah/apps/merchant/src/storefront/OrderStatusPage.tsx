@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, ErrorState, Icon, Loading, StatusBadge, Textarea, FINAL_ORDER_STATUSES, errorMessage, orderProgress, useI18n,
+  Alert, Badge, Button, Card, ConfirmDialog, ErrorState, Icon, Loading, Photo, Price, StatusBadge, Textarea, FINAL_ORDER_STATUSES, errorMessage, orderProgress, useI18n,
   useRealtimeChannel, useToast, type LatLng, type Order, type PaymentStatus, type Tracking, type Checkout,
 } from '@qabnah/shared';
 import { DROPOFF_COLOR, FitBounds, MapView, Marker, PICKUP_COLOR, Polyline, Tooltip, captainIcon, pinIcon } from '@qabnah/shared/map';
@@ -14,7 +14,7 @@ function Stars({ value, onChange, label }: { value: number; onChange: (n: number
   return (
     <div className="stars" role="radiogroup" aria-label={label}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <button key={n} type="button" role="radio" aria-checked={value === n} aria-label={`${n}/5`} className={`stars__star ${n <= value ? 'stars__star--on' : ''}`} onClick={() => onChange(n)}>★</button>
+        <button key={n} type="button" role="radio" aria-checked={value === n} aria-label={`${n}/5`} className={`stars__star ${n <= value ? 'stars__star--on' : ''}`} onClick={() => onChange(n)}><Icon name="star" /></button>
       ))}
     </div>
   );
@@ -40,7 +40,7 @@ function RatingCard({ order }: { order: Order }) {
         <div className="row between"><span>{t('sf.rateStore')}</span><Stars value={merchant} onChange={setMerchant} label={t('sf.rateStoreLabel')} /></div>
         <Textarea label={t('sf.comment')} rows={2} maxLength={500} value={comment} onChange={(e) => setComment(e.target.value)} optional />
         {m.isError ? <Alert tone="danger">{errorMessage(m.error, t)}</Alert> : null}
-        <div><Button variant="primary" className="sf-primary" disabled={!captain && !merchant} loading={m.isPending} onClick={() => m.mutate()}>{t('sf.submitRating')}</Button></div>
+        <div><Button variant="primary" disabled={!captain && !merchant} loading={m.isPending} onClick={() => m.mutate()}>{t('sf.submitRating')}</Button></div>
       </div>
     </Card>
   );
@@ -70,13 +70,14 @@ function TrackingMap({ order, tracking, storeName }: { order: Order; tracking: T
 export function OrderStatusPage() {
   const { id } = useParams();
   const { sf } = useStorefront();
-  const { t, pick, money, num, time, dateTime } = useI18n();
+  const { t, pick, num, time, dateTime } = useI18n();
   const qc = useQueryClient();
   const toast = useToast();
   const { signedIn, loading } = useConsumer();
   const [params, setParams] = useSearchParams();
   const paymentId = params.get('paymentId');
   const [cancelOpen, setCancelOpen] = useState(false);
+  const images = useMemo(() => new Map([...sf.categories.flatMap((c) => c.products), ...sf.uncategorized].map((p) => [p.id, p.imageUrl])), [sf]);
 
   const pay = useQuery({
     queryKey: ['c', 'payment', paymentId],
@@ -118,22 +119,24 @@ export function OrderStatusPage() {
     onSuccess: (o) => { qc.setQueryData(['c', 'order', id], o); setCancelOpen(false); toast.push(t('sf.cancelled')); },
   });
 
-  if (loading) return <Loading />;
+  if (loading) return <main className="sf-container sf-page"><Loading /></main>;
   if (!signedIn) {
-    return <main className="sf-container"><Card title={t('sf.signInToTrack')}><OtpSignIn /></Card></main>;
+    return <main className="sf-container sf-page"><Card title={t('sf.signInToTrack')}><OtpSignIn /></Card></main>;
   }
-  if (order.isLoading) return <Loading />;
-  if (order.isError || !order.data) return <main className="sf-container"><Card><ErrorState error={order.error} onRetry={() => order.refetch()} /></Card></main>;
+  if (order.isLoading) return <main className="sf-container sf-page"><Loading lines={7} /></main>;
+  if (order.isError || !order.data) return <main className="sf-container sf-page"><Card><ErrorState error={order.error} onRetry={() => order.refetch()} /></Card></main>;
   const o = order.data;
   const d = o.delivery;
   const { steps, current } = orderProgress(o);
   const failedPayment = o.status === 'pending_payment' && (pay.data?.status === 'failed' || params.get('outcome') === 'cancel' || o.paymentStatus === 'failed');
   const eta = tracking.data?.etaDropoffAt ?? d?.etaDropoffAt;
+  const timeOf = (st: string) => o.timeline.find((e) => e.status === st || (st === 'delivered' && e.status === 'completed'))?.at;
+  const done = ['delivered', 'completed'].includes(o.status);
   return (
-    <main className="sf-container stack stack-lg">
+    <main className="sf-container sf-page">
       <div className="row between">
-        <div className="stack" style={{ ['--gap' as string]: '2px' }}>
-          <h1>{t('sf.orderTitle')} <span className="ltr">#{o.number}</span></h1>
+        <div className="stack" style={{ ['--gap' as string]: '0px' }}>
+          <h1>{t('sf.orderTitle')} <span className="ltr num">#{o.number}</span></h1>
           <span className="text-sm muted">{dateTime(o.createdAt)}</span>
         </div>
         <StatusBadge status={o.status} />
@@ -141,30 +144,34 @@ export function OrderStatusPage() {
       {paymentId && pay.isLoading ? <Alert tone="info">{t('sf.checkingPayment')}</Alert> : null}
       {pay.data?.status === 'paid' ? <Alert tone="success" title={t('sf.paymentReceived')}>{t('sf.paymentReceivedBody')}</Alert> : null}
       {failedPayment ? (
-        <Alert tone="danger" title={t('sf.paymentFailed')} action={<Button size="sm" variant="primary" className="sf-primary" loading={retryPay.isPending} onClick={() => { setParams({}); retryPay.mutate(); }}>{t('sf.tryAgain')}</Button>}>{t('sf.paymentFailedBody')}</Alert>
+        <Alert tone="danger" title={t('sf.paymentFailed')} action={<Button size="sm" variant="primary" loading={retryPay.isPending} onClick={() => { setParams({}); retryPay.mutate(); }}>{t('sf.tryAgain')}</Button>}>{t('sf.paymentFailedBody')}</Alert>
       ) : o.status === 'pending_payment' ? (
-        <Alert tone="warning" title={t('sf.awaitingPayment')} action={<Button size="sm" variant="primary" className="sf-primary" loading={retryPay.isPending} onClick={() => retryPay.mutate()}>{t('sf.payNow')}</Button>}>{t('sf.awaitingPaymentBody')}</Alert>
+        <Alert tone="warning" title={t('sf.awaitingPayment')} action={<Button size="sm" variant="primary" loading={retryPay.isPending} onClick={() => retryPay.mutate()}>{t('sf.payNow')}</Button>}>{t('sf.awaitingPaymentBody')}</Alert>
       ) : null}
       {o.status === 'rejected' || o.status === 'cancelled' ? <Alert tone="danger" title={t(`order.status.${o.status}`)}>{o.cancelReason}</Alert> : null}
 
       {current >= 0 ? (
-        <Card>
-          <ol className="progress" aria-label={t('sf.progress')}>
-            {steps.map((s, i) => (
-              <li key={s} className={`progress__step ${i < current ? 'progress__step--done' : ''} ${i === current ? 'progress__step--current' : ''}`} aria-current={i === current ? 'step' : undefined}>
-                <span className="progress__dot" aria-hidden="true">{i < current ? '✓' : num(i + 1, 0)}</span>
-                <span className="progress__label">{t(`sf.step.${s}`)}</span>
-              </li>
-            ))}
+        <section className="card" style={{ padding: 20 }} aria-label={t('sf.progress')}>
+          <ol className="track">
+            {steps.map((s, i) => {
+              const at = timeOf(s);
+              const isDone = i < current || (done && i === current);
+              return (
+                <li key={s} className={`track__step ${isDone ? 'track__step--done' : i === current ? 'track__step--current' : ''}`} aria-current={i === current ? 'step' : undefined}>
+                  <span className="track__dot" aria-hidden="true">{isDone ? <Icon name="check" /> : null}</span>
+                  <span className="track__label">{t(`sf.step.${s}`)}{at ? <span className="track__time"> {time(at)}</span> : null}</span>
+                </li>
+              );
+            })}
           </ol>
-          {eta && !['delivered', 'completed'].includes(o.status) ? <p className="text-sm muted" style={{ marginBlockStart: 12 }}><Icon name="clock" width={15} height={15} /> {t('sf.etaAt', { time: time(eta) })}</p> : null}
-        </Card>
+          {eta && !done ? <p className="text-sm muted" style={{ marginBlockStart: 16 }}><Icon name="clock" width={15} height={15} /> {t('sf.etaAt', { time: time(eta) })}</p> : null}
+        </section>
       ) : null}
 
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
         <div className="stack stack-lg">
           {d?.deliveryPin && !['delivered', 'completed', 'cancelled', 'rejected'].includes(o.status) ? (
-            <div className="pin-box pin-box--brand" data-testid="delivery-pin">
+            <div className="pin-box" data-testid="delivery-pin">
               <span className="text-sm">{t('sf.pinLabel')}</span>
               <span className="pin-box__code ltr">{d.deliveryPin}</span>
               <span className="text-xs">{t('sf.pinHint')}</span>
@@ -174,8 +181,9 @@ export function OrderStatusPage() {
             <Card title={t('orders.delivery')} actions={<StatusBadge kind="delivery" status={d.status} />}>
               <div className="stack">
                 {d.captain ? (
-                  <div className="row between">
-                    <div className="stack" style={{ ['--gap' as string]: '0px' }}>
+                  <div className="captain-card">
+                    <Photo ratio="1 / 1" glyph="user" className="captain-card__photo" alt="" />
+                    <div className="grow stack" style={{ ['--gap' as string]: '0px' }}>
                       <strong>{d.captain.firstName}</strong>
                       <span className="text-sm muted">{t(`vehicle.${d.captain.vehicleType}`)}{d.captain.vehicleColor ? ` · ${d.captain.vehicleColor}` : ''}{d.captain.vehiclePlate ? <> · <span className="ltr">{d.captain.vehiclePlate}</span></> : null}</span>
                     </div>
@@ -183,30 +191,32 @@ export function OrderStatusPage() {
                   </div>
                 ) : <p className="muted">{FINAL_ORDER_STATUSES.includes(o.status) ? '—' : t('sf.findingCaptain')}</p>}
                 {active ? <TrackingMap order={o} tracking={tracking.data} storeName={pick(sf.merchant.nameEn, sf.merchant.nameAr)} /> : null}
-                <p className="text-sm"><Icon name="pin" width={15} height={15} /> {d.dropoff.address}</p>
+                <p className="text-sm muted"><Icon name="pin" width={15} height={15} /> {d.dropoff.address}</p>
               </div>
             </Card>
           ) : null}
-          {['delivered', 'completed'].includes(o.status) ? <RatingCard order={o} /> : null}
+          {done ? <RatingCard order={o} /> : null}
         </div>
         <Card title={t('sf.summary')}>
           <div className="stack">
-            <ul className="item-list">
+            <ul className="cart-lines">
               {o.items.map((i) => (
-                <li key={i.id}>
-                  <div className="row between row-nowrap"><span><span className="strong">{num(i.quantity, 0)}×</span> {pick(i.nameEn, i.nameAr)}</span><span className="num">{money(i.lineTotalBaisa)}</span></div>
-                  {i.options?.length ? <div className="text-xs muted">{i.options.map((op) => pick(op.nameEn, op.nameAr)).join(' · ')}</div> : null}
+                <li key={i.id} className="cart-line">
+                  <Photo src={images.get(i.productId ?? '') ?? null} category={sf.merchant.category} tint={sf.merchant.brandColor} className="cart-line__photo photo--sm" style={{ width: 56 }} />
+                  <div className="grow stack" style={{ ['--gap' as string]: '0px' }}>
+                    <div className="row between row-nowrap"><span className="strong">{pick(i.nameEn, i.nameAr)}</span><Price baisa={i.lineTotalBaisa} /></div>
+                    <span className="text-sm muted">{t('sf.qtyN', { n: num(i.quantity, 0) })}{i.options?.length ? ` · ${i.options.map((op) => pick(op.nameEn, op.nameAr)).join(' · ')}` : ''}</span>
+                  </div>
                 </li>
               ))}
             </ul>
-            <hr className="divider" />
-            <div className="stack stack-sm text-sm">
-              <div className="row between"><span className="muted">{t('orders.subtotal')}</span><span>{money(o.subtotalBaisa)}</span></div>
-              <div className="row between"><span className="muted">{t('orders.deliveryFee')}</span><span>{money(o.deliveryFeeBaisa)}</span></div>
-              {o.serviceFeeBaisa ? <div className="row between"><span className="muted">{t('orders.serviceFee')}</span><span>{money(o.serviceFeeBaisa)}</span></div> : null}
-              <div className="row between text-lg strong"><span>{t('common.total')}</span><span>{money(o.totalBaisa)}</span></div>
-              <div className="row between"><span className="muted">{t('orders.payment')}</span><span><Badge>{t(`payment.method.${o.paymentMethod}`)}</Badge> <Badge tone={o.paymentStatus === 'paid' ? 'success' : 'neutral'}>{t(`payment.status.${o.paymentStatus}`)}</Badge></span></div>
+            <div className="summary-lines">
+              <div className="row between"><span className="muted">{t('orders.subtotal')}</span><Price baisa={o.subtotalBaisa} /></div>
+              <div className="row between"><span className="muted">{t('orders.deliveryFee')}</span><Price baisa={o.deliveryFeeBaisa} /></div>
+              {o.serviceFeeBaisa ? <div className="row between"><span className="muted">{t('orders.serviceFee')}</span><Price baisa={o.serviceFeeBaisa} /></div> : null}
             </div>
+            <div className="summary-total"><span>{t('common.total')}</span><Price baisa={o.totalBaisa} /></div>
+            <div className="row between text-sm"><span className="muted">{t('orders.payment')}</span><span className="row" style={{ ['--gap' as string]: '6px' }}><Badge>{t(`payment.method.${o.paymentMethod}`)}</Badge><Badge tone={o.paymentStatus === 'paid' ? 'success' : 'neutral'} dot>{t(`payment.status.${o.paymentStatus}`)}</Badge></span></div>
             {o.invoiceUrl ? <a className="btn" href={o.invoiceUrl} target="_blank" rel="noopener noreferrer" aria-label={t('invoice.openLabel')} data-testid="invoice-link"><Icon name="file" />{t('invoice.open')}</a> : null}
             {['pending_payment', 'placed'].includes(o.status) ? <Button variant="danger-outline" onClick={() => setCancelOpen(true)}>{t('sf.cancelOrder')}</Button> : null}
             <Link to={`/s/${sf.merchant.slug}`} className="btn btn--ghost">{t('sf.backToMenu')}</Link>

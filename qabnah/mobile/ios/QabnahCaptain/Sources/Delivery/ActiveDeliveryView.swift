@@ -46,6 +46,8 @@ final class ActiveDeliveryViewModel: ObservableObject {
     func replace(_ d: CaptainDelivery) { delivery = d }
 }
 
+/// Active delivery: map, step progress, large call / WhatsApp / navigate buttons, the two stops,
+/// and exactly one primary action in the bottom bar (release / fail live in the "more" menu).
 struct ActiveDeliveryView: View {
     @EnvironmentObject var lang: LanguageSettings
     @EnvironmentObject var store: CaptainStore
@@ -54,6 +56,7 @@ struct ActiveDeliveryView: View {
     @StateObject private var vm: ActiveDeliveryViewModel
     @State private var reasonAction: DeliveryAction? = nil
     @State private var showComplete = false
+    @State private var showNavigation = false
     private let api: APIClient
 
     init(api: APIClient, store: CaptainStore, delivery: CaptainDelivery) {
@@ -68,49 +71,35 @@ struct ActiveDeliveryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: QTheme.space4) {
                 ActiveDeliveryMap(location: store.location, delivery: d, points: points)
-                    .frame(height: 240)
-                    .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
-
-                HStack {
-                    StatusPill(text: lang.t("delivery.status.\(d.status.rawValue)"))
-                    Spacer()
-                    if let n = d.orderNumber { Text(verbatim: n).font(.caption.monospaced()).foregroundColor(.secondary) }
+                    .frame(height: 230)
+                    .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous))
+                header
+                if let step = progressIndex {
+                    QStepProgress(titles: progressTitles, current: step)
                 }
-
-                if d.codAmountBaisa > 0 {
-                    Label(lang.f("job.collect_cod", lang.money(d.codAmountBaisa)), systemImage: "banknote")
-                        .font(.headline)
-                        .foregroundColor(Brand.accent)
-                        .card()
-                }
-
-                if let target = d.currentTarget, let loc = target.location {
-                    navigationButtons(to: loc)
-                }
-
-                placeCard(title: lang.t("job.pickup"), place: d.pickup, icon: "bag.fill",
-                          highlight: d.status.isBeforePickup, name: d.merchantName)
-                placeCard(title: lang.t("job.dropoff"), place: d.dropoff, icon: "house.fill",
-                          highlight: !d.status.isBeforePickup, name: nil)
-
-                if let desc = d.packageDescription {
-                    Label(desc, systemImage: "shippingbox").card()
-                }
-                if let items = d.itemsCount, items > 0 {
-                    Label(lang.f("job.items_count", items), systemImage: "list.bullet").font(.subheadline)
-                }
-
+                if d.codAmountBaisa > 0 { codBanner }
+                quickActions
+                placeCard(title: lang.t("job.pickup"), place: d.pickup, current: d.status.isBeforePickup, name: d.merchantName)
+                placeCard(title: lang.t("job.dropoff"), place: d.dropoff, current: !d.status.isBeforePickup, name: nil)
+                details
                 InlineError(error: vm.error)
-                actionButtons
             }
-            .padding()
+            .padding(QTheme.space4)
         }
-        .background(Color(.systemGroupedBackground))
+        .qScreen()
         .refreshable { await vm.refresh() }
+        .safeAreaInset(edge: .bottom) { primaryBar }
         .navigationTitle(d.merchantName ?? lang.t("offer.parcel"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) { moreMenu }
+        }
+        .confirmationDialog(lang.t(d.status.isBeforePickup ? "job.navigate_pickup" : "job.navigate_dropoff"),
+                            isPresented: $showNavigation, titleVisibility: .visible) {
+            navigationChoices
+        }
         .sheet(item: $reasonAction) { action in
             ReasonSheet(action: action) { reason in
                 Task {
@@ -131,6 +120,45 @@ struct ActiveDeliveryView: View {
         .task { await vm.refresh() }
     }
 
+    // MARK: Header and progress
+
+    private var header: some View {
+        HStack {
+            StatusPill(text: lang.t("delivery.status.\(d.status.rawValue)"), color: QTheme.saffron)
+            Spacer()
+            if let n = d.orderNumber {
+                Text(verbatim: n).qFont(.small, tabular: true).foregroundColor(QTheme.muted)
+            }
+        }
+    }
+
+    private var progressTitles: [String] {
+        [lang.t("delivery.status.assigned"), lang.t("delivery.status.at_pickup"), lang.t("delivery.status.picked_up"),
+         lang.t("delivery.status.at_dropoff"), lang.t("delivery.status.delivered")]
+    }
+
+    /// Position in the normal flow; nil for exceptional states (failed, returning…).
+    private var progressIndex: Int? {
+        switch d.status {
+        case .assigned: return 0
+        case .atPickup: return 1
+        case .pickedUp: return 2
+        case .atDropoff: return 3
+        case .delivered: return 5
+        default: return nil
+        }
+    }
+
+    private var codBanner: some View {
+        Label(lang.f("job.collect_cod", lang.money(d.codAmountBaisa)), systemImage: "banknote")
+            .qFont(.h3)
+            .foregroundColor(QTheme.warning)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(QTheme.space4)
+            .background(QTheme.warning.opacity(0.14))
+            .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous))
+    }
+
     private var points: [MapPoint] {
         var out: [MapPoint] = []
         if let p = d.pickup?.location {
@@ -142,91 +170,141 @@ struct ActiveDeliveryView: View {
         return out
     }
 
-    private func navigationButtons(to dest: LatLng) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(lang.t(d.status.isBeforePickup ? "job.navigate_pickup" : "job.navigate_dropoff")).font(.headline)
-            HStack(spacing: 8) {
-                navButton(.appleMaps, title: "Apple Maps", dest: dest)
-                navButton(.googleMaps, title: "Google Maps", dest: dest)
-                navButton(.waze, title: "Waze", dest: dest)
-            }
-        }
-        .card()
+    // MARK: Call / WhatsApp / navigate
+
+    /// Phone of the stop the captain is heading to, unless the server masked it.
+    private var targetPhone: String? {
+        guard let phone = d.currentTarget?.contactPhone, !phone.contains("*") else { return nil }
+        return phone
     }
 
-    private func navButton(_ app: ExternalLinks.NavigationApp, title: String, dest: LatLng) -> some View {
-        Button {
-            if let url = ExternalLinks.navigation(app, to: dest), UIApplication.shared.canOpenURL(url) {
-                openURL(url)
-            } else if let web = ExternalLinks.navigationWebFallback(app, to: dest) {
-                openURL(web)
-            }
-        } label: {
-            Text(verbatim: title).font(.caption.bold()).frame(maxWidth: .infinity, minHeight: 40)
-        }
-        .buttonStyle(.bordered)
-        .accessibilityLabel(lang.f("job.navigate_with", title))
+    private var targetName: String {
+        d.currentTarget?.contactName ?? lang.t(d.status.isBeforePickup ? "job.pickup" : "job.dropoff")
     }
 
-    private func placeCard(title: String, place: Place?, icon: String, highlight: Bool, name: String?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: icon).font(.caption.bold()).foregroundColor(highlight ? Brand.primary : .secondary)
-            if let name { Text(name).font(.headline) }
-            if let contact = place?.contactName, contact != name { Text(contact).font(.headline) }
-            if let address = place?.address { Text(address).font(.subheadline) }
-            if let notes = place?.notes, !notes.isEmpty {
-                Text(notes).font(.footnote).italic().foregroundColor(.secondary)
-            }
-            if let phone = place?.contactPhone, !phone.contains("*") {
-                HStack(spacing: 10) {
-                    if let tel = ExternalLinks.tel(phone) {
-                        Link(destination: tel) { Label(lang.t("job.call"), systemImage: "phone.fill") }
-                            .buttonStyle(.bordered)
-                            .accessibilityLabel(lang.f("job.call_a11y", place?.contactName ?? title))
-                    }
-                    if let wa = ExternalLinks.whatsApp(phone) {
-                        Link(destination: wa) { Label("WhatsApp", systemImage: "message.fill") }
-                            .buttonStyle(.bordered)
-                            .tint(Brand.success)
-                            .accessibilityLabel(lang.f("job.whatsapp_a11y", place?.contactName ?? title))
-                    }
+    private var quickActions: some View {
+        HStack(alignment: .top, spacing: QTheme.space2) {
+            if d.currentTarget?.location != nil {
+                Button { showNavigation = true } label: {
+                    QIconAction(systemImage: "location.north.fill", title: lang.t("job.navigate"))
                 }
-            } else if let masked = place?.contactPhone {
-                Text(verbatim: masked).font(.caption.monospaced()).foregroundColor(.secondary)
+                .buttonStyle(.plain)
+            }
+            if let phone = targetPhone, let tel = ExternalLinks.tel(phone) {
+                Link(destination: tel) {
+                    QIconAction(systemImage: "phone.fill", title: lang.t("job.call"))
+                }
+                .accessibilityLabel(lang.f("job.call_a11y", targetName))
+            }
+            if let phone = targetPhone, let wa = ExternalLinks.whatsApp(phone) {
+                Link(destination: wa) {
+                    QIconAction(systemImage: "message.fill", title: lang.t("job.whatsapp"))
+                }
+                .accessibilityLabel(lang.f("job.whatsapp_a11y", targetName))
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var navigationChoices: some View {
+        if let dest = d.currentTarget?.location {
+            Button(lang.f("job.navigate_with", "Apple Maps")) { navigate(.appleMaps, to: dest) }
+            Button(lang.f("job.navigate_with", "Google Maps")) { navigate(.googleMaps, to: dest) }
+            Button(lang.f("job.navigate_with", "Waze")) { navigate(.waze, to: dest) }
+        }
+        Button(lang.t("common.cancel"), role: .cancel) {}
+    }
+
+    private func navigate(_ app: ExternalLinks.NavigationApp, to dest: LatLng) {
+        if let url = ExternalLinks.navigation(app, to: dest), UIApplication.shared.canOpenURL(url) {
+            openURL(url)
+        } else if let web = ExternalLinks.navigationWebFallback(app, to: dest) {
+            openURL(web)
+        }
+    }
+
+    // MARK: Stops and details
+
+    private func placeCard(title: String, place: Place?, current: Bool, name: String?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: QTheme.space2) {
+                Circle().fill(current ? QTheme.saffron : QTheme.muted).frame(width: 10, height: 10).accessibilityHidden(true)
+                Text(title).qFont(.small, .semibold).foregroundColor(current ? QTheme.ink : QTheme.muted)
+            }
+            if let name { Text(name).qFont(.h3).foregroundColor(QTheme.ink) }
+            if let contact = place?.contactName, contact != name {
+                Text(contact).qFont(.h3).foregroundColor(QTheme.ink)
+            }
+            if let address = place?.address { Text(address).qFont(.body).foregroundColor(QTheme.ink) }
+            if let notes = place?.notes, !notes.isEmpty {
+                Text(notes).qFont(.small).foregroundColor(QTheme.muted)
+            }
+            if let phone = place?.contactPhone {
+                Text(verbatim: phone)
+                    .qFont(.small, tabular: true)
+                    .foregroundColor(QTheme.muted)
+                    .environment(\.layoutDirection, .leftToRight)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
-        .overlay(RoundedRectangle(cornerRadius: Brand.radiusMd).stroke(highlight ? Brand.primary : .clear, lineWidth: 2))
+        .overlay(RoundedRectangle(cornerRadius: QTheme.radiusMd, style: .continuous)
+            .stroke(current ? QTheme.saffron : Color.clear, lineWidth: 1.5))
+        .accessibilityElement(children: .combine)
     }
 
-    private var actionButtons: some View {
-        VStack(spacing: 10) {
-            ForEach(d.stepActions, id: \.self) { action in
+    @ViewBuilder private var details: some View {
+        if let desc = d.packageDescription {
+            Label(desc, systemImage: "shippingbox").qFont(.body).foregroundColor(QTheme.ink)
+        }
+        if let items = d.itemsCount, items > 0 {
+            Label(lang.f("job.items_count", items), systemImage: "list.bullet").qFont(.small).foregroundColor(QTheme.muted)
+        }
+    }
+
+    // MARK: The one primary action
+
+    private var primaryStep: DeliveryAction? { d.stepActions.first }
+
+    @ViewBuilder private var primaryBar: some View {
+        if let action = primaryStep {
+            QNightBar {
                 Button {
                     Task { if let u = await vm.perform(action) { store.deliveryUpdated(u) } }
                 } label: {
-                    if vm.runningAction == action { ProgressView().tint(.white) } else { Text(lang.t("action.\(action.rawValue)")) }
+                    if vm.runningAction == action {
+                        ProgressView().tint(QTheme.inkOnLight)
+                    } else {
+                        Text(lang.t("action.\(action.rawValue)"))
+                    }
                 }
-                .buttonStyle(PrimaryButtonStyle())
+                .buttonStyle(SaffronButtonStyle())
                 .disabled(vm.runningAction != nil)
+                .accessibilityIdentifier("delivery.primary")
             }
-            if d.nextActions.contains(.complete) {
+        } else if d.nextActions.contains(.complete) {
+            QNightBar {
                 Button(lang.t("action.complete")) { showComplete = true }
-                    .buttonStyle(PrimaryButtonStyle(color: Brand.success))
+                    .buttonStyle(SaffronButtonStyle())
                     .disabled(vm.runningAction != nil)
             }
-            HStack(spacing: 10) {
+        }
+    }
+
+    @ViewBuilder private var moreMenu: some View {
+        if d.nextActions.contains(.release) || d.nextActions.contains(.fail) {
+            Menu {
                 if d.nextActions.contains(.release) {
                     Button(lang.t("action.release")) { reasonAction = .release }
-                        .buttonStyle(SecondaryButtonStyle(color: Brand.accent))
                 }
                 if d.nextActions.contains(.fail) {
-                    Button(lang.t("action.fail")) { reasonAction = .fail }
-                        .buttonStyle(SecondaryButtonStyle(color: Brand.danger))
+                    Button(lang.t("action.fail"), role: .destructive) { reasonAction = .fail }
                 }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
             .disabled(vm.runningAction != nil)
+            .accessibilityLabel(lang.t("job.more_actions"))
         }
     }
 }
@@ -323,7 +401,7 @@ struct ReasonSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            QForm {
                 Section(lang.t(action == .release ? "reason.release_hint" : "reason.fail_hint")) {
                     ForEach(presets, id: \.self) { p in
                         Button {
@@ -332,16 +410,17 @@ struct ReasonSheet: View {
                             HStack {
                                 Text(lang.t("reason.\(p)"))
                                 Spacer()
-                                if preset == p { Image(systemName: "checkmark").foregroundColor(Brand.primary) }
+                                if preset == p { Image(systemName: "checkmark").foregroundColor(QTheme.tint) }
                             }
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(QTheme.ink)
                     }
                 }
                 Section(lang.t("reason.details")) {
                     TextField(lang.t("reason.details_placeholder"), text: $custom, axis: .vertical).lineLimit(2...5)
                 }
             }
+            .qScreen()
             .navigationTitle(lang.t("action.\(action.rawValue)"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -356,5 +435,6 @@ struct ReasonSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .qSheet()
     }
 }

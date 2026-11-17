@@ -11,6 +11,11 @@ struct QabnahConsumerApp: App {
     @StateObject private var cart = CartStore()
     @StateObject private var router = ConsumerRouter()
 
+    init() {
+        // Bars are styled before the first window exists.
+        QAppearance.apply(language: LanguageSettings.storedLanguage, showsTabSelectionDot: true)
+    }
+
     var body: some Scene {
         WindowGroup {
             ConsumerRootView()
@@ -19,7 +24,8 @@ struct QabnahConsumerApp: App {
                 .environmentObject(cart)
                 .environmentObject(router)
                 .qabnahLocalized(lang)
-                .tint(Brand.primary)
+                .tint(QTheme.primary)
+                .preferredColorScheme(.light)
                 .onAppear {
                     session.api.language = lang.language
                     lang.onChange = { [weak session] in session?.setLanguage($0) }
@@ -73,16 +79,16 @@ struct ConsumerTabView: View {
     var body: some View {
         TabView(selection: selection) {
             HomeView(api: session.api)
-                .tabItem { Label(lang.t("tab.home"), systemImage: "house") }
+                .tabItem { Label(lang.t("tab.home"), systemImage: "house").accessibilityIdentifier("tab.home") }
                 .tag(ConsumerRouter.Tab.home)
             gated(.send) { SendView(api: session.api) }
-                .tabItem { Label(lang.t("tab.send"), systemImage: "shippingbox") }
+                .tabItem { Label(lang.t("tab.send"), systemImage: "shippingbox").accessibilityIdentifier("tab.send") }
                 .tag(ConsumerRouter.Tab.send)
             gated(.orders) { OrdersView(api: session.api) }
-                .tabItem { Label(lang.t("tab.orders"), systemImage: "list.bullet.rectangle") }
+                .tabItem { Label(lang.t("tab.orders"), systemImage: "list.bullet.rectangle").accessibilityIdentifier("tab.orders") }
                 .tag(ConsumerRouter.Tab.orders)
             gated(.account) { AccountView() }
-                .tabItem { Label(lang.t("tab.account"), systemImage: "person.crop.circle") }
+                .tabItem { Label(lang.t("tab.account"), systemImage: "person.crop.circle").accessibilityIdentifier("tab.account") }
                 .tag(ConsumerRouter.Tab.account)
         }
         .signInSheet(isPresented: $router.signInPrompt, subtitleKey: "auth.subtitle_consumer") {
@@ -113,6 +119,7 @@ struct SignInRequiredView: View {
                 .frame(maxHeight: 280)
             Button(lang.t("guest.sign_in"), action: signIn)
                 .buttonStyle(PrimaryButtonStyle())
+                .accessibilityIdentifier("guest.signIn")
                 .frame(maxWidth: 280)
         }
         .padding()

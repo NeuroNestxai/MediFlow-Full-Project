@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- From brand/tokens.json -->
+<!-- Design System v2 "Night & Sand" tokens (docs/DESIGN_SYSTEM.md) -->
 <resources>
     <color name="qabnah_primary">#0E7C66</color>
     <color name="qabnah_primary_dark">#095C4C</color>
@@ -7,10 +7,12 @@
     <color name="qabnah_accent">#F4A300</color>
     <color name="qabnah_ink">#0B1F1C</color>
     <color name="qabnah_muted">#5B6B68</color>
-    <color name="qabnah_sand">#FBF7EF</color>
+    <color name="qabnah_sand">#FAF6EE</color>
     <color name="qabnah_surface">#FFFFFF</color>
-    <color name="qabnah_border">#E4E1D8</color>
+    <color name="qabnah_border">#E8E3D8</color>
     <color name="qabnah_danger">#C2410C</color>
     <color name="qabnah_success">#15803D</color>
     <color name="qabnah_info">#1D4ED8</color>
+    <color name="qabnah_night">#061A16</color>
+    <color name="qabnah_night_2">#0B2A25</color>
 </resources>

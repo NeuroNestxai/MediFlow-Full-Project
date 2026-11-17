@@ -34,7 +34,8 @@ struct TicketsListView: View {
         LoadableView(state: vm.state, retry: { Task { await vm.load() } }) { tickets in
             if tickets.isEmpty {
                 EmptyStateView(systemImage: "questionmark.bubble", title: lang.t("support.empty"),
-                               message: lang.t("support.empty_hint"))
+                               message: lang.t("support.empty_hint"),
+                               actionTitle: lang.t("support.new"), action: { showNew = true })
             } else {
                 List(tickets) { t in
                     NavigationLink {
@@ -42,18 +43,20 @@ struct TicketsListView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text(t.subject).font(.headline)
+                                Text(t.subject).qFont(.h3)
                                 Spacer()
                                 StatusPill(text: lang.t("ticket.status.\(t.status)", fallback: t.status),
-                                           color: t.isClosed ? .secondary : Brand.primary)
+                                           color: t.isClosed ? QTheme.muted : QTheme.tint)
                             }
-                            Text(verbatim: "#\(t.number)").font(.caption).foregroundColor(.secondary)
+                            Text(verbatim: "#\(t.number)").qFont(.small).foregroundColor(QTheme.muted)
                         }
                     }
+                    .listRowBackground(QTheme.surface)
                 }
                 .refreshable { await vm.load() }
             }
         }
+        .qScreen()
         .navigationTitle(lang.t("support.title"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -121,25 +124,25 @@ struct TicketDetailView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
-                        Text(ticket.subject).font(.title3.bold())
+                        Text(ticket.subject).qFont(.h2)
                         HStack {
                             Text(verbatim: "#\(ticket.number)")
                             if let c = ticket.category { Text(lang.t("ticket.category.\(c.rawValue)", fallback: c.rawValue)) }
                         }
-                        .font(.caption).foregroundColor(.secondary)
+                        .qFont(.small).foregroundColor(QTheme.muted)
                         ForEach(ticket.messages.filter { !$0.isInternal }) { m in
                             let staff = m.author?.isStaff ?? false
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(staff ? lang.t("support.agent") : (m.author?.fullName ?? ""))
-                                    .font(.caption.bold())
+                                    .qFont(.small, .bold)
                                 Text(m.body)
                                 if let at = m.createdAt {
-                                    Text(lang.dateTime(at)).font(.caption2).foregroundColor(.secondary)
+                                    Text(lang.dateTime(at)).qFont(.micro).foregroundColor(QTheme.muted)
                                 }
                             }
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(staff ? Brand.primary.opacity(0.1) : Color(.secondarySystemGroupedBackground))
+                            .background(staff ? QTheme.primarySoft : QTheme.surface)
                             .clipShape(RoundedRectangle(cornerRadius: Brand.radiusMd))
                         }
                     }
@@ -153,7 +156,8 @@ struct TicketDetailView: View {
                         HStack {
                             TextField(lang.t("support.reply_placeholder"), text: $vm.reply, axis: .vertical)
                                 .lineLimit(1...4)
-                                .textFieldStyle(.roundedBorder)
+                                .padding(.vertical, QTheme.space2)
+                                .qField()
                             Button {
                                 Task { await vm.send() }
                             } label: {
@@ -164,10 +168,11 @@ struct TicketDetailView: View {
                         }
                     }
                     .padding()
-                    .background(.bar)
+                    .background(QTheme.surface)
                 }
             }
         }
+        .qScreen()
         .navigationTitle(lang.t("support.ticket"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await vm.load() }
@@ -224,7 +229,7 @@ struct NewTicketView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            QForm {
                 if let orderId = vm.orderId {
                     Section { Label(lang.f("support.about_order", String(orderId.prefix(8))), systemImage: "bag") }
                 }
@@ -242,6 +247,7 @@ struct NewTicketView: View {
                     Section { InlineError(error: vm.error) }
                 }
             }
+            .qScreen()
             .navigationTitle(lang.t("support.new"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -14,26 +14,6 @@ struct MapPoint: Identifiable, Equatable {
         a.id == b.id && a.kind == b.kind && a.coordinate.latitude == b.coordinate.latitude
             && a.coordinate.longitude == b.coordinate.longitude && a.heading == b.heading
     }
-
-    var systemImage: String { Self.systemImage(for: kind) }
-
-    static func systemImage(for kind: Kind) -> String {
-        switch kind {
-        case .pickup: return "bag.fill"
-        case .dropoff: return "house.fill"
-        case .captain: return "scooter"
-        case .me: return "location.fill"
-        }
-    }
-
-    var color: Color {
-        switch kind {
-        case .pickup: return Brand.accent
-        case .dropoff: return Brand.primary
-        case .captain: return Brand.info
-        case .me: return Brand.info
-        }
-    }
 }
 
 extension MKCoordinateRegion {
@@ -56,65 +36,48 @@ extension MKCoordinateRegion {
     }
 }
 
-/// Map with pickup / dropoff / captain annotations. Re-fits when the set of points changes,
-/// and offers a recenter button.
-struct PlacesMap: View {
-    @EnvironmentObject var lang: LanguageSettings
-    let points: [MapPoint]
-    var showsUserLocation = false
-    @State private var region: MKCoordinateRegion
-
-    init(points: [MapPoint], showsUserLocation: Bool = false) {
-        self.points = points
-        self.showsUserLocation = showsUserLocation
-        _region = State(initialValue: .fitting(points.map(\.coordinate)))
-    }
-
-    var body: some View {
-        Map(coordinateRegion: $region, showsUserLocation: showsUserLocation, annotationItems: points) { p in
-            MapAnnotation(coordinate: p.coordinate) {
-                ZStack {
-                    Circle().fill(p.color).frame(width: 36, height: 36).shadow(radius: 2)
-                    Image(systemName: p.systemImage)
-                        .foregroundColor(.white)
-                }
-                .accessibilityElement()
-                .accessibilityLabel(p.label)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            Button {
-                withAnimation { region = .fitting(points.map(\.coordinate)) }
-            } label: {
-                Image(systemName: "scope")
-                    .padding(10)
-                    .background(.regularMaterial, in: Circle())
-            }
-            .padding(10)
-            .accessibilityLabel(lang.t("map.recenter"))
-        }
-        .onChange(of: points.map(\.id)) { _ in
-            withAnimation { region = .fitting(points.map(\.coordinate)) }
-        }
-    }
-}
-
 // MARK: - Route map (MKMapView)
 
-extension MapPoint.Kind {
-    var uiColor: UIColor {
-        switch self {
-        case .pickup: return UIColor(Brand.accent)
-        case .dropoff: return UIColor(Brand.primary)
-        case .captain, .me: return UIColor(Brand.info)
+/// Marker images drawn once (design system "Maps": drop-off = saffron dot, captain = white dot
+/// with a heading wedge; the pickup is a green pin).
+enum RouteMapImages {
+    static let dropoff: UIImage = {
+        let size = CGSize(width: 24, height: 24)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            let c = context.cgContext
+            let rect = CGRect(origin: .zero, size: size).insetBy(dx: 1, dy: 1)
+            UIColor.white.setFill()
+            c.fillEllipse(in: rect)
+            QUIColor.saffron.setFill()
+            c.fillEllipse(in: rect.insetBy(dx: 3, dy: 3))
         }
-    }
+    }()
+
+    /// Points "up"; the annotation view is rotated to the captain's heading.
+    static let captain: UIImage = {
+        let size = CGSize(width: 36, height: 36)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            let c = context.cgContext
+            c.move(to: CGPoint(x: 18, y: 1))
+            c.addLine(to: CGPoint(x: 26, y: 13))
+            c.addLine(to: CGPoint(x: 10, y: 13))
+            c.closePath()
+            QUIColor.saffron.setFill()
+            c.fillPath()
+            let circle = CGRect(x: 7, y: 7, width: 22, height: 22)
+            QUIColor.night.setFill()
+            c.fillEllipse(in: circle)
+            UIColor.white.setFill()
+            c.fillEllipse(in: circle.insetBy(dx: 2.5, dy: 2.5))
+        }
+    }()
 }
 
-/// Live route map (iOS 16 SwiftUI `Map` has no overlays, so this wraps `MKMapView`):
-/// pickup / dropoff / captain markers, the captain's breadcrumb `path` as a solid line and a
-/// dashed line from `dashedFrom` (captain) to `dashedTo` (next stop). Fits everything when the
-/// set of markers changes; the scope button re-fits on demand.
+/// Live route map (iOS 16 SwiftUI `Map` has no overlays, so this wraps `MKMapView`): pickup pin,
+/// drop-off dot and captain dot, the captain's breadcrumb `path` as a 4 pt saffron line with a
+/// white casing, and a dashed line from `dashedFrom` (captain) to `dashedTo` (next stop). Muted
+/// tiles; dark tiles in the captain app (dark scheme). Fits everything when the set of markers
+/// changes; the scope button re-fits on demand.
 struct RouteMapView: View {
     @EnvironmentObject var lang: LanguageSettings
     let points: [MapPoint]
@@ -123,21 +86,21 @@ struct RouteMapView: View {
     var dashedTo: CLLocationCoordinate2D? = nil
     var showsUserLocation = false
     var showsRecenterButton = true
+    /// Extra coordinate to keep in view (e.g. the captain's own position when there are no markers).
+    var focus: CLLocationCoordinate2D? = nil
     @State private var fitRequest = 0
 
     var body: some View {
         RouteMapRepresentable(points: points, path: path, dashedFrom: dashedFrom, dashedTo: dashedTo,
-                              showsUserLocation: showsUserLocation, fitRequest: fitRequest)
+                              showsUserLocation: showsUserLocation, focus: focus, fitRequest: fitRequest)
             .overlay(alignment: .topTrailing) {
                 if showsRecenterButton {
                     Button {
                         fitRequest += 1
                     } label: {
-                        Image(systemName: "scope")
-                            .padding(10)
-                            .background(.regularMaterial, in: Circle())
+                        QCircleIcon(systemImage: "scope", size: 40)
                     }
-                    .padding(10)
+                    .padding(QTheme.space3)
                     .accessibilityLabel(lang.t("map.recenter"))
                 }
             }
@@ -164,12 +127,14 @@ final class RouteAnnotation: NSObject, MKAnnotation {
     let kind: MapPoint.Kind
     @objc dynamic var coordinate: CLLocationCoordinate2D
     var title: String?
+    var heading: Double?
 
     init(_ point: MapPoint) {
         pointId = point.id
         kind = point.kind
         coordinate = point.coordinate
         title = point.label
+        heading = point.heading
         super.init()
     }
 }
@@ -180,21 +145,29 @@ struct RouteMapRepresentable: UIViewRepresentable {
     let dashedFrom: CLLocationCoordinate2D?
     let dashedTo: CLLocationCoordinate2D?
     let showsUserLocation: Bool
+    let focus: CLLocationCoordinate2D?
     let fitRequest: Int
 
+    static let casingTitle = "casing"
     static let pathTitle = "path"
     static let dashedTitle = "dashed"
+    static let pinReuseId = "qabnah.pin"
+    static let dotReuseId = "qabnah.dot"
 
     func makeCoordinator() -> RouteMapCoordinator { RouteMapCoordinator() }
 
     func makeUIView(context: Context) -> FittingMapView {
         let map = FittingMapView(frame: .zero)
         map.delegate = context.coordinator
-        map.pointOfInterestFilter = .excludingAll
+        let configuration = MKStandardMapConfiguration()
+        configuration.emphasisStyle = .muted
+        configuration.pointOfInterestFilter = .excludingAll
+        map.preferredConfiguration = configuration
         map.showsCompass = false
         map.isRotateEnabled = false
-        map.register(MKMarkerAnnotationView.self,
-                     forAnnotationViewWithReuseIdentifier: MKMapViewDefaultAnnotationViewReuseIdentifier)
+        map.isPitchEnabled = false
+        map.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: Self.pinReuseId)
+        map.register(MKAnnotationView.self, forAnnotationViewWithReuseIdentifier: Self.dotReuseId)
         return map
     }
 
@@ -204,9 +177,9 @@ struct RouteMapRepresentable: UIViewRepresentable {
         syncAnnotations(map, coordinator)
         syncOverlays(map, coordinator)
 
-        let key = points.map(\.id).sorted().joined(separator: ",")
+        let key = points.map(\.id).sorted().joined(separator: ",") + (focus == nil ? "" : "|focus")
         guard key != coordinator.fittedKey || fitRequest != coordinator.fitRequest else { return }
-        let animated = !coordinator.fittedKey.isEmpty
+        let animated = coordinator.fittedKey != nil
         coordinator.fittedKey = key
         coordinator.fitRequest = fitRequest
         let coords = fitCoordinates
@@ -223,6 +196,7 @@ struct RouteMapRepresentable: UIViewRepresentable {
         var coords = points.map(\.coordinate)
         coords.append(contentsOf: path)
         if let dashedFrom { coords.append(dashedFrom) }
+        if let focus { coords.append(focus) }
         return coords
     }
 
@@ -237,6 +211,10 @@ struct RouteMapRepresentable: UIViewRepresentable {
                 if moved {
                     let target = point.coordinate
                     UIView.animate(withDuration: 0.6) { existing.coordinate = target }
+                }
+                if existing.heading != point.heading {
+                    existing.heading = point.heading
+                    if let view = map.view(for: existing) { RouteMapCoordinator.rotate(view, heading: point.heading) }
                 }
             } else {
                 if let stale = coordinator.annotations[point.id] { map.removeAnnotation(stale) }
@@ -258,15 +236,19 @@ struct RouteMapRepresentable: UIViewRepresentable {
         guard signature != coordinator.overlaySignature else { return }
         coordinator.overlaySignature = signature
         map.removeOverlays(map.overlays)
-        if path.count > 1 {
-            let line = MKPolyline(coordinates: path, count: path.count)
-            line.title = Self.pathTitle
-            map.addOverlay(line, level: .aboveRoads)
-        }
         if let a = dashedFrom, let b = dashedTo {
             let ends = [a, b]
             let line = MKPolyline(coordinates: ends, count: ends.count)
             line.title = Self.dashedTitle
+            map.addOverlay(line, level: .aboveRoads)
+        }
+        if path.count > 1 {
+            // White casing first, the saffron line on top of it.
+            let casing = MKPolyline(coordinates: path, count: path.count)
+            casing.title = Self.casingTitle
+            map.addOverlay(casing, level: .aboveRoads)
+            let line = MKPolyline(coordinates: path, count: path.count)
+            line.title = Self.pathTitle
             map.addOverlay(line, level: .aboveRoads)
         }
     }
@@ -285,26 +267,49 @@ struct RouteMapRepresentable: UIViewRepresentable {
         let minSide = 800 * MKMapPointsPerMeterAtLatitude(first.latitude)
         if rect.size.width < minSide { rect = rect.insetBy(dx: -(minSide - rect.size.width) / 2, dy: 0) }
         if rect.size.height < minSide { rect = rect.insetBy(dx: 0, dy: -(minSide - rect.size.height) / 2) }
-        map.setVisibleMapRect(rect, edgePadding: UIEdgeInsets(top: 56, left: 36, bottom: 36, right: 56), animated: animated)
+        map.setVisibleMapRect(rect, edgePadding: UIEdgeInsets(top: 64, left: 40, bottom: 48, right: 56), animated: animated)
     }
 }
 
 final class RouteMapCoordinator: NSObject, MKMapViewDelegate {
     var annotations: [String: RouteAnnotation] = [:]
     var overlaySignature = ""
-    var fittedKey = ""
+    /// Nil until the first fit, so an empty map still gets its initial region.
+    var fittedKey: String? = nil
     var fitRequest = 0
+
+    static func rotate(_ view: MKAnnotationView, heading: Double?) {
+        let radians = CGFloat((heading ?? 0) * Double.pi / 180)
+        view.transform = CGAffineTransform(rotationAngle: radians)
+    }
 
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         guard let route = annotation as? RouteAnnotation else { return nil } // user location: system dot
-        let view = mapView.dequeueReusableAnnotationView(withIdentifier: MKMapViewDefaultAnnotationViewReuseIdentifier,
+        if route.kind == .pickup {
+            let view = mapView.dequeueReusableAnnotationView(withIdentifier: RouteMapRepresentable.pinReuseId,
+                                                             for: annotation)
+            if let marker = view as? MKMarkerAnnotationView {
+                marker.markerTintColor = QUIColor.primary
+                marker.glyphImage = UIImage(systemName: "bag.fill")
+                marker.displayPriority = .required
+                marker.titleVisibility = .adaptive
+            }
+            view.accessibilityLabel = route.title
+            return view
+        }
+        let view = mapView.dequeueReusableAnnotationView(withIdentifier: RouteMapRepresentable.dotReuseId,
                                                          for: annotation)
-        if let marker = view as? MKMarkerAnnotationView {
-            marker.markerTintColor = route.kind.uiColor
-            marker.glyphImage = UIImage(systemName: MapPoint.systemImage(for: route.kind))
-            marker.displayPriority = .required
-            marker.titleVisibility = route.kind == .captain ? .hidden : .adaptive
-            marker.accessibilityLabel = route.title
+        view.displayPriority = .required
+        view.canShowCallout = false
+        view.isAccessibilityElement = true
+        view.accessibilityLabel = route.title
+        if route.kind == .captain {
+            view.image = RouteMapImages.captain
+            view.zPriority = .max
+            RouteMapCoordinator.rotate(view, heading: route.heading)
+        } else {
+            view.image = RouteMapImages.dropoff
+            view.transform = .identity
         }
         return view
     }
@@ -315,12 +320,15 @@ final class RouteMapCoordinator: NSObject, MKMapViewDelegate {
         renderer.lineCap = .round
         renderer.lineJoin = .round
         if line.title == RouteMapRepresentable.dashedTitle {
-            renderer.strokeColor = UIColor(Brand.info).withAlphaComponent(0.8)
+            renderer.strokeColor = QUIColor.ink.withAlphaComponent(0.55)
             renderer.lineWidth = 3
             renderer.lineDashPattern = [NSNumber(value: 2), NSNumber(value: 8)]
+        } else if line.title == RouteMapRepresentable.casingTitle {
+            renderer.strokeColor = UIColor.white
+            renderer.lineWidth = 7
         } else {
-            renderer.strokeColor = UIColor(Brand.primary)
-            renderer.lineWidth = 5
+            renderer.strokeColor = QUIColor.saffron
+            renderer.lineWidth = 4
         }
         return renderer
     }
@@ -352,34 +360,24 @@ struct PinPickerView: View {
                     .ignoresSafeArea(edges: .bottom)
                 Image(systemName: "mappin")
                     .font(.system(size: 44, weight: .bold))
-                    .foregroundColor(Brand.danger)
+                    .foregroundColor(QTheme.primary)
                     .offset(y: -22)
                     .accessibilityHidden(true)
             }
-            .overlay(alignment: .bottom) {
-                VStack(spacing: 10) {
+            .safeAreaInset(edge: .bottom) {
+                QNightBar {
                     Button {
-                        Task {
-                            if let loc = await location.currentLocation() {
-                                withAnimation {
-                                    region = MKCoordinateRegion(center: loc.coordinate,
-                                                                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
-                                }
-                            }
-                        }
+                        Task { await useMyLocation() }
                     } label: {
                         Label(lang.t("map.use_my_location"), systemImage: "location.fill")
                     }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Brand.radiusMd))
-
+                    .buttonStyle(SecondaryButtonStyle(compact: true))
                     Button(lang.t("map.confirm_pin")) {
                         onConfirm(region.center.latLng)
                         dismiss()
                     }
                     .buttonStyle(PrimaryButtonStyle())
                 }
-                .padding()
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -388,6 +386,14 @@ struct PinPickerView: View {
                     Button(lang.t("common.cancel")) { dismiss() }
                 }
             }
+        }
+    }
+
+    private func useMyLocation() async {
+        guard let loc = await location.currentLocation() else { return }
+        withAnimation {
+            region = MKCoordinateRegion(center: loc.coordinate,
+                                        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
         }
     }
 }

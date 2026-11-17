@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, Loading, PageHeader, Select, Switch, Tabs, errorMessage, fromPrice,
+  Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, Loading, PageHeader, Photo, Price, Select, Switch, Tabs, errorMessage, fromPrice,
   useDebounced, useI18n, useToast, type Category, type Items, type Product,
 } from '@qabnah/shared';
 import { merchantApi } from '../../api';
@@ -16,8 +16,8 @@ export function useCategories() {
 }
 
 function ProductsTab() {
-  const { t, pick, money, num } = useI18n();
-  const { merchantId, can } = useSession();
+  const { t, pick, num } = useI18n();
+  const { merchantId, can, detail } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -56,41 +56,36 @@ function ProductsTab() {
         <EmptyState icon="box" title={q || categoryId ? t('catalog.noMatch') : t('catalog.noProducts')}
           action={writable && !q ? <Link className="btn btn--primary btn--sm" to="/catalog/products/new">{t('catalog.newProduct')}</Link> : undefined} />
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead><tr><th>{t('catalog.product')}</th><th>{t('catalog.category')}</th><th className="num">{t('catalog.price')}</th><th>{t('catalog.stock')}</th><th>{t('catalog.options')}</th><th>{t('catalog.available')}</th><th><span className="sr-only">{t('common.actions')}</span></th></tr></thead>
-            <tbody>
-              {products.data.items.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <div className="row row-nowrap">
-                      <div className="thumb">{p.imageUrl ? <img src={p.imageUrl} alt="" /> : null}</div>
-                      <div className="stack" style={{ ['--gap' as string]: '0px', minWidth: 0 }}>
-                        <span className="strong truncate">{pick(p.nameEn, p.nameAr)}</span>
-                        <span className="text-xs muted truncate">{pick(p.nameAr, p.nameEn)}{p.sku ? ` · ${p.sku}` : ''}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{catName(p.categoryId)}</td>
-                  <td className="num nowrap">
-                    <span className="strong">{fromPrice(p) !== p.basePriceBaisa ? `${t('catalog.from')} ` : ''}{money(fromPrice(p))}</span>
-                    {p.compareAtPriceBaisa ? <div className="text-xs muted"><s>{money(p.compareAtPriceBaisa)}</s></div> : null}
-                  </td>
-                  <td>{p.trackStock ? <Badge tone={p.stockQty === 0 ? 'danger' : p.stockQty < 5 ? 'warning' : 'neutral'}>{num(p.stockQty, 0)}</Badge> : <span className="muted text-sm">{t('catalog.notTracked')}</span>}</td>
-                  <td className="text-sm">{p.optionGroups.length ? p.optionGroups.map((g) => pick(g.nameEn, g.nameAr)).join(', ') : <span className="muted">—</span>}</td>
-                  <td><Switch checked={p.isAvailable} disabled={!writable || toggle.isPending} onChange={() => toggle.mutate(p)} label={<span className="sr-only">{t('catalog.available')}</span>} /></td>
-                  <td>
-                    {writable ? (
-                      <div className="row row-nowrap">
-                        <Link className="btn btn--sm" to={`/catalog/products/${p.id}`}>{t('common.edit')}</Link>
-                        <Button size="sm" variant="ghost" iconOnly icon="trash" aria-label={`${t('common.delete')} ${pick(p.nameEn, p.nameAr)}`} onClick={() => setToDelete(p)} />
-                      </div>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="catalog-grid">
+          {products.data.items.map((p) => {
+            const from = fromPrice(p);
+            return (
+              <article key={p.id} className={`catalog-card ${p.isAvailable ? '' : 'catalog-card--off'}`} data-testid="catalog-card">
+                <Photo src={p.imageUrl} category={detail?.category} className="catalog-card__photo" alt="">
+                  {p.trackStock ? <span className="catalog-card__stock"><Badge tone={p.stockQty === 0 ? 'danger' : p.stockQty < 5 ? 'warning' : 'neutral'} dot>{t('catalog.stockN', { n: num(p.stockQty, 0) })}</Badge></span> : null}
+                </Photo>
+                <div className="catalog-card__body">
+                  <span className="micro">{catName(p.categoryId)}</span>
+                  <span className="catalog-card__name">{pick(p.nameEn, p.nameAr)}</span>
+                  <span className="row" style={{ ['--gap' as string]: '6px' }}>
+                    {from !== p.basePriceBaisa ? <span className="text-xs muted">{t('catalog.from')}</span> : null}
+                    <Price baisa={from} />
+                    {p.compareAtPriceBaisa ? <s className="text-xs muted"><Price baisa={p.compareAtPriceBaisa} /></s> : null}
+                  </span>
+                  {p.optionGroups.length ? <span className="text-xs muted truncate">{p.optionGroups.map((g) => pick(g.nameEn, g.nameAr)).join(' · ')}</span> : null}
+                </div>
+                <div className="catalog-card__foot">
+                  <Switch checked={p.isAvailable} disabled={!writable || toggle.isPending} onChange={() => toggle.mutate(p)} label={<span className="text-sm">{p.isAvailable ? t('catalog.available') : t('catalog.unavailable')}</span>} />
+                  {writable ? (
+                    <span className="row row-nowrap" style={{ ['--gap' as string]: '4px' }}>
+                      <Link className="btn btn--sm" to={`/catalog/products/${p.id}`}>{t('common.edit')}</Link>
+                      <Button size="sm" variant="ghost" iconOnly icon="trash" aria-label={`${t('common.delete')} ${pick(p.nameEn, p.nameAr)}`} onClick={() => setToDelete(p)} />
+                    </span>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
       <ConfirmDialog open={!!toDelete} tone="danger" title={t('catalog.deleteTitle')} message={toDelete ? t('catalog.deleteBody', { name: pick(toDelete.nameEn, toDelete.nameAr) }) : ''}

@@ -6,19 +6,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +45,8 @@ import om.qabnah.android.support.NotificationsScreen
 import om.qabnah.android.support.TicketDetailScreen
 import om.qabnah.android.support.TicketsScreen
 import om.qabnah.android.ui.components.DevBanner
+import om.qabnah.android.ui.components.QNavItem
+import om.qabnah.android.ui.components.QNavigationBar
 import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.core.api.SessionEvent
 import om.qabnah.core.push.DeepLink
@@ -92,13 +94,13 @@ object Routes {
     const val RESULT_ADDRESS_ID = "result_address_id"
 }
 
-private data class Tab(val route: String, val label: Int, val icon: ImageVector)
+private data class Tab(val route: String, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
 
 private val tabs = listOf(
-    Tab(Routes.HOME, R.string.tab_home, Icons.Filled.Home),
-    Tab(Routes.SEND, R.string.tab_send, Icons.Filled.LocalShipping),
-    Tab(Routes.ORDERS, R.string.tab_orders, Icons.Filled.Receipt),
-    Tab(Routes.ACCOUNT, R.string.tab_account, Icons.Filled.AccountCircle),
+    Tab(Routes.HOME, R.string.tab_home, Icons.Outlined.Home, Icons.Filled.Home),
+    Tab(Routes.SEND, R.string.tab_send, Icons.Outlined.LocalShipping, Icons.Filled.LocalShipping),
+    Tab(Routes.ORDERS, R.string.tab_orders, Icons.AutoMirrored.Outlined.ReceiptLong, Icons.AutoMirrored.Filled.ReceiptLong),
+    Tab(Routes.ACCOUNT, R.string.tab_account, Icons.Outlined.Person, Icons.Filled.Person),
 )
 
 /**
@@ -178,25 +180,21 @@ private fun MainScaffold(container: ConsumerContainer, snackbar: SnackbarHostSta
     val showBottomBar = tabs.any { t -> destination?.hierarchy?.any { it.route == t.route } == true }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
-                    tabs.forEach { tab ->
-                        val selected = destination?.hierarchy?.any { it.route == tab.route } == true
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                nav.navigate(tab.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.label)) },
-                        )
-                    }
-                }
+                // White bar, active icon in the brand colour with a saffron dot.
+                QNavigationBar(
+                    items = tabs.map { QNavItem(it.route, stringResource(it.label), it.icon, it.selectedIcon) },
+                    selectedRoute = tabs.firstOrNull { t -> destination?.hierarchy?.any { it.route == t.route } == true }?.route,
+                    onSelect = { item ->
+                        nav.navigate(item.route) {
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
         },
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0),

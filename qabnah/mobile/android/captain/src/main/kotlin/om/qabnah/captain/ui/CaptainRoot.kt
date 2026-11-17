@@ -8,17 +8,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +45,8 @@ import om.qabnah.android.support.NotificationsScreen
 import om.qabnah.android.support.TicketDetailScreen
 import om.qabnah.android.support.TicketsScreen
 import om.qabnah.android.ui.components.DevBanner
+import om.qabnah.android.ui.components.QNavItem
+import om.qabnah.android.ui.components.QNavigationBar
 import om.qabnah.android.ui.components.ErrorState
 import om.qabnah.android.ui.components.LoadingState
 import om.qabnah.captain.BuildConfig
@@ -91,13 +93,13 @@ object Routes {
     fun newTicket(orderId: String? = null) = if (orderId == null) "tickets/new" else "tickets/new?orderId=$orderId"
 }
 
-private data class Tab(val route: String, val label: Int, val icon: ImageVector)
+private data class Tab(val route: String, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
 
 private val tabs = listOf(
-    Tab(Routes.HOME, R.string.tab_home, Icons.Filled.Home),
-    Tab(Routes.DELIVERIES, R.string.tab_deliveries, Icons.Filled.LocalShipping),
-    Tab(Routes.EARNINGS, R.string.tab_earnings, Icons.Filled.AccountBalanceWallet),
-    Tab(Routes.PROFILE, R.string.tab_profile, Icons.Filled.Person),
+    Tab(Routes.HOME, R.string.tab_home, Icons.Outlined.Home, Icons.Filled.Home),
+    Tab(Routes.DELIVERIES, R.string.tab_deliveries, Icons.Outlined.LocalShipping, Icons.Filled.LocalShipping),
+    Tab(Routes.EARNINGS, R.string.tab_earnings, Icons.Outlined.AccountBalanceWallet, Icons.Filled.AccountBalanceWallet),
+    Tab(Routes.PROFILE, R.string.tab_profile, Icons.Outlined.Person, Icons.Filled.Person),
 )
 
 @Composable
@@ -163,24 +165,21 @@ private fun MainScaffold(container: CaptainContainer, snackbar: SnackbarHostStat
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 if (showBottomBar) {
-                    NavigationBar {
-                        tabs.forEach { tab ->
-                            NavigationBarItem(
-                                selected = destination?.hierarchy?.any { it.route == tab.route } == true,
-                                onClick = {
-                                    nav.navigate(tab.route) {
-                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = { Icon(tab.icon, contentDescription = null) },
-                                label = { Text(stringResource(tab.label)) },
-                            )
-                        }
-                    }
+                    // Night bar; the active tab is marked with a saffron dot.
+                    QNavigationBar(
+                        items = tabs.map { QNavItem(it.route, stringResource(it.label), it.icon, it.selectedIcon) },
+                        selectedRoute = tabs.firstOrNull { t -> destination?.hierarchy?.any { it.route == t.route } == true }?.route,
+                        onSelect = { item ->
+                            nav.navigate(item.route) {
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
                 }
             },
             contentWindowInsets = WindowInsets(0),

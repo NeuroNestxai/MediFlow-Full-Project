@@ -54,6 +54,23 @@ import om.qabnah.android.util.UploadReader
 import om.qabnah.captain.CaptainContainer
 import om.qabnah.captain.R
 import om.qabnah.core.model.CaptainDocType
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.UploadFile
+import androidx.compose.material.icons.outlined.VerifiedUser
+import om.qabnah.android.ui.components.QBottomSheet
+import om.qabnah.android.ui.components.QButton
+import om.qabnah.android.ui.components.QCard
+import om.qabnah.android.ui.components.QPhoto
+import om.qabnah.android.ui.components.QSecondaryButton
+import om.qabnah.android.ui.components.QTextButton
+import om.qabnah.android.ui.components.digits
 import om.qabnah.core.model.CaptainProfile
 
 @Composable
@@ -83,7 +100,7 @@ fun DocumentsScreen(container: CaptainContainer, onBack: () -> Unit) {
         LoadableContent(state = profile, onRefresh = { vm.load(refresh = true) }, modifier = Modifier.padding(padding)) { p ->
             LazyColumn(Modifier.fillMaxSize()) {
                 item {
-                    Text(stringResource(R.string.documents_intro), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
+                    Text(stringResource(R.string.documents_intro), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
                     ui.error?.let { InlineError(it) }
                 }
                 items(documentTypes(p)) { type ->
@@ -94,10 +111,11 @@ fun DocumentsScreen(container: CaptainContainer, onBack: () -> Unit) {
     }
 
     choosingFor?.let { type ->
-        ModalBottomSheet(onDismissRequest = { choosingFor = null }) {
+        QBottomSheet(onDismiss = { choosingFor = null }) {
             Text(docTypeLabel(type), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
             ListItem(
-                leadingContent = { Icon(Icons.Filled.CameraAlt, contentDescription = null) },
+                colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                leadingContent = { Icon(Icons.Outlined.CameraAlt, contentDescription = null) },
                 headlineContent = { Text(stringResource(R.string.documents_take_photo)) },
                 modifier = Modifier.clickable {
                     val uri = newCaptureUri(context, "doc")
@@ -108,7 +126,8 @@ fun DocumentsScreen(container: CaptainContainer, onBack: () -> Unit) {
                 },
             )
             ListItem(
-                leadingContent = { Icon(Icons.Filled.PhotoLibrary, contentDescription = null) },
+                colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                leadingContent = { Icon(Icons.Outlined.PhotoLibrary, contentDescription = null) },
                 headlineContent = { Text(stringResource(R.string.documents_choose_file)) },
                 modifier = Modifier.clickable {
                     cameraType = type
@@ -127,46 +146,61 @@ fun DocumentsScreen(container: CaptainContainer, onBack: () -> Unit) {
 private fun documentTypes(p: CaptainProfile): List<CaptainDocType> =
     (p.requiredDocuments + p.documents.map { it.docType }).filter { it != CaptainDocType.UNKNOWN }.distinct()
 
+/**
+ * Document card: glyph tile, name, status pill (missing / pending / approved / rejected), rejection reason and expiry,
+ * with one upload / replace action.
+ */
 @Composable
 private fun DocumentRow(p: CaptainProfile, type: CaptainDocType, uploading: Boolean, enabled: Boolean, onUpload: () -> Unit) {
     val doc = p.latestDocument(type)
     val missing = type in p.missingDocuments || doc == null
-    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            val (icon, tint) = when {
-                missing -> Icons.Filled.Description to MaterialTheme.colorScheme.onSurfaceVariant
-                doc?.status == "approved" -> Icons.Filled.CheckCircle to QabnahColors.Success
-                doc?.status == "rejected" -> Icons.Filled.ErrorOutline to QabnahColors.Danger
-                else -> Icons.Filled.HourglassTop to QabnahColors.Info
-            }
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(28.dp))
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    val status = doc?.status
+    val (statusText, tint) = when {
+        missing -> stringResource(R.string.doc_status_missing) to QabnahColors.Warning
+        status == "approved" -> stringResource(R.string.doc_status_approved) to QabnahColors.Success
+        status == "rejected" -> stringResource(R.string.doc_status_rejected) to QabnahColors.Danger
+        else -> stringResource(R.string.doc_status_pending) to QabnahColors.Info
+    }
+    QCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            QPhoto(
+                url = null,
+                contentDescription = null,
+                glyph = docGlyph(type),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.size(width = 64.dp, height = 48.dp),
+            )
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(docTypeLabel(type), style = MaterialTheme.typography.titleSmall)
-                val statusText = when {
-                    missing -> stringResource(R.string.doc_status_missing)
-                    doc?.status == "approved" -> stringResource(R.string.doc_status_approved)
-                    doc?.status == "rejected" -> stringResource(R.string.doc_status_rejected)
-                    else -> stringResource(R.string.doc_status_pending)
-                }
                 StatusPill(statusText, tint)
-                doc?.rejectionReason?.takeIf { doc.status == "rejected" }?.let {
-                    Text(stringResource(R.string.doc_rejection_reason, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                }
-                doc?.expiresAt?.let { Text(stringResource(R.string.doc_expires, it), style = MaterialTheme.typography.bodySmall) }
             }
-            if (uploading) {
-                CircularProgressIndicator(Modifier.size(24.dp))
-            } else if (missing || doc?.status == "rejected" || doc?.status == "approved") {
-                OutlinedButton(onClick = onUpload, enabled = enabled) {
-                    Icon(Icons.Filled.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(
-                        stringResource(if (missing) R.string.documents_upload else R.string.documents_replace),
-                        modifier = Modifier.padding(start = 4.dp),
-                    )
-                }
+            if (uploading) CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+        }
+        doc?.rejectionReason?.takeIf { status == "rejected" }?.let {
+            Text(stringResource(R.string.doc_rejection_reason, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+        }
+        doc?.expiresAt?.let {
+            Text(stringResource(R.string.doc_expires, digits(it)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        }
+        if (!uploading && (missing || status == "rejected" || status == "approved")) {
+            val label = stringResource(if (missing) R.string.documents_upload else R.string.documents_replace)
+            if (missing || status == "rejected") {
+                QButton(label, onClick = onUpload, enabled = enabled, icon = Icons.Outlined.UploadFile, compact = true, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+            } else {
+                QSecondaryButton(label, onClick = onUpload, enabled = enabled, icon = Icons.Outlined.UploadFile, compact = true, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
             }
         }
     }
+}
+
+private fun docGlyph(type: CaptainDocType): androidx.compose.ui.graphics.vector.ImageVector = when (type) {
+    CaptainDocType.NATIONAL_ID -> Icons.Outlined.Badge
+    CaptainDocType.DRIVING_LICENSE -> Icons.Outlined.CreditCard
+    CaptainDocType.VEHICLE_REGISTRATION -> Icons.Outlined.DirectionsCar
+    CaptainDocType.VEHICLE_INSURANCE -> Icons.Outlined.Shield
+    CaptainDocType.PROFILE_PHOTO -> Icons.Outlined.Person
+    CaptainDocType.POLICE_CLEARANCE -> Icons.Outlined.VerifiedUser
+    else -> Icons.Outlined.Description
 }
 
 @Composable
@@ -184,17 +218,15 @@ private fun DocumentDetailsDialog(type: CaptainDocType, onConfirm: (String?, Str
                     expires,
                     { expires = it.take(10) },
                     label = { Text(stringResource(R.string.documents_expiry)) },
-                    placeholder = { Text("YYYY-MM-DD") },
+                    placeholder = { Text(stringResource(R.string.documents_expiry_format)) },
                     isError = !expiresValid,
                     singleLine = true,
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(number.trim(), expires.trim()) }, enabled = expiresValid) {
-                Text(stringResource(R.string.documents_upload))
-            }
+            QTextButton(stringResource(R.string.documents_upload), onClick = { onConfirm(number.trim(), expires.trim()) }, enabled = expiresValid)
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(om.qabnah.android.R.string.common_cancel)) } },
+        dismissButton = { QTextButton(stringResource(om.qabnah.android.R.string.common_cancel), onClick = onDismiss) },
     )
 }

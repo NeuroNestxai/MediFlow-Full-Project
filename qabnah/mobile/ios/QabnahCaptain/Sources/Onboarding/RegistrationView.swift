@@ -119,15 +119,15 @@ private struct RegistrationForm: View {
     let onDone: (CaptainProfile) -> Void
 
     var body: some View {
-        Form {
+        QForm {
             if !isEditing {
                 Section {
-                    Text(lang.t("register.intro")).font(.subheadline).foregroundColor(.secondary)
+                    Text(lang.t("register.intro")).qFont(.body).foregroundColor(QTheme.muted)
                 }
             } else if vm.existing?.status == .active {
                 Section {
                     Label(lang.t("register.vehicle_change_warning"), systemImage: "exclamationmark.triangle")
-                        .font(.footnote).foregroundColor(Brand.accent)
+                        .qFont(.small).foregroundColor(Brand.accent)
                 }
             }
             Section(lang.t("register.vehicle")) {
@@ -157,7 +157,7 @@ private struct RegistrationForm: View {
                     .autocorrectionDisabled()
                     .environment(\.layoutDirection, .leftToRight)
                 if !vm.iban.isEmpty && !vm.ibanLooksValid {
-                    Text(lang.t("register.iban_invalid")).font(.caption).foregroundColor(Brand.danger)
+                    Text(lang.t("register.iban_invalid")).qFont(.small).foregroundColor(Brand.danger)
                 }
             } header: {
                 Text(lang.t("register.payout"))
@@ -169,7 +169,7 @@ private struct RegistrationForm: View {
                 Button {
                     Task { if let p = await vm.submit() { onDone(p) } }
                 } label: {
-                    if vm.isSubmitting { ProgressView().tint(.white) } else { Text(lang.t(isEditing ? "common.save" : "register.submit")) }
+                    if vm.isSubmitting { ProgressView().tint(QTheme.onCta) } else { Text(lang.t(isEditing ? "common.save" : "register.submit")) }
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!vm.canSubmit)

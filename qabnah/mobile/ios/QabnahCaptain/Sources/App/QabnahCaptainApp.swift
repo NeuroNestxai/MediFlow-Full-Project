@@ -15,6 +15,8 @@ struct QabnahCaptainApp: App {
         let session = SessionStore(app: .captain, keychainService: "om.qabnah.captain.session")
         _session = StateObject(wrappedValue: session)
         _store = StateObject(wrappedValue: CaptainStore(api: session.api, realtime: session.realtime))
+        // The captain app is dark by default ("night"): readable outdoors and at night.
+        QAppearance.apply(language: LanguageSettings.storedLanguage, showsTabSelectionDot: false)
     }
 
     var body: some Scene {
@@ -25,7 +27,8 @@ struct QabnahCaptainApp: App {
                 .environmentObject(store)
                 .environmentObject(router)
                 .qabnahLocalized(lang)
-                .tint(Brand.primary)
+                .tint(QTheme.saffron)
+                .preferredColorScheme(.dark)
                 .onAppear {
                     session.api.language = lang.language
                     lang.onChange = { [weak session] in session?.setLanguage($0) }
@@ -96,16 +99,16 @@ struct CaptainTabView: View {
     var body: some View {
         TabView(selection: $router.tab) {
             CaptainHomeView()
-                .tabItem { Label(lang.t("tab.home"), systemImage: "house") }
+                .tabItem { Label(lang.t("tab.home"), systemImage: "house").accessibilityIdentifier("tab.home") }
                 .tag(CaptainRouter.Tab.home)
             DeliveriesHistoryView(api: session.api)
-                .tabItem { Label(lang.t("tab.deliveries"), systemImage: "shippingbox") }
+                .tabItem { Label(lang.t("tab.deliveries"), systemImage: "shippingbox").accessibilityIdentifier("tab.deliveries") }
                 .tag(CaptainRouter.Tab.deliveries)
             EarningsView(api: session.api)
-                .tabItem { Label(lang.t("tab.earnings"), systemImage: "banknote") }
+                .tabItem { Label(lang.t("tab.earnings"), systemImage: "banknote").accessibilityIdentifier("tab.earnings") }
                 .tag(CaptainRouter.Tab.earnings)
             CaptainProfileView()
-                .tabItem { Label(lang.t("tab.profile"), systemImage: "person.crop.circle") }
+                .tabItem { Label(lang.t("tab.profile"), systemImage: "person.crop.circle").accessibilityIdentifier("tab.profile") }
                 .tag(CaptainRouter.Tab.profile)
         }
         .fullScreenCover(item: $store.presentedOffer) { offer in
@@ -119,6 +122,7 @@ struct CaptainTabView: View {
             if let p = session.me?.captain, store.profile == nil { store.setProfile(p) }
             await store.refreshProfile()
             await store.refreshActive()
+            await store.refreshToday()
         }
         .onReceive(router.$pendingRoute) { route in
             guard let route else { return }

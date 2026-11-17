@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Icon, LiveIndicator, Loading, Select, Switch, errorMessage, useI18n, useRealtimeStatus, useToast, type MerchantDetail } from '@qabnah/shared';
+import { Alert, Badge, Button, Icon, LiveIndicator, Loading, Photo, Select, Switch, errorMessage, useI18n, useRealtimeStatus, useToast, type MerchantDetail } from '@qabnah/shared';
 import { merchantApi, merchantRealtime } from '../api';
 import { merchantKey, useSession } from './session';
 
@@ -18,6 +18,8 @@ export const NAV: { to: string; icon: string; label: string; perm: string; end?:
   { to: '/staff', icon: 'users', label: 'nav.staff', perm: 'merchant.store:read', group: 'business' },
   { to: '/documents', icon: 'file', label: 'nav.documents', perm: 'merchant.store:read', group: 'business' },
 ];
+
+const TAB_ITEMS = ['/orders', '/catalog', '/deliveries/new', '/payment-links', '/store'];
 
 export function firstAllowedPath(perms: string[]) {
   return NAV.find((n) => perms.includes(n.perm))?.to ?? '/store';
@@ -55,7 +57,7 @@ export function PortalLayout() {
   const pending = s.merchant && s.merchant.status !== 'active';
 
   return (
-    <div className="app-shell">
+    <div className="app-shell app-shell--tabs">
       <div className={`mobile-nav-backdrop ${open ? 'open' : ''}`} onClick={() => setOpen(false)} aria-hidden="true" />
       <aside className={`sidebar ${open ? 'open' : ''}`} aria-label={t('common.menu')}>
         <a className="sidebar__brand" href="/orders" onClick={(e) => { e.preventDefault(); nav('/orders'); }}>
@@ -65,14 +67,18 @@ export function PortalLayout() {
             <span className="sidebar__brand-sub">{t('portal.subtitle')}</span>
           </span>
         </a>
+        {s.merchant ? (
+          <div className="sidebar__store">
+            <Photo src={detail?.logoUrl ?? detail?.coverUrl} ratio="1 / 1" category={detail?.category} className="photo--sm" style={{ width: 40 }} />
+            <div className="grow" style={{ minWidth: 0 }}>
+              <div className="strong truncate" style={{ color: '#fff' }}>{pick(s.merchant.nameEn, s.merchant.nameAr)}</div>
+              <div className="text-xs muted ltr truncate">/{s.merchant.slug}</div>
+            </div>
+          </div>
+        ) : null}
         {s.merchants.length > 1 ? (
           <Select label={t('portal.store')} value={s.merchantId ?? ''} onChange={(e) => s.setMerchantId(e.target.value)}
             options={s.merchants.map((m) => ({ value: m.id, label: pick(m.nameEn, m.nameAr) }))} />
-        ) : s.merchant ? (
-          <div className="card" style={{ padding: '10px 12px' }}>
-            <div className="strong truncate">{pick(s.merchant.nameEn, s.merchant.nameAr)}</div>
-            <div className="text-xs muted ltr">/{s.merchant.slug}</div>
-          </div>
         ) : null}
         {groups.map((g) => {
           const gi = items.filter((i) => i.group === g);
@@ -90,8 +96,8 @@ export function PortalLayout() {
           );
         })}
         <div className="sidebar__footer">
-          <div className="text-sm">
-            <div className="strong truncate">{s.me.user.fullName}</div>
+          <div className="sidebar__user text-sm">
+            <div className="strong truncate" style={{ color: '#fff' }}>{s.me.user.fullName}</div>
             <div className="text-xs muted truncate ltr">{s.me.user.email}</div>
           </div>
           <NavLink to="/security" className="nav-link"><Icon name="key" /><span>{t('nav.security')}</span>{s.me.user.mfaEnabled ? <span className="badge badge--success">{t('mfa.on')}</span> : null}</NavLink>
@@ -117,6 +123,12 @@ export function PortalLayout() {
           <Suspense fallback={<Loading />}><Outlet /></Suspense>
         </main>
       </div>
+      <nav className="tabbar" aria-label={t('common.menu')}>
+        {items.filter((i) => TAB_ITEMS.includes(i.to)).slice(0, 4).map((i) => (
+          <NavLink key={i.to} to={i.to} end={i.end} className="tabbar__item"><Icon name={i.icon} /><span className="truncate">{t(i.label)}</span></NavLink>
+        ))}
+        <button type="button" className="tabbar__item" onClick={() => setOpen(true)} aria-expanded={open}><Icon name="more" /><span>{t('nav.more')}</span></button>
+      </nav>
     </div>
   );
 }

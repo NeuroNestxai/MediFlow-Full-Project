@@ -142,18 +142,18 @@ struct DeleteAccountSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            QForm {
                 Section {
                     Label(lang.t("account.delete_title"), systemImage: "exclamationmark.triangle.fill")
-                        .font(.headline)
+                        .qFont(.h3)
                         .foregroundColor(Brand.danger)
-                    Text(lang.t("account.delete_message")).font(.subheadline)
+                    Text(lang.t("account.delete_message")).qFont(.body)
                 }
                 Section {
                     TextField(AccountDeletionInput.confirmationWord, text: $vm.confirmText)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
-                        .font(.body.monospaced())
+                        .qFont(.body, tabular: true)
                         .environment(\.layoutDirection, .leftToRight)
                         .accessibilityLabel(lang.t("account.delete_type_prompt"))
                 } header: {
@@ -173,6 +173,7 @@ struct DeleteAccountSheet: View {
                     .disabled(!vm.canDelete)
                 }
             }
+            .qScreen()
             .navigationTitle(lang.t("account.delete"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -190,7 +191,7 @@ struct DeleteAccountSheet: View {
                 Label(lang.t("account.delete_blocked"), systemImage: "hand.raised.fill")
                     .foregroundColor(Brand.danger)
                 if let reasons = e.serverMessage, !reasons.isEmpty {
-                    Text(reasons).font(.footnote).foregroundColor(.secondary)
+                    Text(reasons).qFont(.small).foregroundColor(QTheme.muted)
                 }
             }
         } else if let e = vm.error {

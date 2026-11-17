@@ -68,6 +68,8 @@ data class SendUi(
     val isValid: Boolean
         get() = pickup.isComplete && dropoff.isComplete && description.isNotBlank() && !declaredValueInvalid
     val canSubmit: Boolean get() = isValid && quote != null && !submitting && !quoting
+    val placesComplete: Boolean get() = pickup.isComplete && dropoff.isComplete
+    val packageComplete: Boolean get() = description.isNotBlank() && !declaredValueInvalid
 }
 
 /** C2C parcel: `POST /quotes/delivery` (type c2c) then `POST /shipments` with an Idempotency-Key. */
@@ -103,6 +105,9 @@ class SendViewModel(
         update(side) { it.copy(location = location) }
         requote()
     }
+
+    /** Highlights incomplete fields (used when the wizard's Next is pressed on an incomplete step). */
+    fun showValidation() = _ui.update { it.copy(showValidation = true) }
 
     fun setSize(size: PackageSize) = _ui.update { it.copy(size = size) }
     fun setDescription(v: String) = _ui.update { it.copy(description = v.take(200)) }

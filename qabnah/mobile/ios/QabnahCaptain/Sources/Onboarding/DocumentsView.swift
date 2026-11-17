@@ -12,30 +12,25 @@ struct DocumentsView: View {
     var body: some View {
         Group {
             if let p = store.profile {
-                List {
-                    Section {
-                        Text(lang.t("documents.intro")).font(.subheadline).foregroundColor(.secondary)
-                    }
-                    Section {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: QTheme.space3) {
+                        Text(lang.t("documents.intro")).qFont(.body).foregroundColor(QTheme.muted)
                         ForEach(p.documentChecklist) { row in
                             Button { uploading = row.type } label: {
-                                DocumentRow(type: row.type, document: row.document, missing: row.missing)
+                                DocumentRow(type: row.type, document: row.document, missing: row.missing).card()
                             }
                             .buttonStyle(.plain)
                         }
+                        others(p)
                     }
-                    let extra = p.documents.filter { !p.requiredDocuments.contains($0.docType) && $0.docType != .unknown }
-                    if !extra.isEmpty {
-                        Section(lang.t("documents.other")) {
-                            ForEach(extra) { d in DocumentRow(type: d.docType, document: d, missing: false) }
-                        }
-                    }
+                    .padding(QTheme.space4)
                 }
                 .refreshable { await store.refreshProfile() }
             } else {
                 LoadableView(state: store.profileState, retry: { Task { await store.refreshProfile() } }) { _ in EmptyView() }
             }
         }
+        .qScreen()
         .navigationTitle(lang.t("onboarding.documents"))
         .sheet(item: $uploading) { type in
             DocumentUploadView(api: session.api, docType: type, existing: store.profile?.document(for: type)) {
@@ -44,12 +39,24 @@ struct DocumentsView: View {
         }
         .task { await store.refreshProfile() }
     }
+
+    @ViewBuilder
+    private func others(_ p: CaptainProfile) -> some View {
+        let extra = p.documents.filter { !p.requiredDocuments.contains($0.docType) && $0.docType != .unknown }
+        if !extra.isEmpty {
+            Text(lang.t("documents.other")).qFont(.h3).foregroundColor(QTheme.ink).padding(.top, QTheme.space2)
+            ForEach(extra) { d in
+                DocumentRow(type: d.docType, document: d, missing: false).card()
+            }
+        }
+    }
 }
 
 extension CaptainDocType: Identifiable {
     public var id: String { rawValue }
 }
 
+/// Document card: what it is, where it stands (dot + status), why it was rejected, when it expires.
 struct DocumentRow: View {
     @EnvironmentObject var lang: LanguageSettings
     let type: CaptainDocType
@@ -57,22 +64,33 @@ struct DocumentRow: View {
     let missing: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).foregroundColor(color).font(.title3).frame(width: 28).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(lang.t("doc.\(type.rawValue)")).font(.headline)
-                Text(statusText).font(.caption).foregroundColor(color)
+        HStack(alignment: .top, spacing: QTheme.space3) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(color)
+                .frame(width: 44, height: 44)
+                .background(color.opacity(0.14))
+                .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusSm, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(lang.t("doc.\(type.rawValue)")).qFont(.h3).foregroundColor(QTheme.ink)
+                HStack(spacing: 6) {
+                    Circle().fill(color).frame(width: 6, height: 6).accessibilityHidden(true)
+                    Text(statusText).qFont(.small, .medium).foregroundColor(color)
+                }
                 if document?.status == .rejected, let reason = document?.rejectionReason {
-                    Text(reason).font(.caption).foregroundColor(Brand.danger)
+                    Text(reason).qFont(.small).foregroundColor(QTheme.danger)
                 }
                 if let exp = document?.expiresAt {
-                    Text(lang.f("documents.expires", lang.digits(exp))).font(.caption2).foregroundColor(.secondary)
+                    Text(lang.f("documents.expires", lang.digits(exp))).qFont(.micro).foregroundColor(QTheme.muted)
                 }
             }
-            Spacer()
-            Image(systemName: "chevron.forward").font(.caption).foregroundColor(.secondary).accessibilityHidden(true)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.forward")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(QTheme.muted)
+                .accessibilityHidden(true)
         }
-        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
@@ -92,11 +110,11 @@ struct DocumentRow: View {
     }
 
     private var color: Color {
-        if missing || document == nil { return Brand.info }
+        if missing || document == nil { return QTheme.info }
         switch document!.status {
-        case .approved: return Brand.success
-        case .rejected: return Brand.danger
-        default: return Brand.accent
+        case .approved: return QTheme.success
+        case .rejected: return QTheme.danger
+        default: return QTheme.warning
         }
     }
 }
@@ -164,7 +182,7 @@ struct DocumentUploadView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            QForm {
                 if let existing {
                     Section(lang.t("documents.current")) {
                         DocumentRow(type: existing.docType, document: existing, missing: false)
@@ -201,12 +219,12 @@ struct DocumentUploadView: View {
                         }
                     }
                 } label: {
-                    if vm.isUploading { ProgressView().tint(.white) } else { Text(lang.t("documents.upload")) }
+                    if vm.isUploading { ProgressView().tint(QTheme.onCta) } else { Text(lang.t("documents.upload")) }
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!vm.canUpload)
-                .padding()
-                .background(.bar)
+                .padding(QTheme.space4)
+                .background(QTheme.background)
             }
             .navigationTitle(lang.t("doc.\(vm.docType.rawValue)"))
             .navigationBarTitleDisplayMode(.inline)

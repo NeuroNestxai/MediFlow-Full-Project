@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Button, Card, ErrorState, Input, Loading, MoneyInput, PageHeader, Segmented, Select, Switch, Textarea, defaultSelection, errorMessage,
+  Alert, Button, Card, ErrorState, Icon, Input, Loading, MoneyInput, PageHeader, Photo, Price, Segmented, Select, Switch, Textarea, defaultSelection, errorMessage,
   fromPrice, isApiError, useI18n, useToast, type OptionGroup, type Product, type ProductInput, type Selection,
 } from '@qabnah/shared';
 import { merchantApi } from '../../api';
@@ -108,8 +108,8 @@ function GroupEditor({ g, gi, errors, onChange, onRemove, onMove, count }: { g: 
 export function ProductEditor() {
   const { id } = useParams();
   const isNew = !id || id === 'new';
-  const { t, pick, money } = useI18n();
-  const { merchantId, can } = useSession();
+  const { t, pick } = useI18n();
+  const { merchantId, can, detail } = useSession();
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
@@ -224,12 +224,22 @@ export function ProductEditor() {
           </Card>
           <Card title={t('product.preview')}>
             <div className="stack">
-              <div className="row between">
-                <span className="strong">{pick(d.nameEn, d.nameAr) || t('product.untitled')}</span>
-                <span className="stack" style={{ ['--gap' as string]: '0px', alignItems: 'flex-end' }}>
-                  <span>{fromPrice(preview) !== preview.basePriceBaisa ? `${t('catalog.from')} ` : ''}{money(fromPrice(preview))}</span>
-                  {d.compareAtPriceBaisa ? <s className="text-xs muted">{money(d.compareAtPriceBaisa)}</s> : null}
-                </span>
+              <div className="preview-row">
+                <div className="product-row">
+                  <Photo src={d.imageUrl || null} category={detail?.category} tint={detail?.brandColor} className="product-row__photo" />
+                  <span className="product-row__body">
+                    <span className="product-row__title">{pick(d.nameEn, d.nameAr) || t('product.untitled')}</span>
+                    {pick(d.descriptionEn, d.descriptionAr) ? <span className="product-row__desc">{pick(d.descriptionEn, d.descriptionAr)}</span> : null}
+                    <span className="product-row__foot">
+                      <span className="product-row__price">
+                        {fromPrice(preview) !== preview.basePriceBaisa ? <span className="text-xs muted">{t('catalog.from')}</span> : null}
+                        <Price baisa={fromPrice(preview)} />
+                        {d.compareAtPriceBaisa ? <s className="text-xs muted"><Price baisa={d.compareAtPriceBaisa} /></s> : null}
+                      </span>
+                      <span className="product-row__add" style={{ background: detail?.brandColor }} aria-hidden="true"><Icon name="plus" /></span>
+                    </span>
+                  </span>
+                </div>
               </div>
               <ProductConfigurator product={preview} selection={sel} onSelection={setSel} quantity={qty} onQuantity={setQty} />
               <p className="text-xs muted">{t('product.previewHint')}</p>

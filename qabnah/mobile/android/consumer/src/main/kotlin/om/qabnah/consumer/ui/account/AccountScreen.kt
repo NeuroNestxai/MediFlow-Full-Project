@@ -1,6 +1,32 @@
 package om.qabnah.consumer.ui.account
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.PowerSettingsNew
+import androidx.compose.material.icons.outlined.SupportAgent
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import om.qabnah.android.ui.components.QCard
+import om.qabnah.android.ui.components.QLargeTitle
+import om.qabnah.android.ui.components.SkeletonBox
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -71,50 +97,71 @@ fun AccountScreen(
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-        Text(stringResource(R.string.account_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
+        QLargeTitle(stringResource(R.string.account_title))
         me.error?.let { InlineError(it, onRetry = { vm.load() }) }
         error?.let { InlineError(it, onRetry = null, modifier = Modifier.clickable { vm.clearError() }) }
         val user = me.data?.user
-        ListItem(
-            headlineContent = { Text(user?.fullName?.ifBlank { null } ?: stringResource(R.string.account_no_name), style = MaterialTheme.typography.titleLarge) },
-            supportingContent = { user?.phone?.let { Text(it, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr)) } },
-            trailingContent = {
-                IconButton(onClick = { editingName = true }, enabled = user != null) {
-                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.account_edit_name))
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Profile
+            QCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(52.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Outlined.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        if (me.data == null && me.loading) {
+                            SkeletonBox(Modifier.fillMaxWidth(0.6f).height(20.dp))
+                        } else {
+                            Text(user?.fullName?.ifBlank { null } ?: stringResource(R.string.account_no_name), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        user?.phone?.let {
+                            Text(it, style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    IconButton(onClick = { editingName = true }, enabled = user != null) {
+                        Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.account_edit_name))
+                    }
                 }
-            },
-        )
-        HorizontalDivider()
-        NavRow(Icons.Filled.Place, stringResource(R.string.account_addresses), onAddresses)
-        ListItem(
-            leadingContent = {
-                BadgedBox(badge = { if (unread > 0) Badge { Text(digits(unread.toString())) } }) {
-                    Icon(Icons.Filled.Notifications, contentDescription = null)
-                }
-            },
-            headlineContent = { Text(stringResource(CommonR.string.notifications_title)) },
-            modifier = Modifier.clickable(onClick = onNotifications),
-        )
-        NavRow(Icons.Filled.SupportAgent, stringResource(CommonR.string.support_title), onSupport)
-        ListItem(
-            leadingContent = { Icon(Icons.Filled.Language, contentDescription = null) },
-            headlineContent = { Text(stringResource(CommonR.string.language)) },
-            supportingContent = { Text(stringResource(if (isArabic()) CommonR.string.language_ar else CommonR.string.language_en)) },
-            modifier = Modifier.clickable { choosingLanguage = true },
-        )
-        HorizontalDivider()
-        PrivacySection(container.api, onAccountDeleted = container::onAccountDeleted)
-        HorizontalDivider()
-        ListItem(
-            leadingContent = { Icon(Icons.Filled.PowerSettingsNew, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            headlineContent = { Text(stringResource(CommonR.string.sign_out), color = MaterialTheme.colorScheme.error) },
-            modifier = Modifier.clickable { confirmSignOut = true },
-        )
+            }
+            // Navigation rows
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                NavRow(Icons.Outlined.Place, stringResource(R.string.account_addresses), onAddresses)
+                HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                NavRow(
+                    Icons.Outlined.Notifications,
+                    stringResource(CommonR.string.notifications_title),
+                    onNotifications,
+                    badge = if (unread > 0) digits(unread.toString()) else null,
+                )
+                HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                NavRow(Icons.Outlined.SupportAgent, stringResource(CommonR.string.support_title), onSupport)
+                HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+                NavRow(
+                    Icons.Outlined.Language,
+                    stringResource(CommonR.string.language),
+                    onClick = { choosingLanguage = true },
+                    value = stringResource(if (isArabic()) CommonR.string.language_ar else CommonR.string.language_en),
+                )
+            }
+            // Privacy (PDPL): export and deletion
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                PrivacySection(container.api, onAccountDeleted = container::onAccountDeleted)
+            }
+            QCard(Modifier.fillMaxWidth(), padding = PaddingValues(vertical = 4.dp)) {
+                ListItem(
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    leadingContent = { Icon(Icons.Outlined.PowerSettingsNew, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    headlineContent = { Text(stringResource(CommonR.string.sign_out), color = MaterialTheme.colorScheme.error) },
+                    modifier = Modifier.clickable { confirmSignOut = true },
+                )
+            }
+        }
         Text(
-            stringResource(CommonR.string.common_version, BuildConfig.VERSION_NAME),
+            stringResource(CommonR.string.common_version, digits(BuildConfig.VERSION_NAME)),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
         )
     }
 
@@ -163,10 +210,23 @@ fun AccountScreen(
 }
 
 @Composable
-private fun NavRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
+private fun NavRow(icon: ImageVector, title: String, onClick: () -> Unit, value: String? = null, badge: String? = null) {
     ListItem(
-        leadingContent = { Icon(icon, contentDescription = null) },
-        headlineContent = { Text(title) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+        headlineContent = { Text(title, style = MaterialTheme.typography.bodyMedium) },
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (value != null) Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (badge != null) {
+                    Box(Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                        Text(badge, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                }
+                Spacer(Modifier.width(4.dp))
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(20.dp))
+            }
+        },
         modifier = Modifier.clickable(onClick = onClick),
     )
 }

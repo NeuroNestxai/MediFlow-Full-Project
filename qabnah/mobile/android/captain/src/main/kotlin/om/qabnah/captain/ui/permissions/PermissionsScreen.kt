@@ -59,6 +59,9 @@ import om.qabnah.android.ui.components.ProgressButton
 import om.qabnah.android.ui.components.ScreenScaffold
 import om.qabnah.android.ui.components.errorMessage
 import om.qabnah.android.ui.theme.QabnahColors
+import om.qabnah.android.ui.components.QCard
+import om.qabnah.android.ui.components.QSecondaryButton
+import om.qabnah.android.ui.components.StatusPill
 import om.qabnah.android.util.Intents
 import om.qabnah.captain.CaptainContainer
 import om.qabnah.captain.R
@@ -160,22 +163,17 @@ private fun PermissionCard(
     onGrant: () -> Unit,
     enabled: Boolean = true,
 ) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null)
-                Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
-                Text(tag, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(body, style = MaterialTheme.typography.bodySmall)
-            if (granted) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = QabnahColors.Success, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.permission_granted), color = QabnahColors.Success, modifier = Modifier.padding(start = 6.dp))
-                }
-            } else {
-                OutlinedButton(onClick = onGrant, enabled = enabled) { Text(stringResource(R.string.permission_allow)) }
-            }
+    QCard(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+            Text(tag, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp, bottom = 12.dp))
+        if (granted) {
+            StatusPill(stringResource(R.string.permission_granted), QabnahColors.Success)
+        } else {
+            QSecondaryButton(stringResource(R.string.permission_allow), onClick = onGrant, enabled = enabled, compact = true)
         }
     }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
-import { I18nProvider, translate, useI18n, dirFor } from '../i18n/i18n';
+import { I18nProvider, translate, useI18n, dirFor, langFromUrl } from '../i18n/i18n';
 
 describe('translate', () => {
   it('interpolates variables', () => {
@@ -52,5 +52,26 @@ describe('I18nProvider', () => {
     expect(document.documentElement.dir).toBe('ltr');
     expect(screen.getByTestId('money')).toHaveTextContent('OMR 2.500');
     expect(JSON.parse(localStorage.getItem('test.lang')!)).toBe('en');
+  });
+
+  it('honours ?lang=ar|en on first load and remembers it', () => {
+    expect(langFromUrl('?lang=en')).toBe('en');
+    expect(langFromUrl('?x=1&lang=AR')).toBe('ar');
+    expect(langFromUrl('?lang=fr')).toBeNull();
+    expect(langFromUrl('')).toBeNull();
+    localStorage.clear();
+    window.history.replaceState(null, '', '/stores?lang=en');
+    try {
+      render(
+        <I18nProvider storageKey="test.lang" defaultLang="ar" dictionaries={{ ar: { greet: 'مرحبا' }, en: { greet: 'Hello' } }}>
+          <Probe />
+        </I18nProvider>,
+      );
+      expect(screen.getByTestId('lang')).toHaveTextContent('en');
+      expect(screen.getByTestId('greet')).toHaveTextContent('Hello');
+      expect(JSON.parse(localStorage.getItem('test.lang')!)).toBe('en');
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
   });
 });

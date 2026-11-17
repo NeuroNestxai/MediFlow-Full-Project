@@ -14,37 +14,15 @@ struct CartView: View {
         NavigationStack {
             Group {
                 if cart.cart.isEmpty {
-                    EmptyStateView(systemImage: "cart", title: lang.t("cart.empty"), message: lang.t("cart.empty_hint"))
+                    EmptyStateView(systemImage: "cart", title: lang.t("cart.empty"), message: lang.t("cart.empty_hint"),
+                                   actionTitle: lang.t("common.close"), action: { dismiss() })
                 } else {
-                    List {
-                        if let m = cart.cart.merchant {
-                            Section {
-                                Label(lang.name(m), systemImage: "storefront")
-                                    .font(.headline)
-                                    .foregroundColor(Color(hex: m.brandColor) ?? Brand.primary)
-                            }
-                        }
-                        Section {
-                            ForEach(cart.cart.lines) { line in
-                                CartLineRow(line: line)
-                            }
-                            .onDelete { idx in
-                                idx.map { cart.cart.lines[$0].id }.forEach { cart.setQuantity(0, line: $0) }
-                            }
-                        }
-                        Section {
-                            KeyValueRow(label: lang.t("checkout.subtotal"), value: lang.money(cart.cart.subtotalBaisa), bold: true)
-                            if let m = cart.cart.merchant, !cart.cart.meetsMinimumOrder {
-                                Text(lang.f("cart.min_order_warning", lang.money(m.minOrderBaisa)))
-                                    .font(.footnote)
-                                    .foregroundColor(Brand.danger)
-                            }
-                        }
-                    }
-                    .safeAreaInset(edge: .bottom) {
-                        checkoutButton
-                    }
+                    lines
                 }
+            }
+            .qScreen()
+            .safeAreaInset(edge: .bottom) {
+                if !cart.cart.isEmpty { checkoutBar }
             }
             .navigationDestination(isPresented: $showCheckout) {
                 CheckoutView(api: api, cart: cart, onClose: { dismiss() })
@@ -58,6 +36,7 @@ struct CartView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(lang.t("common.close")) { dismiss() }
+                        .accessibilityIdentifier("cart.close")
                 }
                 if !cart.cart.isEmpty {
                     ToolbarItem(placement: .destructiveAction) {
@@ -66,25 +45,64 @@ struct CartView: View {
                 }
             }
         }
+        .qSheet()
     }
-}
 
-private extension CartView {
-    var checkoutButton: some View {
-        VStack(spacing: 6) {
-            Button {
-                if session.isSignedIn { showCheckout = true } else { showSignIn = true }
-            } label: {
-                Text(lang.t("cart.checkout"))
+    private var lines: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: QTheme.space4) {
+                if let m = cart.cart.merchant {
+                    HStack(spacing: QTheme.space3) {
+                        QLogoChip(urlString: m.logoUrl, name: lang.name(m),
+                                  brand: Color(hex: m.brandColor) ?? QTheme.primary, size: 44)
+                        Text(lang.name(m)).qFont(.h3).foregroundColor(QTheme.ink)
+                        Spacer(minLength: 0)
+                    }
+                }
+                VStack(spacing: 0) {
+                    ForEach(cart.cart.lines) { line in
+                        CartLineRow(line: line)
+                        if line.id != cart.cart.lines.last?.id {
+                            Rectangle().fill(QTheme.line).frame(height: 1)
+                        }
+                    }
+                }
+                .card()
+                if let m = cart.cart.merchant, !cart.cart.meetsMinimumOrder {
+                    Text(lang.f("cart.min_order_warning", lang.money(m.minOrderBaisa)))
+                        .qFont(.small)
+                        .foregroundColor(QTheme.danger)
+                }
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!cart.cart.meetsMinimumOrder)
+            .padding(QTheme.space4)
+        }
+    }
+
+    private var checkoutBar: some View {
+        QNightBar {
+            HStack(spacing: QTheme.space3) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(lang.t("checkout.subtotal")).qFont(.small).foregroundColor(QTheme.muted)
+                    QPrice(baisa: cart.cart.subtotalBaisa, style: .h3)
+                }
+                Spacer(minLength: QTheme.space2)
+                Button {
+                    if session.isSignedIn { showCheckout = true } else { showSignIn = true }
+                } label: {
+                    Text(lang.t("cart.checkout"))
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!cart.cart.meetsMinimumOrder)
+                .frame(maxWidth: 220)
+                .accessibilityIdentifier("cart.checkout")
+            }
             if !session.isSignedIn {
-                Text(lang.t("cart.sign_in_to_checkout")).font(.footnote).foregroundColor(.secondary)
+                Text(lang.t("cart.sign_in_to_checkout"))
+                    .qFont(.small)
+                    .foregroundColor(QTheme.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding()
-        .background(.bar)
     }
 }
 
@@ -93,22 +111,32 @@ struct CartLineRow: View {
     @EnvironmentObject var cart: CartStore
     let line: CartLine
 
+    private var quantity: Binding<Int> {
+        Binding(get: { line.quantity }, set: { cart.setQuantity($0, line: line.id) })
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(lang.name(line)).font(.headline)
-                    let opts = line.optionsSummary(lang.language)
-                    if !opts.isEmpty { Text(opts).font(.caption).foregroundColor(.secondary) }
-                    if let n = line.notes { Text(n).font(.caption).italic().foregroundColor(.secondary) }
+        HStack(alignment: .top, spacing: QTheme.space3) {
+            QPhoto(urlString: line.imageUrl, glyph: "bag")
+                .frame(width: 72, height: 54)
+                .clipShape(RoundedRectangle(cornerRadius: QTheme.radiusSm, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(lang.name(line)).qFont(.body, .semibold).foregroundColor(QTheme.ink)
+                if !line.optionsSummary(lang.language).isEmpty {
+                    Text(line.optionsSummary(lang.language)).qFont(.small).foregroundColor(QTheme.muted)
                 }
-                Spacer()
-                Text(lang.money(line.lineTotalBaisa)).font(.subheadline.bold())
-            }
-            Stepper(value: Binding(get: { line.quantity }, set: { cart.setQuantity($0, line: line.id) }),
-                    in: 0...max(1, line.maxQuantity)) {
-                Text(lang.f("product.quantity", line.quantity)).font(.subheadline)
+                if let n = line.notes, !n.isEmpty {
+                    Text(n).qFont(.small).foregroundColor(QTheme.muted)
+                }
+                HStack {
+                    QPrice(baisa: line.lineTotalBaisa)
+                    Spacer(minLength: 0)
+                    QStepper(value: quantity, range: 0...max(1, line.maxQuantity),
+                             label: lang.f("product.quantity", line.quantity))
+                }
             }
         }
+        .padding(.vertical, QTheme.space3)
     }
 }

@@ -2,12 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
-  Alert, Button, Card, EmptyState, ErrorState, Input, Loading, Spinner, StatusBadge, Textarea, errorMessage, isApiError, normalizeOmanPhone, useDocumentTitle, useI18n,
+  Alert, Button, Card, EmptyState, ErrorState, Icon, Input, Loading, Price, Spinner, StatusBadge, Textarea, errorMessage, isApiError, normalizeOmanPhone, useDocumentTitle, useI18n,
   type Checkout, type LatLng, type PaymentStatus, type PublicPaymentLink,
 } from '@qabnah/shared';
 import { PinPicker } from '@qabnah/shared/map';
 import { publicApi } from '../api';
-import { brandStyle } from '../storefront/StorefrontLayout';
+import { StoreLogo, useBrandScope } from '../storefront/StorefrontLayout';
 
 export function PayPage() {
   const { code } = useParams();
@@ -33,6 +33,7 @@ export function PayPage() {
     }, { auth: false }),
     onSuccess: (c) => window.location.assign(c.checkoutUrl),
   });
+  useBrandScope(link.data?.merchant.brandColor);
   useDocumentTitle(link.data ? `${link.data.title} · ${pick(link.data.merchant.nameEn, link.data.merchant.nameAr)}` : t('pay.title'));
 
   if (link.isLoading) return <Loading />;
@@ -55,56 +56,62 @@ export function PayPage() {
   };
   const outcome = payment.data?.status;
   return (
-    <div className="pay-page" style={brandStyle(m.brandColor, m.brandColor)}>
-      <div className="pay-card stack stack-lg">
-        <div className="row between">
-          <div className="row row-nowrap">
-            <span className="sf-logo">{m.logoUrl ? <img src={m.logoUrl} alt="" /> : <span aria-hidden="true">{pick(m.nameEn, m.nameAr).slice(0, 1)}</span>}</span>
-            <strong>{pick(m.nameEn, m.nameAr)}</strong>
-          </div>
-          <Button size="sm" variant="ghost" onClick={toggleLang} lang={lang === 'ar' ? 'en' : 'ar'} aria-label={t('lang.switchLabel')}>{t('lang.switch')}</Button>
-        </div>
-        <Card>
-          <div className="stack stack-lg">
-            <div className="stack stack-sm" style={{ textAlign: 'center' }}>
-              <h1 className="text-lg">{l.title}</h1>
-              {l.description ? <p className="muted">{l.description}</p> : null}
-              <div className="pay-amount" data-testid="pay-amount">{money(l.amountBaisa)}</div>
-              <div><StatusBadge kind="raw" status={l.status} /></div>
-              {l.expiresAt && l.status === 'active' ? <span className="text-xs muted">{t('pay.expires', { at: dateTime(l.expiresAt) })}</span> : null}
-            </div>
-
-            {paymentId ? (
-              <div className="stack" aria-live="polite">
-                {!outcome || outcome === 'pending' ? <div className="row" style={{ justifyContent: 'center' }}><Spinner /> <span>{t('pay.confirming')}</span></div> : null}
-                {outcome === 'paid' ? <Alert tone="success" title={t('pay.successTitle')}>{l.requestDelivery ? t('pay.successDelivery') : t('pay.successBody')}</Alert> : null}
-                {outcome && !['paid', 'pending'].includes(outcome) ? <Alert tone="danger" title={t('pay.failedTitle')}>{t('pay.failedBody')}</Alert> : null}
+    <div className="pay-page">
+      <div className="receipt">
+        <div className="receipt__head">
+          <div className="row between">
+            <div className="receipt__merchant">
+              <StoreLogo m={m} size={44} />
+              <div className="stack" style={{ ['--gap' as string]: '0px' }}>
+                <strong>{pick(m.nameEn, m.nameAr)}</strong>
+                <span className="text-xs" style={{ opacity: 0.8 }}>{t('pay.request')}</span>
               </div>
-            ) : null}
-
-            {l.status === 'active' && outcome !== 'paid' ? (
-              <form className="stack" onSubmit={submit} noValidate>
-                <div className="form-grid">
-                  <Input label={t('pay.name')} value={name} onChange={(e) => setName(e.target.value)} error={errors.name} autoComplete="name" optional={!l.requestDelivery} />
-                  <Input label={t('pay.phone')} type="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} error={errors.phone} autoComplete="tel" placeholder="+968 9XXXXXXX" optional={!l.requestDelivery} />
-                </div>
-                {l.requestDelivery ? (
-                  <div className="stack">
-                    <span className="field__label">{t('pay.deliverTo')}</span>
-                    <PinPicker value={loc} onChange={setLoc} height={260} />
-                    {errors.location ? <span className="field__error">{errors.location}</span> : null}
-                    <Textarea label={t('delivery.addressText')} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} error={errors.address} />
-                  </div>
-                ) : null}
-                {checkout.isError ? <Alert tone="danger">{errorMessage(checkout.error, t)}</Alert> : null}
-                <Button type="submit" variant="primary" className="sf-primary" size="lg" block loading={checkout.isPending}>{t('pay.payNow', { amount: money(l.amountBaisa) })}</Button>
-                <p className="text-xs muted" style={{ textAlign: 'center' }}>{t('pay.secureNote')}</p>
-              </form>
-            ) : l.status !== 'active' && !paymentId ? <Alert tone={l.status === 'paid' ? 'success' : 'warning'}>{t(`pay.status.${l.status}`)}</Alert> : null}
+            </div>
+            <button type="button" className="btn btn--sm on-night-btn" onClick={toggleLang} lang={lang === 'ar' ? 'en' : 'ar'} aria-label={t('lang.switchLabel')}>{t('lang.switch')}</button>
           </div>
-        </Card>
-        <div className="row" style={{ justifyContent: 'center' }}><span className="text-xs muted">{t('sf.poweredBy')}</span><img src="/brand/logo.svg" alt="Qabnah" height={20} /></div>
+        </div>
+        <div className="receipt__amount">
+          <span className="text-sm muted">{l.title}</span>
+          <Price baisa={l.amountBaisa} testId="pay-amount" />
+          {l.description ? <span className="text-sm muted">{l.description}</span> : null}
+        </div>
+        <div className="receipt__rows">
+          <div className="row between"><span className="muted">{t('common.status')}</span><StatusBadge kind="raw" status={outcome === 'paid' ? 'paid' : l.status} /></div>
+          <div className="row between"><span className="muted">{t('pay.reference')}</span><span className="mono ltr">{l.code}</span></div>
+          {l.expiresAt && l.status === 'active' ? <div className="row between"><span className="muted">{t('pay.validUntil')}</span><span>{dateTime(l.expiresAt)}</span></div> : null}
+          {l.requestDelivery ? <div className="row between"><span className="muted">{t('orders.delivery')}</span><span>{t('pay.withDelivery')}</span></div> : null}
+        </div>
+        <div className="receipt__cut" aria-hidden="true" />
+        <div className="receipt__body">
+          {paymentId ? (
+            <div className="stack" aria-live="polite">
+              {!outcome || outcome === 'pending' ? <div className="row" style={{ justifyContent: 'center' }}><Spinner /> <span>{t('pay.confirming')}</span></div> : null}
+              {outcome === 'paid' ? <Alert tone="success" title={t('pay.successTitle')}>{l.requestDelivery ? t('pay.successDelivery') : t('pay.successBody')}</Alert> : null}
+              {outcome && !['paid', 'pending'].includes(outcome) ? <Alert tone="danger" title={t('pay.failedTitle')}>{t('pay.failedBody')}</Alert> : null}
+            </div>
+          ) : null}
+          {l.status === 'active' && outcome !== 'paid' ? (
+            <form className="stack" onSubmit={submit} noValidate>
+              <div className="form-grid">
+                <Input label={t('pay.name')} value={name} onChange={(e) => setName(e.target.value)} error={errors.name} autoComplete="name" optional={!l.requestDelivery} />
+                <Input label={t('pay.phone')} type="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} error={errors.phone} autoComplete="tel" placeholder="+968 9XXXXXXX" optional={!l.requestDelivery} />
+              </div>
+              {l.requestDelivery ? (
+                <div className="stack">
+                  <span className="field__label">{t('pay.deliverTo')}</span>
+                  <PinPicker value={loc} onChange={setLoc} height={240} />
+                  {errors.location ? <span className="field__error">{errors.location}</span> : null}
+                  <Textarea label={t('delivery.addressText')} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} error={errors.address} />
+                </div>
+              ) : null}
+              {checkout.isError ? <Alert tone="danger">{errorMessage(checkout.error, t)}</Alert> : null}
+              <Button type="submit" variant="primary" size="lg" block loading={checkout.isPending}>{t('pay.payNow', { amount: money(l.amountBaisa) })}</Button>
+              <p className="text-xs muted" style={{ textAlign: 'center' }}><Icon name="shield" width={13} height={13} /> {t('pay.secureNote')}</p>
+            </form>
+          ) : l.status !== 'active' && !paymentId ? <Alert tone={l.status === 'paid' ? 'success' : 'warning'}>{t(`pay.status.${l.status}`)}</Alert> : null}
+        </div>
       </div>
+      <div className="pay-foot"><span>{t('sf.poweredBy')}</span><img src="/brand/logo.svg" alt="Qabnah" height={22} /></div>
     </div>
   );
 }

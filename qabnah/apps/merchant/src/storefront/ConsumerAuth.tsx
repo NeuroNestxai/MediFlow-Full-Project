@@ -37,7 +37,7 @@ export function OtpSignIn({ onDone, compact }: { onDone?: () => void; compact?: 
       <Input label={t('sf.phone')} type="tel" inputMode="tel" dir="ltr" autoComplete="tel" placeholder="9XXX XXXX" prefix="+968" value={phone}
         onChange={(e) => setPhone(e.target.value)} error={phone.length > 7 && !normalized ? t('delivery.phoneInvalid') : null} />
       {req.isError ? <Alert tone="danger">{errorMessage(req.error, t)}</Alert> : null}
-      <Button type="submit" variant="primary" className="sf-primary" block loading={req.isPending} disabled={!normalized}>{t('sf.sendCode')}</Button>
+      <Button type="submit" variant="primary" block loading={req.isPending} disabled={!normalized}>{t('sf.sendCode')}</Button>
     </form>
   ) : (
     <form className="stack" onSubmit={submitCode} noValidate>
@@ -46,7 +46,7 @@ export function OtpSignIn({ onDone, compact }: { onDone?: () => void; compact?: 
       <Input label={t('sf.code')} inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} autoFocus />
       <Input label={t('sf.yourName')} value={name} onChange={(e) => setName(e.target.value)} hint={t('sf.nameHint')} autoComplete="name" optional />
       {verify.isError ? <Alert tone="danger">{errorMessage(verify.error, t)}</Alert> : null}
-      <Button type="submit" variant="primary" className="sf-primary" block loading={verify.isPending} disabled={!/^\d{6}$/.test(code)}>{t('sf.verify')}</Button>
+      <Button type="submit" variant="primary" block loading={verify.isPending} disabled={!/^\d{6}$/.test(code)}>{t('sf.verify')}</Button>
       <Button variant="ghost" size="sm" disabled={req.isPending} onClick={() => req.mutate()}>{t('sf.resend')}</Button>
     </form>
   );

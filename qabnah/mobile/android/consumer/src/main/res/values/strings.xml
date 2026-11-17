@@ -10,6 +10,9 @@
     <string name="home_title">What would you like today?</string>
     <string name="home_search_hint">Search stores</string>
     <string name="home_location_denied">Location is off – showing all stores. Enable it to see what\'s near you.</string>
+    <string name="home_location_near">Near you</string>
+    <string name="home_location_off">Location off</string>
+    <string name="home_location_finding">Finding your location…</string>
     <string name="home_empty">No stores found</string>
     <string name="home_empty_body">Try another category or search term.</string>
     <string name="category_all">All</string>
@@ -31,7 +34,8 @@
     <string name="store_other_items">More items</string>
     <string name="product_unavailable">Unavailable</string>
     <string name="product_notes">Special instructions</string>
-    <string name="product_add">Add · %1$s</string>
+    <string name="product_add_label">Add to cart</string>
+    <string name="product_add_to_cart">Add %1$s to cart</string>
     <string name="option_required_one">Required · choose 1</string>
     <string name="option_required_range">Required · choose %1$s–%2$s</string>
     <string name="option_optional_one">Optional</string>
@@ -40,6 +44,7 @@
     <string name="qty_increase">Increase quantity</string>
 
     <string name="cart_view">View cart (%1$s) · %2$s</string>
+    <string name="cart_view_short">View cart</string>
     <string name="cart_empty">Your cart is empty</string>
     <string name="cart_replace_title">Start a new cart?</string>
     <string name="cart_replace_body">Your cart has items from %1$s. You can only order from one store at a time.</string>
@@ -54,7 +59,6 @@
     <string name="checkout_summary">Summary</string>
     <string name="checkout_select_address_first">Choose a delivery address to see the total.</string>
     <string name="checkout_below_minimum">Add %1$s more to reach the minimum order.</string>
-    <string name="checkout_place">Place order · %1$s</string>
     <string name="checkout_place_no_total">Place order</string>
 
     <string name="price_subtotal">Subtotal</string>
@@ -85,7 +89,7 @@
     <string name="order_title">Order</string>
     <string name="order_parcel">Parcel delivery</string>
     <string name="order_delivery">Delivery</string>
-    <string name="order_pay_now">Pay now · %1$s</string>
+    <string name="order_pay_now_label">Pay now</string>
     <string name="order_track">Track live</string>
     <string name="order_pin_title">Delivery PIN</string>
     <string name="order_pin_hint">Share it with the captain only when you receive your order.</string>
@@ -117,9 +121,13 @@
 
     <string name="send_title">Send a parcel</string>
     <string name="send_subtitle">A captain picks it up and delivers it anywhere in our service area.</string>
+    <string name="send_step_of">Step %1$s of %2$s</string>
+    <string name="send_step_places">Pickup and drop-off</string>
+    <string name="send_step_review">Payment and review</string>
     <string name="send_pickup">Pickup</string>
     <string name="send_dropoff">Drop-off</string>
     <string name="send_set_on_map">Set location on map</string>
+    <string name="send_location_set">Location set · change</string>
     <string name="send_location_required">Choose the location on the map.</string>
     <string name="send_address_details">Address details (building, landmark)</string>
     <string name="send_contact_name">Contact name</string>
@@ -133,7 +141,6 @@
     <string name="send_cod_recipient">Recipient (at drop-off)</string>
     <string name="send_set_both_pins">Set both locations to see the price.</string>
     <string name="send_fix_fields">Please complete the highlighted fields.</string>
-    <string name="send_submit">Request captain · %1$s</string>
     <string name="send_submit_no_price">Request captain</string>
     <string name="package_small">Small</string>
     <string name="package_medium">Medium</string>

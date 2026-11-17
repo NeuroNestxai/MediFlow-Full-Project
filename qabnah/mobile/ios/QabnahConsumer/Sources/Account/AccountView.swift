@@ -10,24 +10,12 @@ struct AccountView: View {
 
     var body: some View {
         NavigationStack(path: $router.accountPath) {
-            List {
+            QList {
                 Section {
                     NavigationLink {
                         ProfileEditView()
                     } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "person.crop.circle.fill")
-                                .font(.system(size: 44))
-                                .foregroundColor(Brand.primary)
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading) {
-                                Text(session.me?.user.fullName.isEmpty == false ? session.me!.user.fullName : lang.t("account.no_name"))
-                                    .font(.headline)
-                                if let phone = session.me?.user.phone {
-                                    Text(verbatim: PhoneNumber.display(phone)).font(.subheadline).foregroundColor(.secondary)
-                                }
-                            }
-                        }
+                        profileHeader
                     }
                     if session.meError != nil && session.me == nil {
                         InlineError(error: session.meError)
@@ -43,10 +31,10 @@ struct AccountView: View {
                             Spacer()
                             if unread > 0 {
                                 Text(lang.digits("\(unread)"))
-                                    .font(.caption.bold())
-                                    .foregroundColor(.white)
+                                    .qFont(.small, .bold, tabular: true)
+                                    .foregroundColor(QTheme.inkOnLight)
                                     .padding(.horizontal, 8).padding(.vertical, 2)
-                                    .background(Brand.accent, in: Capsule())
+                                    .background(QTheme.saffron, in: Capsule())
                             }
                         }
                     }
@@ -64,12 +52,14 @@ struct AccountView: View {
                     }
                 }
                 Section {
-                    Text(verbatim: "Qabnah · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text(verbatim: lang.digits(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""))
+                        .qFont(.small, tabular: true)
+                        .foregroundColor(QTheme.muted)
                         .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
                 }
             }
+            .qScreen()
             .navigationTitle(lang.t("tab.account"))
             .navigationDestination(for: AccountRoute.self) { route in
                 switch route {
@@ -86,6 +76,35 @@ struct AccountView: View {
                 if let page = try? await session.api.send(Endpoints.notifications(limit: 1)) { unread = page.unread }
             }
         }
+    }
+}
+
+private extension AccountView {
+    var displayName: String {
+        let name = session.me?.user.fullName ?? ""
+        return name.isEmpty ? lang.t("account.no_name") : name
+    }
+
+    var profileHeader: some View {
+        HStack(spacing: QTheme.space3) {
+            Image(systemName: "person.fill")
+                .font(.system(size: 22))
+                .foregroundColor(QTheme.primary)
+                .frame(width: 52, height: 52)
+                .background(QTheme.primarySoft)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayName).qFont(.h3).foregroundColor(QTheme.ink)
+                if let phone = session.me?.user.phone {
+                    Text(verbatim: PhoneNumber.display(phone))
+                        .qFont(.small, tabular: true)
+                        .foregroundColor(QTheme.muted)
+                        .environment(\.layoutDirection, .leftToRight)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -125,7 +144,7 @@ struct ProfileEditView: View {
     @StateObject private var vm = ProfileEditViewModel()
 
     var body: some View {
-        Form {
+        QForm {
             Section {
                 TextField(lang.t("auth.full_name"), text: $vm.fullName).textContentType(.name)
                 TextField(lang.t("account.email"), text: $vm.email)
@@ -138,6 +157,7 @@ struct ProfileEditView: View {
             }
             if vm.error != nil { Section { InlineError(error: vm.error) } }
         }
+        .qScreen()
         .navigationTitle(lang.t("account.profile"))
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -216,25 +236,27 @@ struct NotificationsView: View {
                     } label: {
                         HStack(alignment: .top, spacing: 10) {
                             Circle()
-                                .fill(n.isRead ? Color.clear : Brand.accent)
+                                .fill(n.isRead ? Color.clear : QTheme.saffron)
                                 .frame(width: 8, height: 8)
                                 .padding(.top, 6)
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(n.title).font(n.isRead ? .body : .body.bold())
-                                Text(n.body).font(.subheadline).foregroundColor(.secondary)
+                                Text(n.title).qFont(.body, n.isRead ? QFontWeight.regular : QFontWeight.semibold)
+                                Text(n.body).qFont(.body).foregroundColor(QTheme.muted)
                                 if let at = n.createdAt {
-                                    Text(lang.dateTime(at)).font(.caption2).foregroundColor(.secondary)
+                                    Text(lang.dateTime(at)).qFont(.micro).foregroundColor(QTheme.muted)
                                 }
                             }
                         }
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(n.isRead ? "" : lang.t("notifications.unread"))
+                    .listRowBackground(QTheme.surface)
                 }
                 .refreshable { await vm.load() }
             }
         }
+        .qScreen()
         .navigationTitle(lang.t("account.notifications"))
         .task { await vm.load() }
         .onChange(of: vm.state.value?.unread ?? 0) { onUnreadChange($0) }

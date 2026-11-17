@@ -120,6 +120,7 @@
 "earnings.earned" = "Earned";
 "earnings.entries" = "Activity";
 "earnings.payouts" = "Payouts";
+"earnings.per_day" = "Income per day";
 "earnings.period" = "Period";
 "earnings.preset.month" = "This month";
 "earnings.preset.today" = "Today";
@@ -145,6 +146,8 @@
 "history.empty" = "No completed deliveries yet";
 "home.active_jobs" = "Active jobs";
 "home.always_location_hint" = "Allow location 'Always' so customers can track you when the app is in the background.";
+"home.go_offline" = "Tap to go offline";
+"home.go_online" = "Go online";
 "home.location_needed_message" = "Qabnah Captain needs your location to go online and receive nearby offers.";
 "home.location_needed_title" = "Location needed";
 "home.not_active_hint" = "You can go online once your account is approved.";
@@ -160,10 +163,13 @@
 "job.dropoff" = "Drop-off";
 "job.dropoff_approx" = "Drop-off (approximate)";
 "job.items_count" = "%ld items";
+"job.more_actions" = "More actions";
+"job.navigate" = "Navigate";
 "job.navigate_dropoff" = "Navigate to drop-off";
 "job.navigate_pickup" = "Navigate to pickup";
 "job.navigate_with" = "Navigate with %@";
 "job.pickup" = "Pickup";
+"job.whatsapp" = "WhatsApp";
 "job.whatsapp_a11y" = "WhatsApp %@";
 "ledger.adjustment" = "Adjustment";
 "ledger.captain_earning" = "Delivery earning";

@@ -1,6 +1,26 @@
 package om.qabnah.captain.ui.offers
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import om.qabnah.android.ui.components.QButton
+import om.qabnah.android.ui.components.QPrice
+import om.qabnah.android.ui.components.QSecondaryButton
+import om.qabnah.android.ui.components.QSheetHandle
+import om.qabnah.android.ui.components.QTextButton
+import om.qabnah.android.ui.components.tabular
+import om.qabnah.captain.ui.components.CountdownRing
+import om.qabnah.captain.ui.components.RouteRows
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -135,7 +155,7 @@ fun OfferOverlay(container: CaptainContainer, snackbar: SnackbarHostState, onAcc
         AlertDialog(
             onDismissRequest = { failure = null },
             text = { Text(errorMessage(err)) },
-            confirmButton = { TextButton(onClick = { failure = null }) { Text(stringResource(om.qabnah.android.R.string.common_ok)) } },
+            confirmButton = { QTextButton(stringResource(om.qabnah.android.R.string.common_ok), onClick = { failure = null }) },
         )
     }
     val offer = offers.firstOrNull() ?: return
@@ -144,6 +164,10 @@ fun OfferOverlay(container: CaptainContainer, snackbar: SnackbarHostState, onAcc
     }
 }
 
+/**
+ * The offer as a full-height sheet on night: saffron countdown ring, the big earning figure, pickup → drop-off rows and
+ * one saffron action (Accept) with a secondary Decline.
+ */
 @Composable
 private fun OfferContent(offer: Offer, count: Int, busy: Boolean, onAccept: () -> Unit, onReject: (String) -> Unit) {
     val expiresAt = remember(offer.id) { OfferRepository.expiresAtMs(offer) }
@@ -156,73 +180,99 @@ private fun OfferContent(offer: Offer, count: Int, busy: Boolean, onAccept: () -
         }
     }
     val remainingMs = (expiresAt - now).coerceAtLeast(0)
+    val secondsLeft = digits(((remainingMs + 999) / 1000).toString())
     var rejecting by remember(offer.id) { mutableStateOf(false) }
 
-    Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding().padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.offer_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            if (count > 1) Text(stringResource(R.string.offer_more, digits((count - 1).toString())), style = MaterialTheme.typography.labelMedium)
-        }
-        LinearProgressIndicator(
-            progress = { remainingMs.toFloat() / totalMs },
-            modifier = Modifier.fillMaxWidth().height(8.dp),
-            color = if (remainingMs < 10_000) QabnahColors.Danger else QabnahColors.Primary,
-        )
-        Text(
-            stringResource(R.string.offer_seconds_left, digits(((remainingMs + 999) / 1000).toString())),
-            style = MaterialTheme.typography.titleMedium,
-            color = if (remainingMs < 10_000) QabnahColors.Danger else MaterialTheme.colorScheme.onSurface,
-        )
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(stringResource(R.string.offer_you_earn), style = MaterialTheme.typography.labelLarge)
-                Text(money(offer.earningBaisa), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = QabnahColors.Primary)
-                if (offer.codAmountBaisa > 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                        Icon(Icons.Filled.Payments, contentDescription = null, tint = QabnahColors.Danger)
-                        Text(
-                            stringResource(R.string.offer_cod, money(offer.codAmountBaisa)),
-                            color = QabnahColors.Danger,
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(start = 6.dp),
-                        )
+    Box(Modifier.fillMaxSize().background(QabnahColors.Night.copy(alpha = 0.7f)).statusBarsPadding().padding(top = 12.dp)) {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Column(Modifier.fillMaxSize().navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
+                QSheetHandle()
+                Column(
+                    Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.offer_title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                        if (count > 1) {
+                            Text(stringResource(R.string.offer_more, digits((count - 1).toString())), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val countdown = stringResource(R.string.offer_seconds_left, secondsLeft)
+                        CountdownRing(
+                            progress = remainingMs.toFloat() / totalMs,
+                            modifier = Modifier.semantics { contentDescription = countdown },
+                        ) {
+                            Text(secondsLeft, style = MaterialTheme.typography.displaySmall.tabular(), modifier = Modifier.clearAndSetSemantics { })
+                        }
+                        Spacer(Modifier.width(20.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.offer_you_earn), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            QPrice(offer.earningBaisa, style = MaterialTheme.typography.displaySmall)
+                            if (offer.codAmountBaisa > 0) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                                    Icon(Icons.Outlined.Payments, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                                    Text(
+                                        stringResource(R.string.offer_cod, money(offer.codAmountBaisa)),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        modifier = Modifier.padding(start = 6.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider()
+                    offer.merchantName?.let {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(it, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 10.dp))
+                        }
+                    }
+                    RouteRows(
+                        pickupLabel = stringResource(R.string.offer_pickup),
+                        pickup = offer.pickupArea ?: "—",
+                        pickupDetail = stringResource(R.string.offer_away, distance(offer.distanceToPickupM)),
+                        dropoffLabel = stringResource(R.string.offer_dropoff),
+                        dropoff = offer.dropoffArea ?: "—",
+                        dropoffDetail = stringResource(R.string.offer_trip, distance(offer.tripDistanceM)),
+                    )
+                    val details = buildList {
+                        if (offer.orderType == OrderType.C2C) add(stringResource(R.string.offer_parcel, packageSizeLabel(offer.packageSize)))
+                        offer.vehicleType?.let { v -> vehicleLabel(v).takeIf { it.isNotBlank() }?.let { add(stringResource(R.string.offer_vehicle, it)) } }
+                    }
+                    if (details.isNotEmpty()) {
+                        Text(details.joinToString("  ·  "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    QButton(
+                        onClick = onAccept,
+                        enabled = remainingMs > 0,
+                        loading = busy,
+                        saffron = true,
+                        modifier = Modifier.fillMaxWidth().height(64.dp),
+                    ) { Text(stringResource(R.string.offer_accept), style = MaterialTheme.typography.titleLarge) }
+                    QSecondaryButton(stringResource(R.string.offer_reject), onClick = { rejecting = true }, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp))
+                }
             }
-        }
-        offer.merchantName?.let {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Storefront, contentDescription = null)
-                Text(it, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
-            }
-        }
-        if (offer.orderType == OrderType.C2C) Text(stringResource(R.string.offer_parcel, offer.packageSize ?: "—"))
-        AreaRow(stringResource(R.string.offer_pickup), offer.pickupArea, stringResource(R.string.offer_away, distance(offer.distanceToPickupM)))
-        AreaRow(stringResource(R.string.offer_dropoff), offer.dropoffArea, stringResource(R.string.offer_trip, distance(offer.tripDistanceM)))
-        offer.vehicleType?.let { v -> vehicleLabel(v).takeIf { it.isNotBlank() }?.let { Text(stringResource(R.string.offer_vehicle, it), style = MaterialTheme.typography.bodySmall) } }
-
-        Spacer(Modifier.weight(1f))
-        Button(onClick = onAccept, enabled = !busy && remainingMs > 0, modifier = Modifier.fillMaxWidth().height(60.dp)) {
-            if (busy) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White) else Text(stringResource(R.string.offer_accept), style = MaterialTheme.typography.titleMedium)
-        }
-        OutlinedButton(onClick = { rejecting = true }, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text(stringResource(R.string.offer_reject))
         }
     }
 
     if (rejecting) RejectDialog(onDismiss = { rejecting = false }, onConfirm = { reason -> rejecting = false; onReject(reason) })
 }
 
+/** Localized parcel size for an offer's `packageSize` wire value. */
 @Composable
-private fun AreaRow(label: String, area: String?, detail: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(area ?: "—", style = MaterialTheme.typography.titleMedium)
-        Text(detail, style = MaterialTheme.typography.bodySmall)
-    }
+private fun packageSizeLabel(wire: String?): String = when (wire) {
+    "small" -> stringResource(R.string.package_small)
+    "medium" -> stringResource(R.string.package_medium)
+    "large" -> stringResource(R.string.package_large)
+    else -> "—"
 }
 
 @Composable
@@ -251,8 +301,8 @@ private fun RejectDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(selected) }) { Text(stringResource(R.string.offer_reject)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(om.qabnah.android.R.string.common_cancel)) } },
+        confirmButton = { QTextButton(stringResource(R.string.offer_reject), onClick = { onConfirm(selected) }) },
+        dismissButton = { QTextButton(stringResource(om.qabnah.android.R.string.common_cancel), onClick = onDismiss) },
     )
 }
 

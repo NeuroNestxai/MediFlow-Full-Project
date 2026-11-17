@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'qabnah/mobile/screens/**'
+      - 'qabnah/mobile/ios/QabnahScreens/**'
       - '.github/workflows/qabnah-mobile-screens.yml'
 
 permissions:
@@ -87,4 +88,102 @@ jobs:
           git add -A qabnah/docs/screenshots/mobile/android
           git diff --cached --quiet && { echo "nothing to publish"; exit 0; }
           git commit -m "Android emulator screenshots (run ${{ github.run_number }}) [skip ci]"
+          for i in 1 2 3; do git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && break; sleep 5; done
+
+  # iOS: UI tests (QabnahScreens target) drive both apps on an iPhone simulator against a backend started on the runner.
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 30 }
+      - name: Skip when the UI test target is not in the project yet
+        id: have
+        run: test -d qabnah/mobile/ios/QabnahScreens && echo "tests=yes" >> "$GITHUB_OUTPUT" || echo "tests=no" >> "$GITHUB_OUTPUT"
+
+      - name: PostgreSQL + PostGIS
+        if: steps.have.outputs.tests == 'yes'
+        run: |
+          brew install postgis
+          PG=$(brew list --formula | grep -E '^postgresql@[0-9]+$' | sort -V | tail -1)
+          echo "using $PG"
+          PGBIN="$(brew --prefix "$PG")/bin"
+          "$PGBIN/initdb" -D "$RUNNER_TEMP/pg" -U postgres --auth=trust > /dev/null
+          "$PGBIN/pg_ctl" -D "$RUNNER_TEMP/pg" -l "$RUNNER_TEMP/pg.log" -o "-p 5432" -w start
+          "$PGBIN/createdb" -h localhost -U postgres qabnah
+
+      - uses: actions/setup-node@v4
+        if: steps.have.outputs.tests == 'yes'
+        with: { node-version: 22 }
+      - name: Backend with sample data (API :4000) and product photos (:5173)
+        if: steps.have.outputs.tests == 'yes'
+        env:
+          DATABASE_URL: postgres://postgres@localhost:5432/qabnah
+          OTP_DEV_ECHO: 'true'
+          RUN_WORKER_IN_PROCESS: 'true'
+          MERCHANT_WEB_URL: http://localhost:5173
+          PUBLIC_API_URL: http://localhost:4000
+          LOG_LEVEL: warn
+        run: |
+          cd qabnah/backend
+          npm ci
+          npx tsx src/scripts/seed.ts
+          nohup npx tsx src/server.ts > "$RUNNER_TEMP/api.log" 2>&1 &
+          (cd ../apps/merchant/public && nohup python3 -m http.server 5173 > /dev/null 2>&1 &)
+          for i in $(seq 1 40); do curl -fsS localhost:4000/v1/health/ready && break; sleep 2; done
+          curl -fsS localhost:4000/v1/stores | head -c 300
+
+      - name: Generate project
+        if: steps.have.outputs.tests == 'yes'
+        working-directory: qabnah/mobile/ios
+        run: brew install xcodegen && xcodegen generate
+
+      - name: Run the screenshot UI tests on an iPhone simulator
+        if: steps.have.outputs.tests == 'yes'
+        working-directory: qabnah/mobile/ios
+        env:
+          QABNAH_SHOTS_DIR: ${{ runner.temp }}/shots
+        run: |
+          mkdir -p "$QABNAH_SHOTS_DIR"
+          DEVICE=$(xcrun simctl list devices available | grep -E 'iPhone 1[5-9]( Pro)? \(' | head -1 | sed -E 's/^ *([^(]+) \(.*/\1/' | sed 's/ *$//')
+          echo "simulator: $DEVICE"
+          set -o pipefail
+          # TEST_RUNNER_ prefixed variables are passed into the UI test runner process
+          TEST_RUNNER_QABNAH_SHOTS_DIR="$QABNAH_SHOTS_DIR" xcodebuild test -project Qabnah.xcodeproj -scheme QabnahScreens \
+            -destination "platform=iOS Simulator,name=$DEVICE" -resultBundlePath "$RUNNER_TEMP/screens.xcresult" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "Test Case|error:|\*\* TEST|shot:|failed|Executed" | tail -150 || true
+          ls -la "$QABNAH_SHOTS_DIR" | head -60
+
+      - name: Backend log
+        if: always() && steps.have.outputs.tests == 'yes'
+        run: tail -40 "$RUNNER_TEMP/api.log" || true
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.have.outputs.tests == 'yes'
+        with: { name: ios-screenshots, path: '${{ runner.temp }}/shots', if-no-files-found: warn }
+
+      - name: Publish screenshots to the branch
+        if: always() && steps.have.outputs.tests == 'yes'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install --quiet pillow
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import os, pathlib
+          from PIL import Image
+          src = pathlib.Path(os.environ["RUNNER_TEMP"]) / "shots"
+          dst = pathlib.Path("qabnah/docs/screenshots/mobile/ios")
+          dst.mkdir(parents=True, exist_ok=True)
+          pngs = sorted(src.glob("*.png"))
+          if pngs:
+              for old in dst.glob("*.jpg"): old.unlink()
+          for png in pngs:
+              im = Image.open(png).convert("RGB")
+              im = im.resize((720, round(im.height * 720 / im.width)), Image.LANCZOS)
+              im.save(dst / (png.stem + ".jpg"), quality=86)
+          print(len(pngs), "screenshots")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A qabnah/docs/screenshots/mobile/ios
+          git diff --cached --quiet && { echo "nothing to publish"; exit 0; }
+          git commit -m "iOS simulator screenshots (run ${{ github.run_number }}) [skip ci]"
           for i in 1 2 3; do git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && break; sleep 5; done
