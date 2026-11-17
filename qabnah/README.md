@@ -17,6 +17,9 @@ Delivery and e-commerce platform for **Muscat, Oman**. It covers merchant orders
 > account or WhatsApp/SMS credential exists. See [`docs/DECISIONS.md`](docs/DECISIONS.md) (28-item "To validate"
 > checklist) and [`docs/research/MARKET_AND_COMPLIANCE_RESEARCH.md`](docs/research/MARKET_AND_COMPLIANCE_RESEARCH.md).
 
+## Screenshots
+Real screens from the running Docker stack with sample data are in [`docs/screenshots/`](docs/screenshots/): storefront and tracking (phone), invoice, merchant portal, admin panel.
+
 ## Documents
 - [Implementation plan](docs/IMPLEMENTATION_PLAN.md) · [Architecture](docs/ARCHITECTURE.md) · [Decisions & compliance checklist](docs/DECISIONS.md)
 - [API contract (OpenAPI 3.1)](API_CONTRACT.yaml) · [Database schema](docs/DATABASE_SCHEMA.md) · [Roles & permissions](docs/USER_ROLES_AND_PERMISSIONS.md)
