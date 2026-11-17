@@ -11,6 +11,7 @@ Delivery and e-commerce platform for **Muscat, Oman**. It covers merchant orders
 | Qabnah Captain (courier) app | iOS SwiftUI · Android Kotlin/Compose | `mobile/ios/QabnahCaptain`, `mobile/android/captain` |
 | Merchant portal + branded storefront + pay page | React + Vite | `apps/merchant` |
 | Admin panel | React + Vite | `apps/admin` |
+| Marketing website (3D hero, Arabic/English) | Vite + three.js | `apps/site` |
 | API + dispatch worker | Node 22, TypeScript, Fastify, PostgreSQL 16 + PostGIS 3.4 | `backend` |
 
 > **Compliance:** this codebase does not claim regulatory compliance, and no licence, approval, payment-gateway
@@ -30,7 +31,8 @@ Real screens from the running Docker stack with sample data are in [`docs/screen
 cd qabnah/infra
 cp .env.example .env            # dev defaults: mock payments, console SMS/WhatsApp, OTP echoed in API responses
 docker compose up --build -d    # PostGIS, migrations, sample data (first run only), API :4000, worker,
-                                # merchant portal + storefront http://localhost:5173, admin http://localhost:5174
+                                # merchant portal + storefront http://localhost:5173, admin http://localhost:5174,
+                                # marketing website http://localhost:5175
 curl localhost:4000/v1/health/ready
 node ../backend/scripts/smoke.mjs   # full journey: order → dispatch → delivery → ledger, C2C + online payment
 ```
@@ -85,10 +87,21 @@ scans in the seed are placeholders.
 cd qabnah/apps && npm install
 npm run dev:merchant     # http://localhost:5173  (storefront: /s/saffron-grill, pay page: /pay/<code>)
 npm run dev:admin        # http://localhost:5174
+npm run dev:site         # http://localhost:5175  (marketing website)
 npm run typecheck && npm test && npm run build
 QABNAH_API_URL=http://localhost:4000/v1 npm run test:e2e   # Playwright, needs a seeded API
 ```
 Set `VITE_API_URL` (default `http://localhost:4000/v1`) for other environments.
+
+### Marketing website (`apps/site`)
+A single Arabic-first page (English toggle) over a live three.js studio scene: kraft parcel, the Qabnah pin, a phone
+showing the real storefront and a relief map with a route. Scrolling moves the camera through four chapters (hero,
+customers, merchants, captains). Phones, reduced-motion and no-WebGL browsers get pre-rendered frames of the same scene
+(`public/stills`, regenerate with `node scripts/render-stills.cjs` while `npm run dev:site` is running). The store list
+and service zones are read from the API (`/v1/stores`, `/v1/zones`); the page states nothing that the platform does not
+do (no ratings, counts or partner logos). Build-time settings: `VITE_API_URL`, `VITE_MERCHANT_URL` (where "browse
+stores" and "register your store" go), optional `VITE_CONTACT_EMAIL`. Design rules for every surface are in
+[`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
 
 ## Mobile apps
 - iOS: `cd qabnah/mobile/ios && brew install xcodegen && xcodegen generate && open Qabnah.xcodeproj` — see `mobile/ios/README.md`.
@@ -122,6 +135,6 @@ Set `VITE_API_URL` (default `http://localhost:4000/v1`) for other environments.
 ## Deploying (production)
 `infra/prod/`: copy `.env.prod.example` to `.env.prod`, fill in the secrets, then run
 `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build`.
-- Caddy provides automatic HTTPS for the API, web and admin domains. The admin domain is restricted to `ADMIN_ALLOWED_IPS`.
+- Caddy provides automatic HTTPS for the API, website (`SITE_DOMAIN`), web app (`WEB_DOMAIN`) and admin domains. The admin domain is restricted to `ADMIN_ALLOWED_IPS`.
 - The backend refuses to start with unsafe settings: mock payments, OTP echo, missing secrets, or admin MFA off.
 - For road routing, run `infra/osrm/prepare.sh` once and start the `osrm` profile.
