@@ -212,8 +212,11 @@ private fun MainScaffold(container: ConsumerContainer, snackbar: SnackbarHostSta
             }
             is DeepLink.Ticket -> nav.navigate(Routes.ticket(link.ticketId)) { launchSingleTop = true }
             // Back from the hosted payment page: PaymentScreen polls on resume. After a cold start, show the order.
-            is DeepLink.PaymentReturn -> if (link.orderId != null && nav.currentDestination?.route != Routes.PAYMENT) {
-                nav.navigate(Routes.order(link.orderId)) { launchSingleTop = true }
+            is DeepLink.PaymentReturn -> {
+                val orderId = link.orderId // local copy: no smart cast across modules
+                if (orderId != null && nav.currentDestination?.route != Routes.PAYMENT) {
+                    nav.navigate(Routes.order(orderId)) { launchSingleTop = true }
+                }
             }
             is DeepLink.Offer, is DeepLink.Delivery -> Unit // captain app links
         }
