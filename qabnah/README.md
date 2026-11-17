@@ -92,27 +92,33 @@ Set `VITE_API_URL` (default `http://localhost:4000/v1`) for other environments.
 - Android: open `qabnah/mobile/android` in Android Studio — see `mobile/android/README.md`
   (emulator talks to `http://10.0.2.2:4000/v1`).
 
-## Verification status (2026-11-16, real results only)
+## Verification status (2026-11-17, real results only)
 
 | Component | Check | Where | Result |
 |---|---|---|---|
-| Backend | `npm run typecheck` | sandbox + GitHub Actions | ✅ pass |
-| Backend | `npm test` — 79 tests (30 unit, 49 integration on PostgreSQL 16 + PostGIS 3.4) | sandbox + GitHub Actions | ✅ 79/79 |
-| Backend | Docker image build; `docker compose up` (db, migrate, seed, api, worker) | sandbox + GitHub Actions (build) | ✅ |
-| Backend | `scripts/smoke.mjs` full journey against the Docker stack | sandbox | ✅ passed |
-| Web | `npm run typecheck` (shared, merchant, admin, e2e) | sandbox | ✅ pass |
-| Web | `npm test` — 43 tests (shared 35, merchant 8) | sandbox | ✅ 43/43 |
-| Web | Production builds (merchant 629 kB JS / 187 kB gzip, admin 558 kB / 165 kB) + nginx images | sandbox | ✅ |
-| Web | Playwright e2e — merchant board accept, admin live ops, storefront → OTP → quote; against the Docker stack (nginx-served apps + compiled API) | sandbox | ✅ 3/3 |
-| iOS | `swift test` QabnahKit (52 tests) | Linux sandbox (Swift 6.0.3) + macOS 15 GitHub runner | ✅ |
-| iOS | `xcodegen generate` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
-| Android | `./gradlew :core:test` (48 tests) | sandbox + GitHub Actions | ✅ 48/48 |
-| Android | `assembleDebug` consumer & captain APKs | GitHub Actions (Android SDK) | ✅ both build (APK artifact) |
+| Backend | `npm run typecheck` | sandbox + GitHub Actions | ✅ |
+| Backend | `npm test` — 94 tests (unit + integration on PostgreSQL 16/PostGIS 3.4; includes MFA, push signing, S3 via s3rver emulator, OSRM via mock server, invoices, PDPL export/deletion, billing, reminders, realtime WebSocket) | sandbox + GitHub Actions | ✅ 94/94 |
+| Backend | Docker image; `docker compose up` (db, migrate, seed, api, worker, merchant-web, admin-web) | sandbox | ✅ |
+| Backend | `scripts/smoke.mjs` full journey against the Docker stack | sandbox | ✅ |
+| Backend | `scripts/loadtest.mjs` (see TEST_PLAN §4) | sandbox | ✅ ~2.1k req/s reads, 0 errors |
+| Production config | `docker compose -f infra/prod/docker-compose.prod.yml config`; `caddy validate` | sandbox | ✅ valid (not deployed) |
+| Web | typecheck; `npm test` — 49 tests (shared 41, merchant 8); production builds (main chunks: merchant 336 kB / 107 kB gzip, admin 316 kB / 101 kB gzip) | sandbox + GitHub Actions | ✅ |
+| Web | Playwright e2e — admin 2FA sign-in, admin live ops, merchant board accept, storefront → OTP → quote; against Docker (nginx-served apps + compiled API) | sandbox | ✅ 4/4 |
+| iOS | `swift test` QabnahKit (70 tests) | Linux sandbox + macOS 15 GitHub runner | ✅ |
+| iOS | `xcodegen` + `xcodebuild` QabnahConsumer & QabnahCaptain (simulator, unsigned) | macOS 15 GitHub runner | ✅ both build |
+| Android | `./gradlew :core:test` (65 tests) | sandbox + GitHub Actions | ✅ |
+| Android | `assembleDebug` consumer & captain APKs (incl. Firebase Messaging) | GitHub Actions | see latest CI run |
 
-**Not verified / not done:**
-- Mobile apps not run on a device or simulator; no UI tests; not signed; no store submission.
-- No load test or penetration test.
-- No live Thawani, WhatsApp, SMS or push traffic (no credentials).
-- Map tiles could not load in the sandbox (OpenStreetMap blocked); production needs a tile provider that permits app traffic.
-- Admin MFA not implemented (launch blocker, IMPLEMENTATION_PLAN M10).
-- Everything in the DECISIONS compliance checklist is still "To validate" with Omani counsel and regulators.
+**Not verified / needs people or accounts:**
+- Mobile apps have not run on a device or simulator. There are no UI tests, no signing and no store submission.
+- No live Thawani, WhatsApp, SMS, FCM or APNs traffic (no credentials). The adapters and their signing are unit-tested only.
+- No penetration test. Load tested on a single sandbox host only.
+- Map tiles are blocked in the sandbox. Production needs a tile provider that permits app traffic.
+- Everything in the DECISIONS compliance checklist is "To validate" with Omani counsel and regulators.
+
+## Deploying (production)
+`infra/prod/`: copy `.env.prod.example` to `.env.prod`, fill in the secrets, then run
+`docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build`.
+- Caddy provides automatic HTTPS for the API, web and admin domains. The admin domain is restricted to `ADMIN_ALLOWED_IPS`.
+- The backend refuses to start with unsafe settings: mock payments, OTP echo, missing secrets, or admin MFA off.
+- For road routing, run `infra/osrm/prepare.sh` once and start the `osrm` profile.
