@@ -84,7 +84,10 @@ def wait_for_network() -> None:
 def app_log(package: str) -> None:
     """Errors the app logged, to explain a failed screen."""
     pid = ui.shell(f"pidof {package}").strip()
-    out = ui.adb("logcat", "-d", "-t", "1500", timeout=60).stdout.decode(errors="replace")
+    tagged = ui.adb("logcat", "-d", "-s", "QabnahLoad:W", "QabnahHome:W", "AndroidRuntime:E", timeout=60).stdout.decode(errors="replace")
+    for ln in tagged.splitlines()[-60:]:
+        print("     " + ln[:300])
+    out = ui.adb("logcat", "-d", "-t", "4000", timeout=60).stdout.decode(errors="replace")
     lines = [ln for ln in out.splitlines() if (pid and f" {pid} " in ln) and re.search(r" [EW] |Exception|exception|Caused by|\tat ", ln)
              and not re.search(r"OpenGLRenderer|FrameTracker|failed to call release", ln)]
     print(f"   logcat ({package}, pid {pid or '?'}): {len(lines)} warning/error lines")

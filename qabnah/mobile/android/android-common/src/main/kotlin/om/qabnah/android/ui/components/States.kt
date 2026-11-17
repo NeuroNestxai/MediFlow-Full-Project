@@ -1,5 +1,7 @@
 package om.qabnah.android.ui.components
 
+import android.content.pm.ApplicationInfo
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,9 +50,11 @@ fun LoadingState(modifier: Modifier = Modifier) {
 /** Says what happened and what to do (retry). */
 @Composable
 fun ErrorState(error: Throwable, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
+    // Debug builds also name the failure, so a screenshot or a UI dump is enough to diagnose it.
+    val debuggable = (LocalContext.current.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     MessageState(
         title = errorMessage(error),
-        body = null,
+        body = if (debuggable) "${error::class.java.name}: ${error.message}" else null,
         modifier = modifier,
         action = if (onRetry != null) {
             { QSecondaryButton(stringResource(R.string.common_retry), onClick = onRetry, compact = true) }
